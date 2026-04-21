@@ -1,8 +1,7 @@
 import crypto from "crypto";
-import { storage } from "./storage";
 
 const SECRET = process.env.SESSION_SECRET ?? "vigr-dev-secret";
-const DEFAULT_PASSWORD = "omar1267";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "omar1267";
 
 function hashPassword(password: string): string {
   return crypto.createHmac("sha256", SECRET).update(password).digest("hex");
@@ -26,16 +25,10 @@ export function verifyToken(token: string): boolean {
 }
 
 export async function verifyPassword(password: string): Promise<boolean> {
-  let storedHash = await storage.getSetting("admin_password_hash");
-  if (!storedHash) {
-    storedHash = hashPassword(DEFAULT_PASSWORD);
-    await storage.setSetting("admin_password_hash", storedHash);
-  }
-  return storedHash === hashPassword(password);
+  return hashPassword(password) === hashPassword(ADMIN_PASSWORD);
 }
 
-export async function setPassword(newPassword: string): Promise<void> {
-  await storage.setSetting("admin_password_hash", hashPassword(newPassword));
+export async function setPassword(_newPassword: string): Promise<void> {
 }
 
 export function createToken(): string {

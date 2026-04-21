@@ -6,7 +6,6 @@ import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import ThornsDivider from "@/components/ThornsDevider";
 import logoPath from "@assets/12214-removebg-preview_1776743232072.png";
 
 export default function Home() {
@@ -94,7 +93,6 @@ export default function Home() {
       {/* ── HERO ── */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-[72px]">
         <div className="flex flex-col items-center text-center">
-          {/* Logo — invert(1) makes black lines white on dark bg, no bg visible */}
           <div className="w-52 h-52 sm:w-72 sm:h-72 mb-10">
             <img
               src={logoPath}
@@ -125,11 +123,6 @@ export default function Home() {
         </p>
       </section>
 
-      {/* ── THORN DIVIDER ── */}
-      <div className="text-foreground/30 px-0">
-        <ThornsDivider />
-      </div>
-
       {/* ── MARQUEE ── */}
       <div className="bg-foreground text-background py-4 overflow-hidden">
         <div className="flex whitespace-nowrap" style={{ animation: "marquee 24s linear infinite" }}>
@@ -148,11 +141,6 @@ export default function Home() {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* ── THORN DIVIDER ── */}
-      <div className="text-foreground/30">
-        <ThornsDivider flip />
       </div>
 
       {/* ── PRODUCTS ── */}
@@ -180,11 +168,6 @@ export default function Home() {
           </div>
         )}
       </section>
-
-      {/* ── THORN DIVIDER ── */}
-      <div className="text-foreground/30">
-        <ThornsDivider />
-      </div>
 
       {/* ── ABOUT ── */}
       <section id="about" className="py-28 px-6" style={{ background: "rgba(255,255,255,0.02)" }}>
@@ -218,11 +201,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── THORN DIVIDER ── */}
-      <div className="text-foreground/30">
-        <ThornsDivider flip />
-      </div>
-
       {/* ── NEWSLETTER ── */}
       <section className="py-28 px-6 flex flex-col items-center text-center">
         <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">Stay Connected</p>
@@ -250,11 +228,6 @@ export default function Home() {
           </Button>
         </form>
       </section>
-
-      {/* ── THORN DIVIDER ── */}
-      <div className="text-foreground/30">
-        <ThornsDivider />
-      </div>
 
       {/* ── FOOTER ── */}
       <footer className="py-12 px-6 border-t border-border">
