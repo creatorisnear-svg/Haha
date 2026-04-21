@@ -19,7 +19,7 @@ export default function ProductDetail() {
     },
   });
 
-  const { addToCart, itemCount, setIsOpen } = useCart();
+  const { addToCart, buyNow, itemCount, setIsOpen } = useCart();
   const { isLoggedIn } = useAuth();
   const { toast } = useToast();
 
@@ -58,6 +58,11 @@ export default function ProductDetail() {
       title: "Added to cart",
       description: `${product.name}${selectedSize ? ` (${selectedSize})` : ""} × ${quantity}`,
     });
+  };
+
+  const handleBuyNow = () => {
+    if (!canAdd || !product) return;
+    buyNow(product as any, hasSizes ? selectedSize : null, quantity);
   };
 
   return (
@@ -329,18 +334,31 @@ export default function ProductDetail() {
                 </div>
               </div>
 
-              <Button
-                onClick={handleAdd}
-                disabled={!canAdd}
-                data-testid="button-add-to-cart-detail"
-                className="rounded-none w-full font-display text-lg sm:text-xl tracking-[0.2em] h-14 bg-foreground text-background hover:bg-primary hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
-              >
-                {!inStock
-                  ? "SOLD OUT"
-                  : hasSizes && !selectedSize
-                  ? "SELECT A SIZE"
-                  : "ADD TO CART"}
-              </Button>
+              <div className="flex flex-col gap-3">
+                <Button
+                  onClick={handleAdd}
+                  disabled={!canAdd}
+                  data-testid="button-add-to-cart-detail"
+                  className="rounded-none w-full font-display text-lg sm:text-xl tracking-[0.2em] h-14 bg-foreground text-background hover:bg-primary hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
+                >
+                  {!inStock
+                    ? "SOLD OUT"
+                    : hasSizes && !selectedSize
+                    ? "SELECT A SIZE"
+                    : "ADD TO CART"}
+                </Button>
+
+                {inStock && (
+                  <Button
+                    onClick={handleBuyNow}
+                    disabled={!canAdd}
+                    data-testid="button-buy-now-detail"
+                    className="rounded-none w-full font-display text-lg sm:text-xl tracking-[0.2em] h-14 bg-primary text-white hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
+                  >
+                    {hasSizes && !selectedSize ? "SELECT A SIZE" : "BUY NOW"}
+                  </Button>
+                )}
+              </div>
 
               <Link
                 href="/"

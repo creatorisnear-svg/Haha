@@ -10,6 +10,7 @@ export interface CartItem {
 interface CartContextType {
   items: CartItem[];
   addToCart: (product: Product, size?: string | null) => void;
+  buyNow: (product: Product, size?: string | null, quantity?: number) => void;
   removeFromCart: (productId: string, size?: string | null) => void;
   updateQuantity: (productId: string, quantity: number, size?: string | null) => void;
   clearCart: () => void;
@@ -17,6 +18,7 @@ interface CartContextType {
   itemCount: number;
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
+  checkoutRequest: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -50,6 +52,7 @@ function loadCart(): CartItem[] {
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(() => loadCart());
   const [isOpen, setIsOpen] = useState(false);
+  const [checkoutRequest, setCheckoutRequest] = useState(0);
 
   useEffect(() => {
     try {
@@ -59,20 +62,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [items]);
 
-  const addToCart = (product: Product, size?: string | null) => {
+  const addItems = (product: Product, size: string | null | undefined, qty: number) => {
     setItems((prev) => {
       const key = itemKey(product.id!, size);
       const existing = prev.find((item) => itemKey(item.product.id!, item.size) === key);
       if (existing) {
         return prev.map((item) =>
           itemKey(item.product.id!, item.size) === key
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: item.quantity + qty }
             : item
         );
       }
-      return [...prev, { product, quantity: 1, size: size ?? null }];
+      return [...prev, { product, quantity: qty, size: size ?? null }];
     });
+  };
+
+  const addToCart = (product: Product, size?: string | null) => {
+    addItems(product, size, 1);
     setIsOpen(true);
+  };
+
+  const buyNow = (product: Product, size?: string | null, quantity: number = 1) => {
+    addItems(product, size, Math.max(1, quantity));
+    setIsOpen(true);
+    setCheckoutRequest((n) => n + 1);
   };
 
   const removeFromCart = (productId: string, size?: string | null) => {
@@ -107,6 +120,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       value={{
         items,
         addToCart,
+        buyNow,
         removeFromCart,
         updateQuantity,
         clearCart,
@@ -114,6 +128,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         itemCount,
         isOpen,
         setIsOpen,
+        checkoutRequest,
       }}
     >
       {children}

@@ -193,7 +193,7 @@ function PaymentForm({
 
 // ── Main Cart component ──────────────────────────────────────────────────────
 export function Cart() {
-  const { items, isOpen, setIsOpen, updateQuantity, removeFromCart, total, clearCart } = useCart();
+  const { items, isOpen, setIsOpen, updateQuantity, removeFromCart, total, clearCart, checkoutRequest } = useCart();
   const { token, isLoggedIn, customer, login } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -205,6 +205,13 @@ export function Cart() {
   const [stripeLoading, setStripeLoading] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<any>(null);
   const [promo, setPromo] = useState<PromoState>({ ...defaultPromo });
+
+  // Buy Now: jump straight to checkout step when items exist
+  useEffect(() => {
+    if (checkoutRequest > 0 && items.length > 0) {
+      setStep("info");
+    }
+  }, [checkoutRequest, items.length]);
 
   // Pre-fill info from logged-in customer
   useEffect(() => {
