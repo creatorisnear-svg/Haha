@@ -5,18 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-type Carrier = "ups" | "usps" | "fedex" | "dhl" | "unknown";
+type Carrier = "ups" | "usps" | "fedex" | "dhl" | "amazon" | "unknown";
 
 function detectCarrier(raw: string): Carrier {
   const tn = raw.replace(/\s+/g, "").toUpperCase();
+  // Amazon Logistics: TBA + 12 digits
+  if (/^TBA\d{10,14}$/.test(tn)) return "amazon";
   if (/^1Z[0-9A-Z]{16}$/.test(tn)) return "ups";
-  if (/^\d{12}$|^\d{15}$|^\d{20}$|^\d{22}$/.test(tn)) {
-    // FedEx: 12 or 15 digits
-    if (tn.length === 12 || tn.length === 15) return "fedex";
-    // USPS: 20 or 22 digits (often starts with 9)
-    if (tn.length === 20 || tn.length === 22) return "usps";
-  }
   if (/^(94|93|92|95|82)\d{18,20}$/.test(tn)) return "usps";
+  if (/^\d{12}$|^\d{15}$/.test(tn)) return "fedex";
+  if (/^\d{20}$|^\d{22}$/.test(tn)) return "usps";
   if (/^\d{10,11}$/.test(tn)) return "dhl";
   return "unknown";
 }
@@ -26,6 +24,7 @@ const CARRIER_INFO: Record<Carrier, { name: string; url: (tn: string) => string 
   usps: { name: "USPS", url: (tn) => `https://tools.usps.com/go/TrackConfirmAction?tLabels=${encodeURIComponent(tn)}` },
   fedex: { name: "FedEx", url: (tn) => `https://www.fedex.com/fedextrack/?trknbr=${encodeURIComponent(tn)}` },
   dhl: { name: "DHL", url: (tn) => `https://www.dhl.com/en/express/tracking.html?AWB=${encodeURIComponent(tn)}` },
+  amazon: { name: "Amazon Logistics", url: (tn) => `https://track.amazon.com/tracking/${encodeURIComponent(tn)}` },
   unknown: { name: "Carrier", url: (tn) => `https://parcelsapp.com/en/tracking/${encodeURIComponent(tn)}` },
 };
 
