@@ -325,6 +325,12 @@ components:
           description: Price in cents
         imageUrl:
           type: string
+          nullable: true
+        imageUrls:
+          type: array
+          nullable: true
+          items:
+            type: string
         inStock:
           type: boolean
         stockCount:
@@ -333,6 +339,12 @@ components:
           description: Optional stock count. If null, stock is unlimited. Decrements on checkout.
         category:
           type: string
+          nullable: true
+        sizes:
+          type: array
+          nullable: true
+          items:
+            type: string
         createdAt:
           type: string
       required: [id, name, price, inStock]

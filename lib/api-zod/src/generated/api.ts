@@ -24,7 +24,8 @@ export const ListProductsResponse = zod.object({
       name: zod.string(),
       description: zod.string().optional(),
       price: zod.number().describe("Price in cents"),
-      imageUrl: zod.string().optional(),
+      imageUrl: zod.string().nullish(),
+      imageUrls: zod.array(zod.string()).nullish(),
       inStock: zod.boolean(),
       stockCount: zod
         .number()
@@ -32,7 +33,8 @@ export const ListProductsResponse = zod.object({
         .describe(
           "Optional stock count. If null, stock is unlimited. Decrements on checkout.",
         ),
-      category: zod.string().optional(),
+      category: zod.string().nullish(),
+      sizes: zod.array(zod.string()).nullish(),
       createdAt: zod.string().optional(),
     }),
   ),
@@ -50,7 +52,8 @@ export const GetProductResponse = zod.object({
   name: zod.string(),
   description: zod.string().optional(),
   price: zod.number().describe("Price in cents"),
-  imageUrl: zod.string().optional(),
+  imageUrl: zod.string().nullish(),
+  imageUrls: zod.array(zod.string()).nullish(),
   inStock: zod.boolean(),
   stockCount: zod
     .number()
@@ -58,7 +61,8 @@ export const GetProductResponse = zod.object({
     .describe(
       "Optional stock count. If null, stock is unlimited. Decrements on checkout.",
     ),
-  category: zod.string().optional(),
+  category: zod.string().nullish(),
+  sizes: zod.array(zod.string()).nullish(),
   createdAt: zod.string().optional(),
 });
 
@@ -161,7 +165,8 @@ export const UpdateAdminProductResponse = zod.object({
   name: zod.string(),
   description: zod.string().optional(),
   price: zod.number().describe("Price in cents"),
-  imageUrl: zod.string().optional(),
+  imageUrl: zod.string().nullish(),
+  imageUrls: zod.array(zod.string()).nullish(),
   inStock: zod.boolean(),
   stockCount: zod
     .number()
@@ -169,7 +174,8 @@ export const UpdateAdminProductResponse = zod.object({
     .describe(
       "Optional stock count. If null, stock is unlimited. Decrements on checkout.",
     ),
-  category: zod.string().optional(),
+  category: zod.string().nullish(),
+  sizes: zod.array(zod.string()).nullish(),
   createdAt: zod.string().optional(),
 });
 

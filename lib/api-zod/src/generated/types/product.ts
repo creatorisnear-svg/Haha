@@ -12,10 +12,12 @@ export interface Product {
   description?: string;
   /** Price in cents */
   price: number;
-  imageUrl?: string;
+  imageUrl?: string | null;
+  imageUrls?: string[] | null;
   inStock: boolean;
   /** Optional stock count. If null, stock is unlimited. Decrements on checkout. */
   stockCount?: number | null;
-  category?: string;
+  category?: string | null;
+  sizes?: string[] | null;
   createdAt?: string;
 }

@@ -10,9 +10,11 @@ function serialize(p: any) {
     description: p.description,
     price: p.price,
     imageUrl: p.imageUrl,
+    imageUrls: p.imageUrls ?? null,
     inStock: p.inStock,
     stockCount: p.stockCount ?? null,
     category: p.category,
+    sizes: p.sizes ?? null,
     createdAt: p.createdAt?.toISOString?.() ?? p.createdAt,
   };
 }
