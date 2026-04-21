@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import ThornsDivider from "@/components/ThornsDevider";
-import logoPath from "@assets/Screenshot_20260420_195437_TikTok_1776741331060.jpg";
+import logoPath from "@assets/vaa-logo.png";
 
 export default function Home() {
   const { data: productsData, isLoading } = useListProducts();
@@ -48,11 +48,11 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 h-[72px] flex items-center justify-between">
           {/* Logo + brand */}
           <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+            <div className="w-10 h-10 flex-shrink-0">
               <img
                 src={logoPath}
                 alt="VAA"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
                 style={{ filter: "invert(1)" }}
               />
             </div>
@@ -95,11 +95,11 @@ export default function Home() {
       <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-[72px]">
         <div className="flex flex-col items-center text-center">
           {/* Logo — invert(1) makes black lines white on dark bg, no bg visible */}
-          <div className="w-52 h-52 sm:w-72 sm:h-72 mb-10 rounded-full overflow-hidden">
+          <div className="w-52 h-52 sm:w-72 sm:h-72 mb-10">
             <img
               src={logoPath}
               alt="VIGR Angel Apparel Logo"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
               style={{ filter: "invert(1)" }}
             />
           </div>
@@ -206,11 +206,11 @@ export default function Home() {
 
           {/* Logo block */}
           <div className="flex justify-center items-center">
-            <div className="w-64 h-64 rounded-full overflow-hidden border border-border">
+            <div className="w-64 h-64">
               <img
                 src={logoPath}
                 alt="VAA Mark"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
                 style={{ filter: "invert(1)", opacity: 0.85 }}
               />
             </div>
