@@ -71,8 +71,11 @@ export default function DevDashboard() {
           </Button>
         </header>
 
-        <Tabs defaultValue="orders" className="w-full">
+        <Tabs defaultValue="overview" className="w-full">
           <TabsList className="bg-transparent border-b border-border rounded-none h-12 w-full justify-start gap-8 p-0 overflow-x-auto">
+            <TabsTrigger value="overview" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
+              Overview
+            </TabsTrigger>
             <TabsTrigger value="orders" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
               Orders
             </TabsTrigger>
@@ -98,6 +101,10 @@ export default function DevDashboard() {
               Settings
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="overview" className="pt-8">
+            <OverviewTab token={token} />
+          </TabsContent>
 
           <TabsContent value="orders" className="pt-8">
             <OrdersTab token={token} />
@@ -1829,6 +1836,264 @@ function SizesTab({ token }: { token: string }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OverviewTab — sales summary & tax-prep helpers
+// ─────────────────────────────────────────────────────────────────────────────
+function OverviewTab({ token }: { token: string }) {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [taxYear, setTaxYear] = useState<number>(new Date().getFullYear());
+
+  useEffect(() => {
+    setLoading(true);
+    fetch("/api/admin/orders", { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => setOrders(d.data ?? []))
+      .catch(() => setOrders([]))
+      .finally(() => setLoading(false));
+  }, [token]);
+
+  if (loading) {
+    return <div className="font-sans text-sm text-muted-foreground tracking-widest uppercase">Loading overview...</div>;
+  }
+
+  // "Paid" orders = anything not pending. Pending orders haven't been paid yet.
+  const paidOrders = orders.filter((o) => o.status !== "pending");
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const start30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+  const sumCents = (arr: any[]) => arr.reduce((acc, o) => acc + (o.total ?? 0), 0);
+  const sumDiscount = (arr: any[]) => arr.reduce((acc, o) => acc + (o.discountAmount ?? 0), 0);
+  const inRange = (o: any, since: Date) => new Date(o.createdAt) >= since;
+
+  const totalRevenue = sumCents(paidOrders);
+  const monthRevenue = sumCents(paidOrders.filter((o) => inRange(o, startOfMonth)));
+  const ytdRevenue = sumCents(paidOrders.filter((o) => inRange(o, startOfYear)));
+  const last30Revenue = sumCents(paidOrders.filter((o) => inRange(o, start30)));
+  const aov = paidOrders.length > 0 ? totalRevenue / paidOrders.length : 0;
+
+  // Status counts (all orders, not just paid)
+  const statusCounts = {
+    pending: orders.filter((o) => o.status === "pending").length,
+    processing: orders.filter((o) => o.status === "processing").length,
+    shipped: orders.filter((o) => o.status === "shipped").length,
+    delivered: orders.filter((o) => o.status === "delivered").length,
+  };
+
+  // Best sellers: aggregate items
+  const itemCounts = new Map<string, { name: string; qty: number; revenue: number }>();
+  for (const o of paidOrders) {
+    for (const item of o.items ?? []) {
+      const key = item.productName ?? item.name ?? "Unknown";
+      const cur = itemCounts.get(key) ?? { name: key, qty: 0, revenue: 0 };
+      cur.qty += item.quantity ?? 1;
+      cur.revenue += (item.price ?? 0) * (item.quantity ?? 1);
+      itemCounts.set(key, cur);
+    }
+  }
+  const bestSellers = Array.from(itemCounts.values()).sort((a, b) => b.qty - a.qty).slice(0, 5);
+
+  // Available years for tax year selector
+  const years = Array.from(new Set(paidOrders.map((o) => new Date(o.createdAt).getFullYear()))).sort((a, b) => b - a);
+  if (!years.includes(taxYear)) years.unshift(taxYear);
+
+  // Monthly breakdown for selected tax year
+  const taxYearOrders = paidOrders.filter((o) => new Date(o.createdAt).getFullYear() === taxYear);
+  const monthlyBreakdown = Array.from({ length: 12 }, (_, i) => {
+    const monthOrders = taxYearOrders.filter((o) => new Date(o.createdAt).getMonth() === i);
+    return {
+      month: new Date(taxYear, i, 1).toLocaleString("en-US", { month: "long" }),
+      orders: monthOrders.length,
+      gross: sumCents(monthOrders) + sumDiscount(monthOrders), // gross = total + discount
+      discounts: sumDiscount(monthOrders),
+      net: sumCents(monthOrders), // what was actually charged
+    };
+  });
+  const yearTotals = monthlyBreakdown.reduce(
+    (acc, m) => ({
+      orders: acc.orders + m.orders,
+      gross: acc.gross + m.gross,
+      discounts: acc.discounts + m.discounts,
+      net: acc.net + m.net,
+    }),
+    { orders: 0, gross: 0, discounts: 0, net: 0 },
+  );
+
+  const fmt = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+
+  const downloadCsv = () => {
+    const header = ["Order Number", "Date", "Customer Name", "Customer Email", "Status", "Items", "Gross (USD)", "Discount (USD)", "Net Charged (USD)", "Promo Code"];
+    const rows = taxYearOrders
+      .slice()
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      .map((o) => {
+        const itemsStr = (o.items ?? [])
+          .map((it: any) => `${it.quantity ?? 1}x ${it.productName ?? it.name ?? ""}${it.size ? " (" + it.size + ")" : ""}`)
+          .join("; ");
+        const discount = o.discountAmount ?? 0;
+        const net = o.total ?? 0;
+        const gross = net + discount;
+        return [
+          o.orderNumber ?? "",
+          new Date(o.createdAt).toISOString().split("T")[0],
+          o.customerName ?? "",
+          o.customerEmail ?? "",
+          o.status ?? "",
+          itemsStr,
+          (gross / 100).toFixed(2),
+          (discount / 100).toFixed(2),
+          (net / 100).toFixed(2),
+          o.promoCode ?? "",
+        ];
+      });
+    const escape = (v: any) => {
+      const s = String(v ?? "");
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const csv = [header, ...rows].map((r) => r.map(escape).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `vaa-sales-${taxYear}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const Stat = ({ label, value, sub }: { label: string; value: string; sub?: string }) => (
+    <div className="border border-border bg-card p-5">
+      <p className="font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground mb-2">{label}</p>
+      <p className="font-display text-2xl md:text-3xl tracking-wider text-foreground">{value}</p>
+      {sub && <p className="font-sans text-[11px] text-muted-foreground mt-1">{sub}</p>}
+    </div>
+  );
+
+  return (
+    <div className="space-y-8">
+      {/* Headline stats */}
+      <div>
+        <h2 className="font-display text-2xl tracking-widest uppercase mb-4">Revenue</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Stat label="This Month" value={fmt(monthRevenue)} sub={`${paidOrders.filter((o) => inRange(o, startOfMonth)).length} orders`} />
+          <Stat label="Last 30 Days" value={fmt(last30Revenue)} sub={`${paidOrders.filter((o) => inRange(o, start30)).length} orders`} />
+          <Stat label="Year to Date" value={fmt(ytdRevenue)} sub={`${paidOrders.filter((o) => inRange(o, startOfYear)).length} orders`} />
+          <Stat label="All Time" value={fmt(totalRevenue)} sub={`${paidOrders.length} orders`} />
+        </div>
+      </div>
+
+      {/* Order pipeline */}
+      <div>
+        <h2 className="font-display text-2xl tracking-widest uppercase mb-4">Order Pipeline</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Stat label="Pending" value={String(statusCounts.pending)} sub="Awaiting payment" />
+          <Stat label="Processing" value={String(statusCounts.processing)} sub="Paid · needs ship" />
+          <Stat label="Shipped" value={String(statusCounts.shipped)} sub="In transit" />
+          <Stat label="Delivered" value={String(statusCounts.delivered)} sub="Completed" />
+        </div>
+        <p className="font-sans text-xs text-muted-foreground mt-3">
+          Average order value: <span className="text-foreground font-semibold">{fmt(aov)}</span>
+        </p>
+      </div>
+
+      {/* Best sellers */}
+      {bestSellers.length > 0 && (
+        <div>
+          <h2 className="font-display text-2xl tracking-widest uppercase mb-4">Best Sellers</h2>
+          <div className="border border-border bg-card divide-y divide-border">
+            {bestSellers.map((b, i) => (
+              <div key={b.name} className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="font-display text-xl text-primary w-6 flex-shrink-0">{i + 1}</span>
+                  <p className="font-sans text-sm truncate">{b.name}</p>
+                </div>
+                <div className="text-right flex-shrink-0 ml-3">
+                  <p className="font-sans text-sm font-semibold">{b.qty} sold</p>
+                  <p className="font-sans text-xs text-muted-foreground">{fmt(b.revenue)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tax helper */}
+      <div>
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+          <h2 className="font-display text-2xl tracking-widest uppercase">Tax Summary</h2>
+          <div className="flex items-center gap-2">
+            <select
+              value={taxYear}
+              onChange={(e) => setTaxYear(Number(e.target.value))}
+              className="bg-background border border-border rounded-none font-sans text-sm tracking-widest uppercase h-9 px-3"
+              data-testid="select-tax-year"
+            >
+              {years.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+            <Button
+              onClick={downloadCsv}
+              className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 bg-foreground text-background hover:bg-primary hover:text-white"
+              data-testid="button-export-csv"
+            >
+              Export CSV
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <Stat label={`${taxYear} Orders`} value={String(yearTotals.orders)} />
+          <Stat label={`${taxYear} Gross Sales`} value={fmt(yearTotals.gross)} sub="Before discounts" />
+          <Stat label={`${taxYear} Discounts`} value={fmt(yearTotals.discounts)} sub="Promo codes applied" />
+          <Stat label={`${taxYear} Net Revenue`} value={fmt(yearTotals.net)} sub="What you actually collected" />
+        </div>
+
+        <div className="border border-border bg-card overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="border-b border-border">
+              <tr className="text-left">
+                <th className="p-3 font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground">Month</th>
+                <th className="p-3 font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground text-right">Orders</th>
+                <th className="p-3 font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground text-right">Gross</th>
+                <th className="p-3 font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground text-right">Discounts</th>
+                <th className="p-3 font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground text-right">Net</th>
+              </tr>
+            </thead>
+            <tbody>
+              {monthlyBreakdown.map((m) => (
+                <tr key={m.month} className="border-b border-border last:border-0">
+                  <td className="p-3 font-sans">{m.month}</td>
+                  <td className="p-3 font-sans text-right">{m.orders}</td>
+                  <td className="p-3 font-sans text-right">{fmt(m.gross)}</td>
+                  <td className="p-3 font-sans text-right text-muted-foreground">{fmt(m.discounts)}</td>
+                  <td className="p-3 font-sans text-right font-semibold">{fmt(m.net)}</td>
+                </tr>
+              ))}
+              <tr className="bg-background/40">
+                <td className="p-3 font-display tracking-widest uppercase text-sm">Total</td>
+                <td className="p-3 font-sans text-right font-semibold">{yearTotals.orders}</td>
+                <td className="p-3 font-sans text-right font-semibold">{fmt(yearTotals.gross)}</td>
+                <td className="p-3 font-sans text-right font-semibold text-muted-foreground">{fmt(yearTotals.discounts)}</td>
+                <td className="p-3 font-sans text-right font-semibold text-primary">{fmt(yearTotals.net)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-4 border border-border bg-card p-4 text-xs text-muted-foreground font-sans space-y-1.5 leading-relaxed">
+          <p><span className="text-foreground font-semibold uppercase tracking-widest text-[10px]">Tax filing tip:</span> Use the <span className="text-foreground">Net Revenue</span> figure as your gross income. Excluded: pending (unpaid) orders.</p>
+          <p>Stripe fees are not deducted here — pull those from your Stripe dashboard (Stripe → Reports → Balance) and subtract them as a business expense.</p>
+          <p>Click <span className="text-foreground">Export CSV</span> to download every order for {taxYear} in a spreadsheet your accountant or tax software can import.</p>
+        </div>
+      </div>
     </div>
   );
 }
