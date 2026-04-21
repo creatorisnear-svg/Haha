@@ -72,17 +72,6 @@ function TrackingPanel({ trackingNumber }: { trackingNumber: string }) {
         )}
       </div>
 
-      {/* Live tracker iframe (parcelsapp embeds cleanly) */}
-      <div className="border-t border-border bg-[#0a0a0a]">
-        <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground p-4 pb-2">Live Status</p>
-        <iframe
-          src={`https://parcelsapp.com/en/tracking/${encodeURIComponent(tn)}`}
-          title="Package tracking"
-          loading="lazy"
-          className="w-full h-[480px] bg-white border-0"
-          data-testid="iframe-tracker"
-        />
-      </div>
     </div>
   );
 }
