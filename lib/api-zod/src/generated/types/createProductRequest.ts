@@ -12,5 +12,6 @@ export interface CreateProductRequest {
   price: number;
   imageUrl?: string;
   inStock?: boolean;
+  stockCount?: number | null;
   category?: string;
 }

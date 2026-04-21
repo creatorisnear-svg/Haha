@@ -9,6 +9,7 @@ export interface Product {
   price: number;
   imageUrl?: string | null;
   inStock: boolean;
+  stockCount?: number | null;
   category?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -23,6 +24,7 @@ function docToProduct(doc: any): Product {
     price: doc.price,
     imageUrl: doc.imageUrl ?? null,
     inStock: doc.inStock,
+    stockCount: typeof doc.stockCount === "number" ? doc.stockCount : null,
     category: doc.category ?? null,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
@@ -140,6 +142,37 @@ export class Storage {
   async deleteProduct(id: string): Promise<void> {
     const db = await getDb();
     try { await db.collection("products").deleteOne({ _id: new ObjectId(id) }); } catch {}
+  }
+
+  /**
+   * Decrement the stockCount for a product. Returns true if successful, false if
+   * the product doesn't exist or has insufficient stock. Products without a
+   * stockCount field are treated as unlimited and always succeed.
+   */
+  async decrementStock(id: string, quantity: number): Promise<boolean> {
+    const db = await getDb();
+    try {
+      const _id = new ObjectId(id);
+      const product = await db.collection("products").findOne({ _id });
+      if (!product) return false;
+      // Unlimited stock when stockCount is not a number
+      if (typeof product.stockCount !== "number") return true;
+      if (product.stockCount < quantity) return false;
+      const newCount = product.stockCount - quantity;
+      await db.collection("products").updateOne(
+        { _id },
+        {
+          $set: {
+            stockCount: newCount,
+            inStock: newCount > 0,
+            updatedAt: new Date(),
+          },
+        }
+      );
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   // Settings

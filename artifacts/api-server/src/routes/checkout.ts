@@ -2,6 +2,8 @@ import { Router } from "express";
 import Stripe from "stripe";
 import { storage } from "../storage";
 import { hashPassword, verifyCustomerToken, createCustomerToken } from "../lib/customerAuth";
+import { sendOrderConfirmation } from "../lib/email";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -87,6 +89,25 @@ router.post("/checkout", async (req, res) => {
     total,
     status: "pending",
   });
+
+  // Decrement stock for each item (best-effort — order is already placed)
+  for (const item of orderItems) {
+    try {
+      await storage.decrementStock(item.productId, item.quantity);
+    } catch (err) {
+      logger.error({ err, productId: item.productId }, "Failed to decrement stock");
+    }
+  }
+
+  // Send confirmation emails (don't block response on email delivery)
+  sendOrderConfirmation({
+    orderNumber: order.orderNumber,
+    customerName: order.customerName,
+    customerEmail: order.customerEmail,
+    items: orderItems,
+    shippingAddress,
+    total,
+  }).catch((err) => logger.error({ err }, "Order confirmation email failed"));
 
   res.status(201).json({ order, token: newToken, customer: newCustomer });
 });

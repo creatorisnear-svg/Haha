@@ -14,6 +14,8 @@ export interface Product {
   price: number;
   imageUrl?: string;
   inStock: boolean;
+  /** Optional stock count. If null, stock is unlimited. Decrements on checkout. */
+  stockCount?: number | null;
   category?: string;
   createdAt?: string;
 }

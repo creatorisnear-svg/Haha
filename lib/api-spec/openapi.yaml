@@ -327,6 +327,10 @@ components:
           type: string
         inStock:
           type: boolean
+        stockCount:
+          type: integer
+          nullable: true
+          description: Optional stock count. If null, stock is unlimited. Decrements on checkout.
         category:
           type: string
         createdAt:
@@ -346,6 +350,9 @@ components:
           type: string
         inStock:
           type: boolean
+        stockCount:
+          type: integer
+          nullable: true
         category:
           type: string
       required: [name, price]

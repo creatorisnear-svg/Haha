@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { Product } from "@workspace/api-client-react/src/generated/api.schemas";
 
 export interface CartItem {
@@ -20,9 +20,39 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const CART_STORAGE_KEY = "vaa_cart_v1";
+
+function loadCart(): CartItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(CART_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (item) =>
+        item &&
+        typeof item === "object" &&
+        item.product &&
+        typeof item.quantity === "number" &&
+        item.quantity > 0
+    );
+  } catch {
+    return [];
+  }
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>(() => loadCart());
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    } catch {
+      // ignore quota / privacy mode failures
+    }
+  }, [items]);
 
   const addToCart = (product: Product) => {
     setItems((prev) => {

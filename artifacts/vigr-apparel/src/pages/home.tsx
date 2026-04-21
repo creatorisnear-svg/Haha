@@ -285,6 +285,14 @@ function ProductCard({ product }: { product: any }) {
             ${(product.price / 100).toFixed(2)}
           </span>
         </div>
+        {typeof product.stockCount === "number" && product.stockCount > 0 && product.stockCount < 5 && (
+          <p
+            className="font-sans text-[10px] tracking-[0.3em] uppercase text-primary"
+            data-testid={`text-low-stock-${product.id}`}
+          >
+            Only {product.stockCount} left
+          </p>
+        )}
         <button
           onClick={() => {
             if (!product.inStock) return;

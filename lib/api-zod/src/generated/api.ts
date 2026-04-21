@@ -26,6 +26,12 @@ export const ListProductsResponse = zod.object({
       price: zod.number().describe("Price in cents"),
       imageUrl: zod.string().optional(),
       inStock: zod.boolean(),
+      stockCount: zod
+        .number()
+        .nullish()
+        .describe(
+          "Optional stock count. If null, stock is unlimited. Decrements on checkout.",
+        ),
       category: zod.string().optional(),
       createdAt: zod.string().optional(),
     }),
@@ -46,6 +52,12 @@ export const GetProductResponse = zod.object({
   price: zod.number().describe("Price in cents"),
   imageUrl: zod.string().optional(),
   inStock: zod.boolean(),
+  stockCount: zod
+    .number()
+    .nullish()
+    .describe(
+      "Optional stock count. If null, stock is unlimited. Decrements on checkout.",
+    ),
   category: zod.string().optional(),
   createdAt: zod.string().optional(),
 });
@@ -123,6 +135,7 @@ export const CreateAdminProductBody = zod.object({
   price: zod.number(),
   imageUrl: zod.string().optional(),
   inStock: zod.boolean().optional(),
+  stockCount: zod.number().nullish(),
   category: zod.string().optional(),
 });
 
@@ -139,6 +152,7 @@ export const UpdateAdminProductBody = zod.object({
   price: zod.number(),
   imageUrl: zod.string().optional(),
   inStock: zod.boolean().optional(),
+  stockCount: zod.number().nullish(),
   category: zod.string().optional(),
 });
 
@@ -149,6 +163,12 @@ export const UpdateAdminProductResponse = zod.object({
   price: zod.number().describe("Price in cents"),
   imageUrl: zod.string().optional(),
   inStock: zod.boolean(),
+  stockCount: zod
+    .number()
+    .nullish()
+    .describe(
+      "Optional stock count. If null, stock is unlimited. Decrements on checkout.",
+    ),
   category: zod.string().optional(),
   createdAt: zod.string().optional(),
 });

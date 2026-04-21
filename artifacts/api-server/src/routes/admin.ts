@@ -37,36 +37,56 @@ router.put("/admin/settings", adminAuthMiddleware, async (req, res) => {
   res.json({ success: true, message: "Settings updated" });
 });
 
-router.post("/admin/products", adminAuthMiddleware, async (req, res) => {
-  const { name, description, price, imageUrl, inStock, category } = req.body;
-  if (!name || price === undefined) return res.status(400).json({ error: "name and price required" });
-  const product = await storage.createProduct({ name, description, price, imageUrl, inStock: inStock ?? true, category });
-  res.status(201).json({
+function serializeProduct(product: any) {
+  return {
     id: product.id,
     name: product.name,
     description: product.description,
     price: product.price,
     imageUrl: product.imageUrl,
     inStock: product.inStock,
+    stockCount: product.stockCount ?? null,
     category: product.category,
-    createdAt: product.createdAt?.toISOString(),
+    createdAt: product.createdAt?.toISOString?.() ?? product.createdAt,
+  };
+}
+
+router.post("/admin/products", adminAuthMiddleware, async (req, res) => {
+  const { name, description, price, imageUrl, inStock, stockCount, category } = req.body;
+  if (!name || price === undefined) return res.status(400).json({ error: "name and price required" });
+  const normalizedStockCount =
+    typeof stockCount === "number" && stockCount >= 0 ? Math.floor(stockCount) : null;
+  const computedInStock =
+    normalizedStockCount === null ? (inStock ?? true) : normalizedStockCount > 0;
+  const product = await storage.createProduct({
+    name,
+    description,
+    price,
+    imageUrl,
+    inStock: computedInStock,
+    stockCount: normalizedStockCount,
+    category,
   });
+  res.status(201).json(serializeProduct(product));
 });
 
 router.put("/admin/products/:id", adminAuthMiddleware, async (req, res) => {
-  const { name, description, price, imageUrl, inStock, category } = req.body;
-  const product = await storage.updateProduct(req.params.id, { name, description, price, imageUrl, inStock, category });
+  const { name, description, price, imageUrl, inStock, stockCount, category } = req.body;
+  const updates: any = { name, description, price, imageUrl, category };
+  if (stockCount !== undefined) {
+    updates.stockCount =
+      typeof stockCount === "number" && stockCount >= 0 ? Math.floor(stockCount) : null;
+    if (updates.stockCount !== null) {
+      updates.inStock = updates.stockCount > 0;
+    } else if (inStock !== undefined) {
+      updates.inStock = inStock;
+    }
+  } else if (inStock !== undefined) {
+    updates.inStock = inStock;
+  }
+  const product = await storage.updateProduct(req.params.id, updates);
   if (!product) return res.status(404).json({ error: "Product not found" });
-  res.json({
-    id: product.id,
-    name: product.name,
-    description: product.description,
-    price: product.price,
-    imageUrl: product.imageUrl,
-    inStock: product.inStock,
-    category: product.category,
-    createdAt: product.createdAt?.toISOString(),
-  });
+  res.json(serializeProduct(product));
 });
 
 router.delete("/admin/products/:id", adminAuthMiddleware, async (req, res) => {

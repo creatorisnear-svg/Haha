@@ -112,6 +112,7 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
     imageUrl: "",
     category: "",
     inStock: true,
+    stockCount: "",
   });
 
   const { toast } = useToast();
@@ -125,6 +126,7 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
       imageUrl: "",
       category: "",
       inStock: true,
+      stockCount: "",
     });
     setEditingProduct(null);
   };
@@ -139,6 +141,8 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
         imageUrl: product.imageUrl || "",
         category: product.category || "",
         inStock: product.inStock,
+        stockCount:
+          typeof product.stockCount === "number" ? String(product.stockCount) : "",
       });
     } else {
       resetForm();
@@ -150,13 +154,16 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
     e.preventDefault();
     
     try {
+      const trimmedStock = formData.stockCount.trim();
+      const parsedStock = trimmedStock === "" ? null : Math.max(0, Math.floor(Number(trimmedStock)));
       const payload = {
         name: formData.name,
         description: formData.description || undefined,
         price: Math.round(parseFloat(formData.price) * 100),
         imageUrl: formData.imageUrl || undefined,
         category: formData.category || undefined,
-        inStock: formData.inStock,
+        inStock: parsedStock === null ? formData.inStock : parsedStock > 0,
+        stockCount: parsedStock,
       };
 
       const url = editingProduct 
@@ -293,15 +300,35 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
                   className="rounded-none border-border focus-visible:ring-1 focus-visible:ring-primary"
                 />
               </div>
-              <div className="flex items-center space-x-2 pt-2">
-                <Checkbox 
-                  id="inStock" 
-                  checked={formData.inStock} 
-                  onCheckedChange={(checked) => setFormData({...formData, inStock: !!checked})} 
-                  className="rounded-none border-border data-[state=checked]:bg-primary data-[state=checked]:text-white"
+              <div className="space-y-2">
+                <Label htmlFor="stockCount" className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Stock Count <span className="lowercase tracking-normal">(leave blank for unlimited)</span>
+                </Label>
+                <Input
+                  id="stockCount"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="e.g. 25"
+                  value={formData.stockCount}
+                  onChange={(e) => setFormData({ ...formData, stockCount: e.target.value })}
+                  className="rounded-none border-border focus-visible:ring-1 focus-visible:ring-primary"
                 />
-                <Label htmlFor="inStock" className="text-xs uppercase tracking-widest">In Stock</Label>
+                <p className="text-[10px] text-muted-foreground tracking-wide">
+                  Stock is decremented automatically when an order is placed. When it reaches 0, the product is marked sold out.
+                </p>
               </div>
+              {formData.stockCount.trim() === "" && (
+                <div className="flex items-center space-x-2 pt-2">
+                  <Checkbox
+                    id="inStock"
+                    checked={formData.inStock}
+                    onCheckedChange={(checked) => setFormData({ ...formData, inStock: !!checked })}
+                    className="rounded-none border-border data-[state=checked]:bg-primary data-[state=checked]:text-white"
+                  />
+                  <Label htmlFor="inStock" className="text-xs uppercase tracking-widest">In Stock</Label>
+                </div>
+              )}
               <div className="pt-6">
                 <Button type="submit" className="w-full rounded-none font-display text-xl tracking-widest h-12 bg-foreground text-background hover:bg-primary hover:text-white transition-colors">
                   {editingProduct ? "UPDATE PRODUCT" : "CREATE PRODUCT"}
