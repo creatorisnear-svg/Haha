@@ -1,285 +1,272 @@
-import { useEffect, useRef, useState } from "react";
-import logoPath from "@assets/Screenshot_20260420_195437_TikTok_1776741331060.jpg";
-import heroBg from "@/assets/hero-bg.png";
-import aboutTexture from "@/assets/about-texture.png";
-import manifestoBg from "@/assets/manifesto-bg.png";
+import React, { useState } from "react";
 import { Link } from "wouter";
+import { ShoppingCart, Menu } from "lucide-react";
+import { useListProducts, useSubscribeNewsletter } from "@workspace/api-client-react";
+import { useCart } from "@/context/CartContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import logoPath from "@assets/Screenshot_20260420_195437_TikTok_1776741331060.jpg";
 
 export default function Home() {
-  const [scrolled, setScrolled] = useState(false);
+  const { data: productsData, isLoading } = useListProducts();
+  const { itemCount, setIsOpen } = useCart();
+  const { toast } = useToast();
+  const subscribeNewsletter = useSubscribeNewsletter();
+  const [email, setEmail] = useState("");
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+
+    subscribeNewsletter.mutate(
+      { data: { email } },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Subscribed",
+            description: "Welcome to the gritty depths.",
+          });
+          setEmail("");
+        },
+        onError: () => {
+          toast({
+            title: "Error",
+            description: "Failed to subscribe. Try again.",
+            variant: "destructive",
+          });
+        }
+      }
+    );
+  };
+
+  const scrollToProducts = () => {
+    document.getElementById("products")?.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
-    <main className="relative min-h-screen bg-background text-foreground overflow-hidden selection:bg-primary selection:text-white">
-      <div className="bg-noise" />
-
-      {/* Navigation */}
-      <nav className={`fixed top-0 left-0 w-full z-50 px-6 py-6 flex justify-between items-center transition-all duration-500 ${scrolled ? 'bg-background/80 backdrop-blur-md border-b border-white/5 py-4' : 'bg-transparent'}`}>
-        <div className="text-xl font-display tracking-widest text-white uppercase group flex items-center gap-4">
-          <div className="w-8 h-8 rounded-full overflow-hidden border border-white/20 group-hover:border-primary transition-colors">
-            <img src={logoPath} alt="VAA Logo" className="w-full h-full object-cover mix-blend-screen grayscale contrast-150" />
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      {/* Fixed Nav */}
+      <nav className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-md border-b border-border">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-8">
+            <Link href="/" className="flex items-center">
+              <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center" style={{ background: 'transparent' }}>
+                <img src={logoPath} alt="VAA Logo" className="w-full h-full object-cover scale-150" style={{ mixBlendMode: 'multiply' }} />
+              </div>
+              <span className="font-display text-2xl tracking-widest ml-3 hidden sm:block">VAA</span>
+            </Link>
+            <div className="hidden md:flex items-center gap-6">
+              <button onClick={scrollToProducts} className="font-sans text-xs tracking-widest uppercase hover:text-primary transition-colors">Shop</button>
+              <a href="#about" className="font-sans text-xs tracking-widest uppercase hover:text-primary transition-colors">About</a>
+            </div>
           </div>
-          <span className="hidden sm:inline-block">VIGR Angel</span>
-        </div>
-        <div className="flex gap-6 md:gap-12 font-sans text-xs md:text-sm tracking-[0.2em] text-white/70">
-          <a href="#about" className="hover:text-primary transition-colors duration-300 uppercase">About</a>
-          <a href="#manifesto" className="hover:text-primary transition-colors duration-300 uppercase">Manifesto</a>
-          <a href="#syndicate" className="hover:text-primary transition-colors duration-300 uppercase">Syndicate</a>
+
+          <div className="flex items-center gap-4">
+            <button 
+              className="relative p-2 hover:text-primary transition-colors"
+              onClick={() => setIsOpen(true)}
+              data-testid="button-open-cart"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              {itemCount > 0 && (
+                <span className="absolute top-0 right-0 w-4 h-4 bg-primary text-white text-[10px] flex items-center justify-center rounded-full font-sans">
+                  {itemCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="relative h-screen w-full flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <img 
-            src={heroBg} 
-            alt="Dark cinematic angel" 
-            className="w-full h-full object-cover opacity-30 grayscale scale-105 animate-[pulse_20s_ease-in-out_infinite]"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-transparent to-background" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.8)_100%)]" />
-        </div>
-
-        <div className="relative z-10 flex flex-col items-center justify-center pt-20">
-          <div className="relative w-48 h-48 md:w-64 md:h-64 mb-16 animate-in fade-in zoom-in duration-1000 ease-out">
-            <div className="absolute inset-[-20%] bg-primary/20 rounded-full blur-3xl opacity-40 animate-pulse" />
-            <img 
-              src={logoPath} 
-              alt="VIGR Angel Apparel Logo" 
-              className="w-full h-full object-cover rounded-full border-2 border-primary/30 mix-blend-screen grayscale contrast-200"
-            />
+      <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-20">
+        <div className="flex flex-col items-center text-center max-w-4xl z-10 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+          <div className="w-48 h-48 sm:w-64 sm:h-64 mb-8" style={{ background: 'transparent' }}>
+             <img src={logoPath} alt="VIGR Angel Apparel Logo" className="w-full h-full object-cover scale-125" style={{ mixBlendMode: 'multiply' }} />
           </div>
-
-          <div className="text-center px-4 animate-in slide-in-from-bottom-12 fade-in duration-1000 delay-300 fill-mode-both">
-            <h1 className="text-7xl md:text-9xl lg:text-[12rem] font-display text-white mb-2 tracking-tighter leading-none mix-blend-overlay">
-              GRIT & <span className="text-primary italic font-serif lowercase tracking-tight relative">
-                Grace
-                <span className="absolute -inset-1 blur-xl bg-primary/30 -z-10 rounded-full"></span>
-              </span>
-            </h1>
-            <p className="text-muted-foreground font-sans max-w-2xl mx-auto text-lg md:text-xl tracking-[0.2em] uppercase mt-8 border-t border-white/10 pt-8">
-              Underground faith. Raw street elements. 
-              <br />The crown is heavy.
-            </p>
-          </div>
-        </div>
-
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center animate-bounce opacity-50">
-          <span className="font-sans text-xs tracking-widest uppercase mb-2">Scroll</span>
-          <div className="w-px h-12 bg-gradient-to-b from-primary to-transparent" />
+          <h1 className="font-display text-6xl sm:text-8xl md:text-9xl tracking-[0.1em] leading-none mb-6">
+            VIGR ANGEL<br />APPAREL
+          </h1>
+          <p className="font-sans text-muted-foreground text-sm sm:text-base tracking-[0.2em] uppercase mb-12 max-w-md">
+            Born in the grit.<br />Worn by the chosen.
+          </p>
+          <Button 
+            onClick={scrollToProducts}
+            className="rounded-none font-display text-2xl tracking-[0.15em] h-16 px-12 bg-foreground text-background hover:bg-primary hover:text-white transition-all duration-300 hover:scale-105"
+          >
+            SHOP NOW
+          </Button>
         </div>
       </section>
 
-      {/* Marquee Section 1 */}
-      <div className="border-y border-white/5 bg-black/80 py-6 overflow-hidden relative z-20">
+      {/* Marquee Strip */}
+      <div className="bg-foreground text-background py-4 border-y border-border">
         <div className="marquee-container">
-          <div className="marquee-content text-5xl md:text-7xl font-display uppercase tracking-widest text-white/10">
-            <span className="mx-8 hover:text-primary transition-colors cursor-default">Crown of Thorns</span> • 
-            <span className="mx-8 hover:text-primary transition-colors cursor-default text-stroke">VIGR Angel</span> • 
-            <span className="mx-8 hover:text-primary transition-colors cursor-default">Rebel Spirit</span> • 
-            <span className="mx-8 hover:text-primary transition-colors cursor-default text-stroke">Street Faith</span> • 
-            <span className="mx-8 hover:text-primary transition-colors cursor-default">Crown of Thorns</span> • 
-            <span className="mx-8 hover:text-primary transition-colors cursor-default text-stroke">VIGR Angel</span> • 
-            <span className="mx-8 hover:text-primary transition-colors cursor-default">Rebel Spirit</span> • 
-            <span className="mx-8 hover:text-primary transition-colors cursor-default text-stroke">Street Faith</span> • 
+          <div className="marquee-content font-display text-3xl tracking-widest flex gap-8 whitespace-nowrap">
+            <span>VIGR ANGEL APPAREL</span>
+            <span>·</span>
+            <span>VAA</span>
+            <span>·</span>
+            <span>CROWN OF THORNS</span>
+            <span>·</span>
+            <span>GRIT AND GRACE</span>
+            <span>·</span>
+            <span>UNDERGROUND FAITH</span>
+            <span>·</span>
+            {/* Duplicate for infinite effect */}
+            <span>VIGR ANGEL APPAREL</span>
+            <span>·</span>
+            <span>VAA</span>
+            <span>·</span>
+            <span>CROWN OF THORNS</span>
+            <span>·</span>
+            <span>GRIT AND GRACE</span>
+            <span>·</span>
+            <span>UNDERGROUND FAITH</span>
+            <span>·</span>
           </div>
         </div>
       </div>
+
+      {/* Products Section */}
+      <section id="products" className="py-24 sm:py-32 px-6 max-w-7xl mx-auto w-full">
+        <div className="flex flex-col items-center mb-16">
+          <h2 className="font-display text-5xl sm:text-7xl tracking-widest text-center">THE DROP</h2>
+          <div className="w-12 h-[2px] bg-primary mt-6"></div>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64 text-muted-foreground font-sans tracking-widest uppercase">
+            Loading collection...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {productsData?.data.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* About Section */}
-      <section id="about" className="relative py-32 md:py-48 px-6 md:px-12 lg:px-24">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 md:gap-24 items-center">
-          <div className="order-2 lg:order-1 relative h-[70vh] overflow-hidden group">
-            <div className="absolute inset-0 bg-primary/20 mix-blend-overlay group-hover:bg-transparent transition-colors duration-1000 z-10" />
-            <img 
-              src={aboutTexture} 
-              alt="Raw fabric texture" 
-              className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-[0.5] group-hover:opacity-100 transition-all duration-1000 group-hover:scale-110"
-            />
-            <div className="absolute inset-4 border border-white/20 transition-all duration-700 group-hover:scale-[0.95] group-hover:border-primary/50" />
-          </div>
-          
-          <div className="order-1 lg:order-2 space-y-12">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-px bg-primary" />
-              <span className="font-sans text-xs tracking-[0.3em] uppercase text-primary">The Genesis</span>
-            </div>
-            
-            <h2 className="text-5xl md:text-7xl font-display text-white leading-none">
-              Forged in <span className="text-primary block font-serif italic lowercase tracking-normal mt-4 text-6xl md:text-8xl">Shadows</span>
-            </h2>
-            
-            <div className="space-y-8 font-sans text-muted-foreground text-lg leading-relaxed font-light">
-              <p className="text-xl text-white/80">
-                VIGR Angel Apparel is not just fabric. It's a statement written in ink and woven in defiance.
+      <section id="about" className="py-24 sm:py-32 border-t border-border bg-card">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+          <div className="space-y-8 order-2 md:order-1">
+            <h2 className="font-display text-5xl sm:text-6xl tracking-widest">ABOUT VAA</h2>
+            <div className="space-y-6 font-sans text-muted-foreground leading-relaxed text-sm tracking-wide">
+              <p>
+                VIGR Angel Apparel is more than fabric and thread. It is a testament to resilience, forged in the fires of the underground and sustained by unwavering faith.
               </p>
               <p>
-                We exist at the intersection of underground street art and raw, unapologetic faith. Born from the concept of the crown of thorns—a symbol of suffering turned into ultimate victory. 
+                We build for the outcasts, the believers, and those who carry their cross with pride. Our garments are armor for the modern world—raw, unapologetic, and stripped of pretense.
               </p>
               <p>
-                Our garments are armor for those who walk through the grit of the city but carry grace in their spirit. We don't make clothes for the masses. We make statements for the few.
+                No glitz. No excess. Just truth woven into streetwear.
               </p>
+            </div>
+          </div>
+          <div className="order-1 md:order-2 flex justify-center items-center p-8 bg-background border border-border">
+            <div className="w-64 h-64" style={{ background: 'transparent' }}>
+               <img src={logoPath} alt="VAA Mark" className="w-full h-full object-cover scale-125 opacity-80" style={{ mixBlendMode: 'multiply' }} />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Quote Interlude */}
-      <section className="py-32 px-6 bg-black relative overflow-hidden flex items-center justify-center">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(139,0,0,0.1)_0%,transparent_70%)]" />
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <svg className="w-16 h-16 text-primary/30 mx-auto mb-12" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-          </svg>
-          <p className="text-3xl md:text-5xl font-serif text-white/90 leading-tight">
-            "The world <span className="text-primary italic">bleeds</span>. <br />We wear the <span className="font-display uppercase tracking-widest text-4xl md:text-6xl not-italic ml-2">scars</span>."
-          </p>
-        </div>
-      </section>
-
-      {/* Manifesto Section */}
-      <section id="manifesto" className="relative py-32 md:py-48 flex flex-col items-center justify-center min-h-screen text-center px-4 overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <img 
-            src={manifestoBg} 
-            alt="Grunge wall" 
-            className="w-full h-full object-cover opacity-20 grayscale"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background" />
-        </div>
-
-        <div className="relative z-10 max-w-5xl mx-auto space-y-16">
-          <div className="flex flex-col items-center gap-6">
-            <div className="w-px h-24 bg-primary mx-auto opacity-50" />
-            <span className="font-sans text-sm tracking-[0.4em] uppercase text-primary">Manifesto</span>
-          </div>
-          
-          <h2 className="text-6xl md:text-8xl lg:text-[8rem] font-display text-white leading-[0.9] tracking-tighter uppercase">
-            No Compromises. <br />
-            <span className="text-stroke text-white/20">No False Idols.</span>
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-left mt-24">
-            <div className="space-y-4 border-l border-white/10 pl-6 hover:border-primary transition-colors duration-500">
-              <h3 className="font-display text-3xl text-white tracking-widest">01. The Grit</h3>
-              <p className="font-sans text-muted-foreground font-light leading-relaxed">
-                The streets don't forgive, and neither do we. Our aesthetic is pulled from the concrete, the alleyways, the places where true art is born out of necessity.
-              </p>
-            </div>
-            <div className="space-y-4 border-l border-white/10 pl-6 hover:border-primary transition-colors duration-500">
-              <h3 className="font-display text-3xl text-white tracking-widest">02. The Grace</h3>
-              <p className="font-sans text-muted-foreground font-light leading-relaxed">
-                In the darkness, there is light. The crown of thorns reminds us that the heaviest burdens can become the greatest triumphs. We wear our faith unapologetically.
-              </p>
-            </div>
-            <div className="space-y-4 border-l border-white/10 pl-6 hover:border-primary transition-colors duration-500">
-              <h3 className="font-display text-3xl text-white tracking-widest">03. The Garment</h3>
-              <p className="font-sans text-muted-foreground font-light leading-relaxed">
-                Every thread is intentional. No fast fashion. No cheap thrills. We craft armor for the modern believer, the creative outcast, the rebel with a cause.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Marquee Section 2 - Reverse */}
-      <div className="border-y border-white/5 bg-primary/10 py-4 overflow-hidden relative z-20 backdrop-blur-sm">
-        <div className="marquee-container" style={{ direction: 'rtl' }}>
-          <div className="marquee-content text-3xl md:text-5xl font-display uppercase tracking-widest text-primary/80" style={{ animationDirection: 'reverse' }}>
-            <span className="mx-8">Join the Syndicate</span> • 
-            <span className="mx-8 text-white/50">Exclusive Drops</span> • 
-            <span className="mx-8">Join the Syndicate</span> • 
-            <span className="mx-8 text-white/50">Exclusive Drops</span> • 
-            <span className="mx-8">Join the Syndicate</span> • 
-            <span className="mx-8 text-white/50">Exclusive Drops</span> • 
-            <span className="mx-8">Join the Syndicate</span> • 
-            <span className="mx-8 text-white/50">Exclusive Drops</span> • 
-          </div>
-        </div>
-      </div>
-
-      {/* Newsletter Section */}
-      <section id="syndicate" className="py-32 md:py-48 px-6 bg-black relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(139,0,0,0.15)_0%,transparent_60%)]" />
+      {/* Newsletter */}
+      <section className="py-24 sm:py-32 border-t border-border flex flex-col items-center justify-center px-6 text-center">
+        <h2 className="font-display text-4xl sm:text-5xl tracking-widest mb-4">JOIN THE COVENANT</h2>
+        <p className="font-sans text-muted-foreground text-sm tracking-widest uppercase mb-8">Access to exclusive drops and raw transmissions.</p>
         
-        <div className="max-w-3xl mx-auto text-center space-y-12 relative z-10">
-          <div className="w-24 h-24 mx-auto mb-12">
-            <img src={logoPath} alt="VAA Seal" className="w-full h-full object-cover rounded-full mix-blend-screen grayscale opacity-50" />
-          </div>
-
-          <h2 className="text-5xl md:text-7xl font-display text-white tracking-widest uppercase">
-            Join the <span className="text-primary">Syndicate</span>
-          </h2>
-          
-          <p className="font-sans text-muted-foreground text-lg md:text-xl font-light tracking-wide">
-            Enter the inner circle. First access to drops, exclusive pieces, and the VAA manifesto. We don't spam. We send truth.
-          </p>
-          
-          <form className="relative flex flex-col sm:flex-row gap-0 group pt-8" onSubmit={(e) => e.preventDefault()}>
-            <input 
-              type="email" 
-              placeholder="ENTER YOUR EMAIL" 
-              className="w-full bg-white/5 border border-white/10 px-8 py-6 text-white font-sans uppercase tracking-widest focus:outline-none focus:border-primary focus:bg-white/10 transition-all placeholder:text-white/30 text-lg"
-              required
-            />
-            <button 
-              type="submit"
-              className="shrink-0 bg-primary text-white px-12 py-6 font-display text-2xl tracking-widest hover:bg-white hover:text-black transition-colors duration-300 relative overflow-hidden border border-primary hover:border-white"
-            >
-              Subscribe
-            </button>
-          </form>
-        </div>
+        <form onSubmit={handleSubscribe} className="flex w-full max-w-md">
+          <Input 
+            type="email" 
+            placeholder="YOUR EMAIL ADDRESS" 
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="rounded-none border-border bg-transparent font-sans tracking-widest h-14 rounded-l-md focus-visible:ring-1 focus-visible:ring-primary flex-1"
+          />
+          <Button 
+            type="submit" 
+            disabled={subscribeNewsletter.isPending}
+            className="rounded-none font-display text-xl tracking-widest h-14 px-8 bg-foreground text-background hover:bg-primary hover:text-white transition-colors"
+          >
+            {subscribeNewsletter.isPending ? "..." : "JOIN"}
+          </Button>
+        </form>
       </section>
 
       {/* Footer */}
-      <footer className="pt-24 pb-12 border-t border-white/5 px-6 relative bg-background">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-24">
-            <div className="col-span-1 md:col-span-2 space-y-8">
-              <div className="text-2xl font-display tracking-widest text-white uppercase">VIGR Angel Apparel</div>
-              <p className="font-sans text-white/40 text-sm tracking-wide max-w-sm leading-relaxed">
-                Streetwear forged in faith and grit. Designed for the rebels, the believers, and the outcasts.
-              </p>
-            </div>
-            
-            <div className="space-y-6">
-              <h4 className="font-display text-xl tracking-widest text-white">Explore</h4>
-              <div className="flex flex-col gap-4 font-sans text-sm tracking-widest text-white/40 uppercase">
-                <a href="#about" className="hover:text-primary transition-colors">About</a>
-                <a href="#manifesto" className="hover:text-primary transition-colors">Manifesto</a>
-                <a href="#syndicate" className="hover:text-primary transition-colors">Syndicate</a>
-              </div>
-            </div>
-            
-            <div className="space-y-6">
-              <h4 className="font-display text-xl tracking-widest text-white">Connect</h4>
-              <div className="flex flex-col gap-4 font-sans text-sm tracking-widest text-white/40 uppercase">
-                <a href="#" className="hover:text-primary transition-colors">Instagram</a>
-                <a href="#" className="hover:text-primary transition-colors">Contact</a>
-                <a href="#" className="hover:text-primary transition-colors">Terms</a>
-              </div>
-            </div>
+      <footer className="border-t border-border py-12 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="font-display text-2xl tracking-widest">
+            VIGR ANGEL APPAREL
+          </div>
+          
+          <div className="flex gap-8 font-sans text-xs tracking-widest uppercase text-muted-foreground">
+            <button onClick={scrollToProducts} className="hover:text-foreground transition-colors">Shop</button>
+            <a href="#about" className="hover:text-foreground transition-colors">About</a>
           </div>
 
-          <div className="flex flex-col md:flex-row justify-between items-center gap-8 pt-8 border-t border-white/5">
-            <div className="w-12 h-12 opacity-30 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-500">
-              <img src={logoPath} alt="VAA Logo" className="w-full h-full object-contain rounded-full" />
-            </div>
-            
-            <div className="font-sans text-xs tracking-widest text-white/30 uppercase">
+          <div className="flex flex-col items-center sm:items-end gap-2">
+            <p className="font-sans text-xs tracking-wider text-muted-foreground">
               © {new Date().getFullYear()} VIGR Angel Apparel. All rights reserved.
-            </div>
+            </p>
+            <Link href="/dev" className="font-sans text-[10px] tracking-widest uppercase text-muted-foreground/50 hover:text-primary transition-colors">
+              Dev
+            </Link>
           </div>
         </div>
       </footer>
-    </main>
+    </div>
+  );
+}
+
+function ProductCard({ product }: { product: any }) {
+  const { addToCart } = useCart();
+  const { toast } = useToast();
+
+  const handleAddToCart = () => {
+    addToCart(product);
+    toast({
+      title: "Added to Cart",
+      description: `${product.name} has been added.`,
+    });
+  };
+
+  return (
+    <div className="group flex flex-col border border-border bg-card overflow-hidden hover:border-foreground transition-colors duration-300">
+      <div className="aspect-[3/4] bg-secondary relative overflow-hidden">
+        {product.imageUrl ? (
+          <img 
+            src={product.imageUrl} 
+            alt={product.name} 
+            className="w-full h-full object-cover mix-blend-multiply opacity-80 group-hover:scale-105 group-hover:opacity-100 transition-all duration-500" 
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground font-sans text-xs tracking-widest uppercase">
+            No Image
+          </div>
+        )}
+      </div>
+      <div className="p-6 flex flex-col flex-1">
+        <div className="flex justify-between items-start mb-4">
+          <h3 className="font-sans text-sm font-medium uppercase tracking-widest pr-4">{product.name}</h3>
+          <span className="font-sans text-sm text-muted-foreground">${(product.price / 100).toFixed(2)}</span>
+        </div>
+        <div className="mt-auto">
+          <Button 
+            onClick={handleAddToCart}
+            disabled={!product.inStock}
+            variant="outline"
+            className="w-full rounded-none font-sans text-xs tracking-widest uppercase h-12 border-border hover:bg-primary hover:text-white hover:border-primary transition-colors"
+          >
+            {product.inStock ? "ADD TO CART" : "SOLD OUT"}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

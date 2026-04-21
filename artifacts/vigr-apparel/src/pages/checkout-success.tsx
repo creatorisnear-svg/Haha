@@ -1,0 +1,23 @@
+import React from "react";
+import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
+
+export default function CheckoutSuccess() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6 text-center">
+      <div className="max-w-md space-y-6">
+        <h1 className="font-display text-5xl tracking-widest uppercase">Order Confirmed</h1>
+        <p className="text-muted-foreground font-sans tracking-wide">
+          Your order has been placed. Check your email for confirmation and shipping details.
+        </p>
+        <div className="pt-8">
+          <Link href="/">
+            <Button className="rounded-none font-display text-xl tracking-widest h-14 px-8 bg-foreground text-background hover:bg-primary hover:text-white transition-colors">
+              BACK TO HOME
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
