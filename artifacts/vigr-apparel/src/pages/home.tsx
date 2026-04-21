@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { ShoppingCart, User, Menu } from "lucide-react";
+import { ShoppingCart, User, Menu, Search, X } from "lucide-react";
 import { useListProducts, useSubscribeNewsletter } from "@workspace/api-client-react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -22,6 +22,7 @@ export default function Home() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetch("/api/categories")
@@ -31,9 +32,17 @@ export default function Home() {
   }, []);
 
   const allProducts = productsData?.data ?? [];
-  const filteredProducts = activeCategory
-    ? allProducts.filter((p: any) => (p.category ?? "").toLowerCase() === activeCategory.toLowerCase())
-    : allProducts;
+  const trimmedQuery = searchQuery.trim().toLowerCase();
+  const filteredProducts = allProducts.filter((p: any) => {
+    if (activeCategory && (p.category ?? "").toLowerCase() !== activeCategory.toLowerCase()) {
+      return false;
+    }
+    if (trimmedQuery) {
+      const haystack = `${p.name ?? ""} ${p.description ?? ""} ${p.category ?? ""}`.toLowerCase();
+      if (!haystack.includes(trimmedQuery)) return false;
+    }
+    return true;
+  });
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,20 +107,24 @@ export default function Home() {
                 </button>
 
                 {categories.length > 0 && (
-                  <div className="px-6 py-3 border-b border-border">
-                    <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground">Categories</p>
+                  <div className="border-b border-border py-3">
+                    <p className="px-6 pb-2 font-sans text-[9px] tracking-[0.4em] uppercase text-muted-foreground/70">
+                      Categories
+                    </p>
+                    <div className="flex flex-col">
+                      {categories.map((cat) => (
+                        <button
+                          key={cat.id}
+                          onClick={() => { setActiveCategory(cat.name); setMenuOpen(false); scrollToProducts(); }}
+                          className="w-full text-left pl-10 pr-6 py-2 font-sans text-[10px] tracking-[0.25em] uppercase text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+                          data-testid={`menu-category-${cat.slug}`}
+                        >
+                          {cat.name}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
-                {categories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => { setActiveCategory(cat.name); setMenuOpen(false); scrollToProducts(); }}
-                    className="w-full text-left px-6 py-3 font-sans text-xs tracking-[0.3em] uppercase border-b border-border text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
-                    data-testid={`menu-category-${cat.slug}`}
-                  >
-                    {cat.name}
-                  </button>
-                ))}
 
                 <div className="px-6 py-3 border-b border-border">
                   <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground">Explore</p>
@@ -256,24 +269,70 @@ export default function Home() {
 
       {/* ── PRODUCTS ── */}
       <section id="products" className="py-16 sm:py-28 px-4 sm:px-6 max-w-7xl mx-auto w-full">
-        <div className="mb-10 sm:mb-16 text-center">
+        <div className="mb-8 sm:mb-12 text-center">
           <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">Collection</p>
           <h2 className="font-display text-[clamp(2.5rem,6vw,5rem)] tracking-[0.15em]">THE COLLECTION</h2>
+          {activeCategory && (
+            <button
+              onClick={() => setActiveCategory(null)}
+              className="mt-4 font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground hover:text-foreground transition-colors"
+              data-testid="button-clear-category"
+            >
+              Filtered: {activeCategory} · Clear ✕
+            </button>
+          )}
+        </div>
+
+        {/* Search bar */}
+        <div className="max-w-md mx-auto mb-10 sm:mb-14">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <Input
+              type="search"
+              placeholder="Search clothes..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              data-testid="input-product-search"
+              className="rounded-none border border-border bg-transparent font-sans text-xs tracking-[0.2em] h-11 pl-10 pr-10 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                aria-label="Clear search"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="button-clear-search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         {isLoading ? (
           <div className="flex justify-center items-center h-64 font-sans text-xs tracking-widest uppercase text-muted-foreground">
             Loading collection...
           </div>
-        ) : !productsData?.data.length ? (
+        ) : !allProducts.length ? (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <p className="font-sans text-xs tracking-widest uppercase text-muted-foreground">
               No products yet — check back soon.
             </p>
           </div>
+        ) : !filteredProducts.length ? (
+          <div className="flex flex-col items-center justify-center h-64 gap-4">
+            <p className="font-sans text-xs tracking-widest uppercase text-muted-foreground">
+              No products match your search.
+            </p>
+            <button
+              onClick={() => { setSearchQuery(""); setActiveCategory(null); }}
+              className="font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground hover:text-foreground transition-colors underline"
+            >
+              Reset filters
+            </button>
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {productsData.data.map((product) => (
+            {filteredProducts.map((product: any) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
