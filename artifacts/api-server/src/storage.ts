@@ -146,8 +146,78 @@ function docToPromo(doc: any): PromoCode {
   };
 }
 
+// ── Category ──────────────────────────────────────────────────────────────────
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  createdAt: Date;
+}
+
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function docToCategory(doc: any): Category {
+  return {
+    id: doc._id.toString(),
+    name: doc.name,
+    slug: doc.slug,
+    createdAt: doc.createdAt,
+  };
+}
+
 // ── Storage class ─────────────────────────────────────────────────────────────
 export class Storage {
+  // Categories
+  async listCategories(): Promise<Category[]> {
+    const db = await getDb();
+    const docs = await db.collection("categories").find().sort({ name: 1 }).toArray();
+    return docs.map(docToCategory);
+  }
+
+  async createCategory(name: string): Promise<Category> {
+    const db = await getDb();
+    const trimmed = name.trim();
+    if (!trimmed) throw new Error("Category name required");
+    const slug = slugify(trimmed);
+    const now = new Date();
+    const existing = await db.collection("categories").findOne({ slug });
+    if (existing) throw new Error("A category with that name already exists");
+    const result = await db.collection("categories").insertOne({ name: trimmed, slug, createdAt: now });
+    return docToCategory({ _id: result.insertedId, name: trimmed, slug, createdAt: now });
+  }
+
+  async updateCategory(id: string, name: string): Promise<Category | null> {
+    const db = await getDb();
+    const trimmed = name.trim();
+    if (!trimmed) throw new Error("Category name required");
+    const slug = slugify(trimmed);
+    try {
+      const _id = new ObjectId(id);
+      const conflict = await db.collection("categories").findOne({ slug, _id: { $ne: _id } });
+      if (conflict) throw new Error("A category with that name already exists");
+      const result = await db.collection("categories").findOneAndUpdate(
+        { _id },
+        { $set: { name: trimmed, slug } },
+        { returnDocument: "after" }
+      );
+      return result ? docToCategory(result) : null;
+    } catch (err: any) {
+      if (err?.message?.includes("already exists")) throw err;
+      return null;
+    }
+  }
+
+  async deleteCategory(id: string): Promise<void> {
+    const db = await getDb();
+    try { await db.collection("categories").deleteOne({ _id: new ObjectId(id) }); } catch {}
+  }
+
   // Products
   async listProducts(): Promise<Product[]> {
     const db = await getDb();

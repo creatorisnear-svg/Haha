@@ -79,6 +79,9 @@ export default function DevDashboard() {
             <TabsTrigger value="products" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
               Products
             </TabsTrigger>
+            <TabsTrigger value="categories" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
+              Categories
+            </TabsTrigger>
             <TabsTrigger value="promos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
               Promos
             </TabsTrigger>
@@ -99,6 +102,10 @@ export default function DevDashboard() {
           
           <TabsContent value="products" className="pt-8">
             <ProductsTab products={productsData?.data || []} isLoading={isLoadingProducts} token={token} />
+          </TabsContent>
+
+          <TabsContent value="categories" className="pt-8">
+            <CategoriesTab token={token} />
           </TabsContent>
           
           <TabsContent value="promos" className="pt-8">
@@ -127,6 +134,14 @@ const ALL_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 function ProductsTab({ products, isLoading, token }: { products: any[], isLoading: boolean, token: string }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((d) => setCategories(d.data ?? []))
+      .catch(() => setCategories([]));
+  }, [isDialogOpen]);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -319,12 +334,25 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="category" className="text-xs uppercase tracking-widest text-muted-foreground">Category</Label>
-                  <Input 
-                    id="category" 
-                    value={formData.category} 
+                  <select
+                    id="category"
+                    value={formData.category}
                     onChange={(e) => setFormData({...formData, category: e.target.value})}
-                    className="rounded-none border-border focus-visible:ring-1 focus-visible:ring-primary"
-                  />
+                    className="w-full h-10 rounded-none border border-border bg-background text-foreground font-sans text-sm px-3 focus-visible:ring-1 focus-visible:ring-primary focus:outline-none"
+                  >
+                    <option value="">— None —</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.name}>{c.name}</option>
+                    ))}
+                    {formData.category && !categories.find((c) => c.name === formData.category) && (
+                      <option value={formData.category}>{formData.category} (legacy)</option>
+                    )}
+                  </select>
+                  {categories.length === 0 && (
+                    <p className="text-[10px] text-muted-foreground tracking-wide">
+                      No categories yet — create one in the Categories tab.
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="space-y-2">
@@ -1296,6 +1324,180 @@ function PromoCodesTab({ token }: { token: string }) {
                 >
                   Delete
                 </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CategoriesTab({ token }: { token: string }) {
+  const { toast } = useToast();
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newName, setNewName] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+
+  const fetchCategories = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/categories", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setCategories(data.data ?? []);
+    } catch {
+      setCategories([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchCategories(); }, []);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newName.trim();
+    if (!name) return;
+    try {
+      const res = await fetch("/api/admin/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to create category");
+      toast({ title: "Category created", description: name });
+      setNewName("");
+      fetchCategories();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleUpdate = async (id: string) => {
+    const name = editName.trim();
+    if (!name) return;
+    try {
+      const res = await fetch(`/api/admin/categories/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update category");
+      toast({ title: "Category updated" });
+      setEditingId(null);
+      setEditName("");
+      fetchCategories();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this category? Existing products keep their category label.")) return;
+    try {
+      await fetch(`/api/admin/categories/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast({ title: "Category deleted" });
+      fetchCategories();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-2xl tracking-widest uppercase">Categories</h2>
+        <Button variant="outline" onClick={fetchCategories} className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4">
+          Refresh
+        </Button>
+      </div>
+
+      <form onSubmit={handleCreate} className="border border-border bg-card p-6 space-y-4">
+        <h3 className="font-display text-lg tracking-widest uppercase">New Category</h3>
+        <div className="flex gap-2">
+          <Input
+            placeholder="e.g. Tees, Hoodies, Headwear"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            className="rounded-none border-border focus-visible:ring-1 focus-visible:ring-primary"
+          />
+          <Button
+            type="submit"
+            className="rounded-none font-display tracking-widest h-10 px-6 bg-foreground text-background hover:bg-primary hover:text-white transition-colors whitespace-nowrap"
+          >
+            Add
+          </Button>
+        </div>
+      </form>
+
+      {loading ? (
+        <div className="font-sans text-sm text-muted-foreground tracking-widest uppercase">Loading...</div>
+      ) : categories.length === 0 ? (
+        <div className="border border-dashed border-border p-12 text-center font-sans text-sm text-muted-foreground tracking-widest uppercase">
+          No categories yet
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {categories.map((cat) => (
+            <div key={cat.id} className="border border-border bg-card p-4 flex items-center justify-between gap-3">
+              {editingId === cat.id ? (
+                <Input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="rounded-none border-border h-9"
+                  autoFocus
+                />
+              ) : (
+                <div>
+                  <p className="font-sans uppercase tracking-widest text-sm font-medium">{cat.name}</p>
+                  <p className="font-sans text-[10px] text-muted-foreground tracking-wider">/{cat.slug}</p>
+                </div>
+              )}
+              <div className="flex gap-2">
+                {editingId === cat.id ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleUpdate(cat.id)}
+                      className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4"
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => { setEditingId(null); setEditName(""); }}
+                      className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 border-border"
+                    >
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => { setEditingId(cat.id); setEditName(cat.name); }}
+                      className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 border-border"
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleDelete(cat.id)}
+                      className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 border-destructive text-destructive hover:bg-destructive hover:text-white"
+                    >
+                      Delete
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           ))}

@@ -209,6 +209,40 @@ router.post("/admin/customers/:id/reset-password", adminAuthMiddleware, async (r
   });
 });
 
+// ── Categories ────────────────────────────────────────────────────────────────
+router.get("/admin/categories", adminAuthMiddleware, async (_req, res) => {
+  const categories = await storage.listCategories();
+  res.json({ data: categories });
+});
+
+router.post("/admin/categories", adminAuthMiddleware, async (req, res) => {
+  const { name } = req.body;
+  if (!name || typeof name !== "string") return res.status(400).json({ error: "Category name required" });
+  try {
+    const category = await storage.createCategory(name);
+    res.status(201).json(category);
+  } catch (err: any) {
+    res.status(400).json({ error: err?.message ?? "Failed to create category" });
+  }
+});
+
+router.put("/admin/categories/:id", adminAuthMiddleware, async (req, res) => {
+  const { name } = req.body;
+  if (!name || typeof name !== "string") return res.status(400).json({ error: "Category name required" });
+  try {
+    const category = await storage.updateCategory(req.params.id, name);
+    if (!category) return res.status(404).json({ error: "Category not found" });
+    res.json(category);
+  } catch (err: any) {
+    res.status(400).json({ error: err?.message ?? "Failed to update category" });
+  }
+});
+
+router.delete("/admin/categories/:id", adminAuthMiddleware, async (req, res) => {
+  await storage.deleteCategory(req.params.id);
+  res.json({ success: true, message: "Category deleted" });
+});
+
 router.get("/admin/newsletter/subscribers", adminAuthMiddleware, async (_req, res) => {
   const emails = await storage.getAllNewsletterSubscribers();
   res.json({ data: emails, count: emails.length });

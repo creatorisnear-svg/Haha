@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { ShoppingCart, User } from "lucide-react";
+import { ShoppingCart, User, Menu } from "lucide-react";
 import { useListProducts, useSubscribeNewsletter } from "@workspace/api-client-react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import logoPath from "@assets/12214-removebg-preview_1776743232072.png";
+
+interface Category { id: string; name: string; slug: string; }
 
 export default function Home() {
   const { data: productsData, isLoading } = useListProducts();
@@ -16,6 +19,21 @@ export default function Home() {
   const { toast } = useToast();
   const subscribeNewsletter = useSubscribeNewsletter();
   const [email, setEmail] = useState("");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((d) => setCategories(d.data ?? []))
+      .catch(() => setCategories([]));
+  }, []);
+
+  const allProducts = productsData?.data ?? [];
+  const filteredProducts = activeCategory
+    ? allProducts.filter((p: any) => (p.category ?? "").toLowerCase() === activeCategory.toLowerCase())
+    : allProducts;
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +65,89 @@ export default function Home() {
         style={{ background: "rgba(10,10,10,0.95)" }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[64px] sm:h-[72px] flex items-center justify-between gap-2">
+          {/* Hamburger menu */}
+          <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+            <SheetTrigger asChild>
+              <button
+                className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Open menu"
+                data-testid="button-open-menu"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+            </SheetTrigger>
+            <SheetContent
+              side="left"
+              className="w-[300px] sm:w-[360px] bg-background border-r border-border p-0 flex flex-col"
+            >
+              <SheetHeader className="p-6 border-b border-border">
+                <SheetTitle className="font-display text-xl tracking-[0.2em] uppercase text-left flex items-center gap-3">
+                  <div className="w-8 h-8">
+                    <img src={logoPath} alt="VAA" className="w-full h-full object-contain" style={{ filter: "invert(1)" }} />
+                  </div>
+                  Menu
+                </SheetTitle>
+              </SheetHeader>
+              <nav className="flex-1 overflow-y-auto py-2">
+                <button
+                  onClick={() => { setActiveCategory(null); setMenuOpen(false); scrollToProducts(); }}
+                  className="w-full text-left px-6 py-4 font-sans text-xs tracking-[0.3em] uppercase border-b border-border hover:bg-foreground/5 transition-colors"
+                  data-testid="menu-shop-all"
+                >
+                  Shop All
+                </button>
+
+                {categories.length > 0 && (
+                  <div className="px-6 py-3 border-b border-border">
+                    <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground">Categories</p>
+                  </div>
+                )}
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => { setActiveCategory(cat.name); setMenuOpen(false); scrollToProducts(); }}
+                    className="w-full text-left px-6 py-3 font-sans text-xs tracking-[0.3em] uppercase border-b border-border text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+                    data-testid={`menu-category-${cat.slug}`}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+
+                <div className="px-6 py-3 border-b border-border">
+                  <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground">Explore</p>
+                </div>
+                <a
+                  href="#about"
+                  onClick={() => setMenuOpen(false)}
+                  className="block w-full text-left px-6 py-4 font-sans text-xs tracking-[0.3em] uppercase border-b border-border hover:bg-foreground/5 transition-colors"
+                >
+                  About
+                </a>
+                <Link
+                  href="/orders/lookup"
+                  onClick={() => setMenuOpen(false)}
+                  className="block w-full text-left px-6 py-4 font-sans text-xs tracking-[0.3em] uppercase border-b border-border hover:bg-foreground/5 transition-colors"
+                >
+                  Track Order
+                </Link>
+                <Link
+                  href={isLoggedIn ? "/account/orders" : "/account/login"}
+                  onClick={() => setMenuOpen(false)}
+                  className="block w-full text-left px-6 py-4 font-sans text-xs tracking-[0.3em] uppercase border-b border-border hover:bg-foreground/5 transition-colors"
+                >
+                  {isLoggedIn ? "My Account" : "Sign In"}
+                </Link>
+                <Link
+                  href="/dev"
+                  onClick={() => setMenuOpen(false)}
+                  className="block w-full text-left px-6 py-4 font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground/50 hover:text-primary transition-colors"
+                >
+                  Admin
+                </Link>
+              </nav>
+            </SheetContent>
+          </Sheet>
+
           {/* Logo + brand */}
           <Link href="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0">

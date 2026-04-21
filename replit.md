@@ -42,11 +42,18 @@ Domain: vaaclothing.xyz
 
 ### Database — MongoDB (`artifacts/api-server/src/lib/mongodb.ts`)
 Collections:
-- `products` — product catalog
+- `products` — product catalog (each has optional `category` string label)
+- `categories` — admin-managed category list (`name`, `slug`)
 - `customers` — registered customer accounts
 - `orders` — all orders (guest or customer)
 - `settings` — key/value (stripe_publishable_key, stripe_secret_key, admin_password_hash)
 - `newsletter` — email subscribers
+
+### Categories & Navigation
+- Admin manages categories in the **Categories** tab of `/dev/dashboard` (CRUD).
+- Product form's category field is a dropdown of admin-created categories.
+- Storefront has a top-left hamburger menu (Sheet drawer) that lists Shop All, every category (clicking filters the product grid), About, Track Order, Account, and Admin.
+- Endpoints: `GET /api/categories` (public), `GET/POST/PUT/DELETE /api/admin/categories` (admin JWT).
 
 ## Stripe Configuration (IMPORTANT)
 
