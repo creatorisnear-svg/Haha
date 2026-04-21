@@ -1,6 +1,9 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
+import path from "node:path";
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
@@ -30,5 +33,29 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
+
+// In production (single-service deployments like Koyeb/Render/Fly), serve the
+// built frontend from ./public alongside the API. In dev we leave this off so
+// the Vite dev server handles it.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const publicDir = path.resolve(__dirname, "public");
+if (existsSync(publicDir)) {
+  app.use(
+    express.static(publicDir, {
+      index: false,
+      setHeaders(res, filePath) {
+        if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        }
+      },
+    }),
+  );
+  // SPA fallback: send index.html for any non-API GET that isn't a file.
+  app.get(/^(?!\/api\/).*/, (req, res, next) => {
+    if (req.method !== "GET") return next();
+    res.sendFile(path.join(publicDir, "index.html"));
+  });
+  logger.info({ publicDir }, "Serving built frontend from /public");
+}
 
 export default app;
