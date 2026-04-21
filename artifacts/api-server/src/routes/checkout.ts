@@ -14,7 +14,7 @@ async function getStripe(): Promise<Stripe | null> {
 }
 
 router.post("/checkout", async (req, res) => {
-  const { items, shippingAddress, email, phone, createAccount, password, paymentIntentId } = req.body;
+  const { items, shippingAddress, email, phone, createAccount, password, paymentIntentId, promoCode } = req.body;
 
   if (!items || !items.length) return res.status(400).json({ error: "No items provided" });
   if (!shippingAddress) return res.status(400).json({ error: "Shipping address required" });
@@ -67,17 +67,50 @@ router.post("/checkout", async (req, res) => {
   let orderItems;
   try {
     orderItems = await Promise.all(
-      items.map(async (item: { productId: string; quantity: number }) => {
+      items.map(async (item: { productId: string; quantity: number; size?: string }) => {
         const product = await storage.getProduct(item.productId);
         if (!product) throw new Error("Product not found");
-        return { productId: product.id, productName: product.name, price: product.price, quantity: item.quantity, imageUrl: product.imageUrl ?? null };
+        return {
+          productId: product.id,
+          productName: product.name,
+          price: product.price,
+          quantity: item.quantity,
+          size: item.size ?? null,
+          imageUrl: product.imageUrl ?? null,
+        };
       })
     );
   } catch (err: any) {
     return res.status(400).json({ error: err.message });
   }
 
-  const total = orderItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  let subtotal = orderItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
+  // Apply promo code if provided
+  let discountAmountCents = 0;
+  let appliedPromoCode: string | null = null;
+
+  if (promoCode) {
+    const promo = await storage.getPromoCodeByCode(String(promoCode).trim());
+    if (promo && promo.active) {
+      const now = new Date();
+      const notExpired = !promo.expiresAt || promo.expiresAt >= now;
+      const underLimit = promo.usageLimit === null || promo.usageCount < promo.usageLimit;
+      const subtotalDollars = subtotal / 100;
+      const meetsMin = promo.minOrderValue === null || promo.minOrderValue === undefined || subtotalDollars >= promo.minOrderValue;
+
+      if (notExpired && underLimit && meetsMin) {
+        if (promo.discountType === "percent") {
+          discountAmountCents = Math.round(subtotal * (promo.discountAmount / 100));
+        } else {
+          discountAmountCents = Math.min(Math.round(promo.discountAmount * 100), subtotal);
+        }
+        appliedPromoCode = promo.code;
+      }
+    }
+  }
+
+  const total = Math.max(0, subtotal - discountAmountCents);
 
   const order = await storage.createOrder({
     customerId,
@@ -87,6 +120,8 @@ router.post("/checkout", async (req, res) => {
     items: orderItems,
     shippingAddress,
     total,
+    discountAmount: discountAmountCents > 0 ? discountAmountCents : null,
+    promoCode: appliedPromoCode,
     status: "pending",
   });
 
@@ -97,6 +132,13 @@ router.post("/checkout", async (req, res) => {
     } catch (err) {
       logger.error({ err, productId: item.productId }, "Failed to decrement stock");
     }
+  }
+
+  // Increment promo usage
+  if (appliedPromoCode) {
+    storage.incrementPromoUsage(appliedPromoCode).catch((err) =>
+      logger.error({ err }, "Failed to increment promo usage")
+    );
   }
 
   // Send confirmation emails (don't block response on email delivery)

@@ -11,6 +11,7 @@ export interface Product {
   inStock: boolean;
   stockCount?: number | null;
   category?: string | null;
+  sizes?: string[] | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,6 +27,7 @@ function docToProduct(doc: any): Product {
     inStock: doc.inStock,
     stockCount: typeof doc.stockCount === "number" ? doc.stockCount : null,
     category: doc.category ?? null,
+    sizes: Array.isArray(doc.sizes) && doc.sizes.length > 0 ? doc.sizes : null,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
@@ -58,6 +60,7 @@ export interface OrderItem {
   productName: string;
   price: number;
   quantity: number;
+  size?: string | null;
   imageUrl?: string | null;
 }
 
@@ -81,6 +84,8 @@ export interface Order {
   items: OrderItem[];
   shippingAddress: ShippingAddress;
   total: number;
+  discountAmount?: number | null;
+  promoCode?: string | null;
   status: "pending" | "processing" | "shipped" | "delivered";
   notes?: string | null;
   trackingNumber?: string | null;
@@ -99,10 +104,42 @@ function docToOrder(doc: any): Order {
     items: doc.items,
     shippingAddress: doc.shippingAddress,
     total: doc.total,
+    discountAmount: doc.discountAmount ?? null,
+    promoCode: doc.promoCode ?? null,
     status: doc.status,
     notes: doc.notes ?? null,
     trackingNumber: doc.trackingNumber ?? null,
     shippedAt: doc.shippedAt ?? null,
+    createdAt: doc.createdAt,
+  };
+}
+
+// ── PromoCode ─────────────────────────────────────────────────────────────────
+export interface PromoCode {
+  id: string;
+  code: string;
+  discountType: "percent" | "fixed";
+  discountAmount: number;
+  minOrderValue?: number | null;
+  usageLimit?: number | null;
+  usageCount: number;
+  expiresAt?: Date | null;
+  active: boolean;
+  createdAt: Date;
+}
+export type InsertPromoCode = Omit<PromoCode, "id" | "usageCount" | "createdAt">;
+
+function docToPromo(doc: any): PromoCode {
+  return {
+    id: doc._id.toString(),
+    code: doc.code,
+    discountType: doc.discountType,
+    discountAmount: doc.discountAmount,
+    minOrderValue: doc.minOrderValue ?? null,
+    usageLimit: doc.usageLimit ?? null,
+    usageCount: doc.usageCount ?? 0,
+    expiresAt: doc.expiresAt ?? null,
+    active: doc.active ?? true,
     createdAt: doc.createdAt,
   };
 }
@@ -148,18 +185,12 @@ export class Storage {
     try { await db.collection("products").deleteOne({ _id: new ObjectId(id) }); } catch {}
   }
 
-  /**
-   * Decrement the stockCount for a product. Returns true if successful, false if
-   * the product doesn't exist or has insufficient stock. Products without a
-   * stockCount field are treated as unlimited and always succeed.
-   */
   async decrementStock(id: string, quantity: number): Promise<boolean> {
     const db = await getDb();
     try {
       const _id = new ObjectId(id);
       const product = await db.collection("products").findOne({ _id });
       if (!product) return false;
-      // Unlimited stock when stockCount is not a number
       if (typeof product.stockCount !== "number") return true;
       if (product.stockCount < quantity) return false;
       const newCount = product.stockCount - quantity;
@@ -281,6 +312,62 @@ export class Storage {
       const doc = await db.collection("orders").findOne({ _id: new ObjectId(id) });
       return doc ? docToOrder(doc) : null;
     } catch { return null; }
+  }
+
+  async getOrderByNumberAndEmail(orderNumber: string, email: string): Promise<Order | null> {
+    const db = await getDb();
+    try {
+      const doc = await db.collection("orders").findOne({
+        orderNumber: orderNumber.toUpperCase(),
+        customerEmail: email.toLowerCase(),
+      });
+      return doc ? docToOrder(doc) : null;
+    } catch { return null; }
+  }
+
+  // Promo Codes
+  async createPromoCode(data: InsertPromoCode): Promise<PromoCode> {
+    const db = await getDb();
+    const now = new Date();
+    const result = await db.collection("promoCodes").insertOne({ ...data, usageCount: 0, createdAt: now });
+    return docToPromo({ _id: result.insertedId, ...data, usageCount: 0, createdAt: now });
+  }
+
+  async getPromoCodeByCode(code: string): Promise<PromoCode | null> {
+    const db = await getDb();
+    const doc = await db.collection("promoCodes").findOne({ code: code.toUpperCase() });
+    return doc ? docToPromo(doc) : null;
+  }
+
+  async getAllPromoCodes(): Promise<PromoCode[]> {
+    const db = await getDb();
+    const docs = await db.collection("promoCodes").find().sort({ createdAt: -1 }).toArray();
+    return docs.map(docToPromo);
+  }
+
+  async updatePromoCode(id: string, data: Partial<InsertPromoCode>): Promise<PromoCode | null> {
+    const db = await getDb();
+    try {
+      const result = await db.collection("promoCodes").findOneAndUpdate(
+        { _id: new ObjectId(id) },
+        { $set: data },
+        { returnDocument: "after" }
+      );
+      return result ? docToPromo(result) : null;
+    } catch { return null; }
+  }
+
+  async deletePromoCode(id: string): Promise<void> {
+    const db = await getDb();
+    try { await db.collection("promoCodes").deleteOne({ _id: new ObjectId(id) }); } catch {}
+  }
+
+  async incrementPromoUsage(code: string): Promise<void> {
+    const db = await getDb();
+    await db.collection("promoCodes").updateOne(
+      { code: code.toUpperCase() },
+      { $inc: { usageCount: 1 } }
+    );
   }
 }
 

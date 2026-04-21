@@ -72,14 +72,17 @@ export default function DevDashboard() {
         </header>
 
         <Tabs defaultValue="orders" className="w-full">
-          <TabsList className="bg-transparent border-b border-border rounded-none h-12 w-full justify-start gap-8 p-0">
-            <TabsTrigger value="orders" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase">
+          <TabsList className="bg-transparent border-b border-border rounded-none h-12 w-full justify-start gap-8 p-0 overflow-x-auto">
+            <TabsTrigger value="orders" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
               Orders
             </TabsTrigger>
-            <TabsTrigger value="products" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase">
+            <TabsTrigger value="products" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
               Products
             </TabsTrigger>
-            <TabsTrigger value="settings" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase">
+            <TabsTrigger value="promos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
+              Promos
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
               Settings
             </TabsTrigger>
           </TabsList>
@@ -92,6 +95,10 @@ export default function DevDashboard() {
             <ProductsTab products={productsData?.data || []} isLoading={isLoadingProducts} token={token} />
           </TabsContent>
           
+          <TabsContent value="promos" className="pt-8">
+            <PromoCodesTab token={token} />
+          </TabsContent>
+
           <TabsContent value="settings" className="pt-8">
             <SettingsTab settings={settings} isLoading={isLoadingSettings} token={token} />
           </TabsContent>
@@ -100,6 +107,8 @@ export default function DevDashboard() {
     </div>
   );
 }
+
+const ALL_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
 function ProductsTab({ products, isLoading, token }: { products: any[], isLoading: boolean, token: string }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -113,6 +122,7 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
     category: "",
     inStock: true,
     stockCount: "",
+    sizes: [] as string[],
   });
 
   const { toast } = useToast();
@@ -127,6 +137,7 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
       category: "",
       inStock: true,
       stockCount: "",
+      sizes: [],
     });
     setEditingProduct(null);
   };
@@ -143,11 +154,21 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
         inStock: product.inStock,
         stockCount:
           typeof product.stockCount === "number" ? String(product.stockCount) : "",
+        sizes: Array.isArray(product.sizes) ? product.sizes : [],
       });
     } else {
       resetForm();
     }
     setIsDialogOpen(true);
+  };
+
+  const toggleSize = (size: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      sizes: prev.sizes.includes(size)
+        ? prev.sizes.filter((s) => s !== size)
+        : [...prev.sizes, size],
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -164,6 +185,7 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
         category: formData.category || undefined,
         inStock: parsedStock === null ? formData.inStock : parsedStock > 0,
         stockCount: parsedStock,
+        sizes: formData.sizes.length > 0 ? formData.sizes : null,
       };
 
       const url = editingProduct 
@@ -299,6 +321,28 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
                   onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
                   className="rounded-none border-border focus-visible:ring-1 focus-visible:ring-primary"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs uppercase tracking-widest text-muted-foreground">Sizes Available</Label>
+                <div className="flex flex-wrap gap-2">
+                  {ALL_SIZES.map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => toggleSize(size)}
+                      className={`h-8 px-3 font-sans text-xs uppercase tracking-widest border transition-all ${
+                        formData.sizes.includes(size)
+                          ? "border-primary bg-primary text-white"
+                          : "border-border text-muted-foreground hover:border-foreground/50"
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground tracking-wide">
+                  Leave all unselected if this product has no size options.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="stockCount" className="text-xs uppercase tracking-widest text-muted-foreground">
@@ -678,6 +722,238 @@ function SettingsTab({ settings, isLoading, token }: { settings: any, isLoading:
           SAVE CHANGES
         </Button>
       </form>
+    </div>
+  );
+}
+
+const BASE_ADMIN = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+function PromoCodesTab({ token }: { token: string }) {
+  const { toast } = useToast();
+  const [promos, setPromos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    code: "",
+    discountType: "percent" as "percent" | "fixed",
+    discountAmount: "",
+    minOrderValue: "",
+    usageLimit: "",
+    expiresAt: "",
+  });
+
+  const fetchPromos = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${BASE_ADMIN}/api/admin/promo`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setPromos(data.data ?? []);
+    } catch {
+      setPromos([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchPromos(); }, []);
+
+  const resetForm = () => {
+    setForm({ code: "", discountType: "percent", discountAmount: "", minOrderValue: "", usageLimit: "", expiresAt: "" });
+    setShowForm(false);
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${BASE_ADMIN}/api/admin/promo`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          code: form.code.trim().toUpperCase(),
+          discountType: form.discountType,
+          discountAmount: Number(form.discountAmount),
+          minOrderValue: form.minOrderValue ? Number(form.minOrderValue) : null,
+          usageLimit: form.usageLimit ? Number(form.usageLimit) : null,
+          expiresAt: form.expiresAt || null,
+          active: true,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to create promo code");
+      toast({ title: "Success", description: "Promo code created" });
+      resetForm();
+      fetchPromos();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const toggleActive = async (promo: any) => {
+    try {
+      const res = await fetch(`${BASE_ADMIN}/api/admin/promo/${promo.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ active: !promo.active }),
+      });
+      if (!res.ok) throw new Error("Failed to update");
+      setPromos((prev) => prev.map((p) => p.id === promo.id ? { ...p, active: !p.active } : p));
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this promo code?")) return;
+    try {
+      await fetch(`${BASE_ADMIN}/api/admin/promo/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setPromos((prev) => prev.filter((p) => p.id !== id));
+      toast({ title: "Deleted", description: "Promo code removed" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="font-display text-2xl tracking-widest uppercase">Promo Codes</h2>
+        <Button
+          onClick={() => setShowForm((v) => !v)}
+          className="rounded-none font-sans uppercase tracking-widest text-xs h-10 px-6 bg-foreground text-background hover:bg-primary hover:text-white transition-colors"
+        >
+          {showForm ? "Cancel" : "+ New Code"}
+        </Button>
+      </div>
+
+      {showForm && (
+        <form onSubmit={handleCreate} className="border border-border bg-card p-6 space-y-4">
+          <h3 className="font-display text-lg tracking-widest uppercase">Create Promo Code</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Code</Label>
+              <Input
+                required
+                placeholder="e.g. SAVE10"
+                value={form.code}
+                onChange={(e) => setForm((p) => ({ ...p, code: e.target.value.toUpperCase() }))}
+                className="rounded-none border-border font-mono uppercase tracking-widest"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Discount Type</Label>
+              <select
+                value={form.discountType}
+                onChange={(e) => setForm((p) => ({ ...p, discountType: e.target.value as "percent" | "fixed" }))}
+                className="w-full h-10 rounded-none border border-border bg-background text-foreground font-sans text-sm px-3"
+              >
+                <option value="percent">% Off</option>
+                <option value="fixed">$ Off (Fixed)</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Discount Amount {form.discountType === "percent" ? "(%)" : "($)"}
+              </Label>
+              <Input
+                required
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder={form.discountType === "percent" ? "10" : "5.00"}
+                value={form.discountAmount}
+                onChange={(e) => setForm((p) => ({ ...p, discountAmount: e.target.value }))}
+                className="rounded-none border-border"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Min Order Value ($)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Optional (e.g. 50.00)"
+                value={form.minOrderValue}
+                onChange={(e) => setForm((p) => ({ ...p, minOrderValue: e.target.value }))}
+                className="rounded-none border-border"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Usage Limit</Label>
+              <Input
+                type="number"
+                min="1"
+                step="1"
+                placeholder="Optional (e.g. 100)"
+                value={form.usageLimit}
+                onChange={(e) => setForm((p) => ({ ...p, usageLimit: e.target.value }))}
+                className="rounded-none border-border"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Expiry Date</Label>
+              <Input
+                type="date"
+                value={form.expiresAt}
+                onChange={(e) => setForm((p) => ({ ...p, expiresAt: e.target.value }))}
+                className="rounded-none border-border"
+              />
+            </div>
+          </div>
+          <Button type="submit" className="rounded-none font-display tracking-widest h-12 px-8 bg-foreground text-background hover:bg-primary hover:text-white transition-colors">
+            CREATE CODE
+          </Button>
+        </form>
+      )}
+
+      {loading ? (
+        <div className="font-sans text-sm text-muted-foreground tracking-widest uppercase">Loading...</div>
+      ) : promos.length === 0 ? (
+        <div className="border border-dashed border-border p-12 text-center font-sans text-sm text-muted-foreground tracking-widest uppercase">
+          No promo codes yet
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {promos.map((promo) => (
+            <div key={promo.id} className="border border-border bg-card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="font-mono text-lg tracking-widest font-bold">{promo.code}</span>
+                  <span className={`font-sans text-[10px] tracking-widest border px-2 py-0.5 ${promo.active ? "border-green-700 text-green-400" : "border-border text-muted-foreground"}`}>
+                    {promo.active ? "Active" : "Inactive"}
+                  </span>
+                </div>
+                <p className="font-sans text-sm text-muted-foreground">
+                  {promo.discountType === "percent" ? `${promo.discountAmount}% off` : `$${promo.discountAmount.toFixed(2)} off`}
+                  {promo.minOrderValue ? ` · Min $${promo.minOrderValue.toFixed(2)}` : ""}
+                  {promo.usageLimit ? ` · ${promo.usageCount}/${promo.usageLimit} used` : ` · ${promo.usageCount} used`}
+                  {promo.expiresAt ? ` · Expires ${new Date(promo.expiresAt).toLocaleDateString()}` : ""}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => toggleActive(promo)}
+                  className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 border-border"
+                >
+                  {promo.active ? "Disable" : "Enable"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleDelete(promo.id)}
+                  className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 border-destructive text-destructive hover:bg-destructive hover:text-white"
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

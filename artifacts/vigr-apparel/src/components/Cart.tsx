@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
-import { X, Plus, Minus, CheckCircle, CreditCard } from "lucide-react";
+import { X, Plus, Minus, CheckCircle, CreditCard, Tag } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,19 +41,45 @@ const CARD_STYLE = {
   },
 };
 
+interface PromoState {
+  code: string;
+  applied: boolean;
+  discountValue: number;
+  discountType: "percent" | "fixed" | null;
+  discountAmount: number;
+  message: string;
+  error: string;
+  loading: boolean;
+}
+
+const defaultPromo: PromoState = {
+  code: "",
+  applied: false,
+  discountValue: 0,
+  discountType: null,
+  discountAmount: 0,
+  message: "",
+  error: "",
+  loading: false,
+};
+
 // ── Inner payment form (needs Stripe context) ────────────────────────────────
 function PaymentForm({
-  clientSecret, info, items, token, onSuccess, onBack,
+  clientSecret, info, items, token, onSuccess, onBack, promo,
 }: {
   clientSecret: string; info: InfoForm; items: any[]; token: string | null;
   onSuccess: (order: any, newToken: string | null, newCustomer: any | null) => void;
   onBack: () => void;
+  promo: PromoState;
 }) {
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
+
+  const subtotal = items.reduce((s: number, i: any) => s + (i.product.price * i.quantity / 100), 0);
+  const finalTotal = promo.applied ? Math.max(0, subtotal - promo.discountValue) : subtotal;
 
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +90,6 @@ function PaymentForm({
     const cardElement = elements.getElement(CardElement);
     if (!cardElement) { setLoading(false); return; }
 
-    // Confirm the card payment with the existing clientSecret
     const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
       payment_method: {
         card: cardElement,
@@ -84,7 +109,6 @@ function PaymentForm({
       return;
     }
 
-    // Save order to backend
     try {
       const res = await fetch(`${BASE}/api/checkout`, {
         method: "POST",
@@ -93,13 +117,14 @@ function PaymentForm({
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
+          items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity, size: i.size ?? undefined })),
           shippingAddress: { name: info.name, line1: info.line1, line2: info.line2, city: info.city, state: info.state, zip: info.zip, country: info.country },
           email: info.email,
           phone: info.phone,
           createAccount: info.createAccount,
           password: info.createAccount ? info.password : undefined,
           paymentIntentId: paymentIntent.id,
+          promoCode: promo.applied ? promo.code : undefined,
         }),
       });
       const data = await res.json();
@@ -118,14 +143,20 @@ function PaymentForm({
         <div>
           <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground mb-3">Order Summary</p>
           {items.map((item: any) => (
-            <div key={item.product.id} className="flex justify-between font-sans text-xs text-muted-foreground py-1">
-              <span>{item.product.name} × {item.quantity}</span>
+            <div key={`${item.product.id}-${item.size ?? ""}`} className="flex justify-between font-sans text-xs text-muted-foreground py-1">
+              <span>{item.product.name}{item.size ? ` — ${item.size}` : ""} × {item.quantity}</span>
               <span>${(item.product.price * item.quantity / 100).toFixed(2)}</span>
             </div>
           ))}
+          {promo.applied && (
+            <div className="flex justify-between font-sans text-xs text-green-400 py-1">
+              <span>Promo: {promo.code}</span>
+              <span>-${promo.discountValue.toFixed(2)}</span>
+            </div>
+          )}
           <div className="flex justify-between font-sans text-sm font-semibold border-t border-border pt-2 mt-2">
             <span>Total</span>
-            <span>${items.reduce((s: number, i: any) => s + (i.product.price * i.quantity / 100), 0).toFixed(2)}</span>
+            <span>${finalTotal.toFixed(2)}</span>
           </div>
         </div>
 
@@ -150,7 +181,7 @@ function PaymentForm({
 
       <div className="p-6 border-t border-border space-y-3 flex-shrink-0">
         <Button type="submit" disabled={!stripe || loading} className="w-full rounded-none font-display text-xl tracking-widest h-14 bg-foreground text-background hover:bg-primary hover:text-white transition-colors">
-          {loading ? "PROCESSING..." : `PAY $${items.reduce((s: number, i: any) => s + (i.product.price * i.quantity / 100), 0).toFixed(2)}`}
+          {loading ? "PROCESSING..." : `PAY $${finalTotal.toFixed(2)}`}
         </Button>
         <Button type="button" variant="ghost" onClick={onBack} className="w-full rounded-none font-sans text-xs uppercase tracking-widest text-muted-foreground">
           ← Back
@@ -173,6 +204,7 @@ export function Cart() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [stripeLoading, setStripeLoading] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<any>(null);
+  const [promo, setPromo] = useState<PromoState>({ ...defaultPromo });
 
   // Pre-fill info from logged-in customer
   useEffect(() => {
@@ -192,6 +224,7 @@ export function Cart() {
     setClientSecret(null);
     setStripePromise(null);
     setConfirmedOrder(null);
+    setPromo({ ...defaultPromo });
   };
 
   const handleClose = () => {
@@ -207,12 +240,46 @@ export function Cart() {
   const f = (field: keyof InfoForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setInfo((prev) => ({ ...prev, [field]: e.target.value }));
 
+  const handleApplyPromo = async () => {
+    if (!promo.code.trim()) return;
+    setPromo((p) => ({ ...p, loading: true, error: "", message: "" }));
+    try {
+      const res = await fetch(`${BASE}/api/promo/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: promo.code.trim(), orderTotal: total }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setPromo((p) => ({
+          ...p,
+          applied: true,
+          discountValue: data.discountValue,
+          discountType: data.discountType,
+          discountAmount: data.discountAmount,
+          message: data.message,
+          error: "",
+          loading: false,
+        }));
+      } else {
+        setPromo((p) => ({ ...p, applied: false, discountValue: 0, error: data.message, message: "", loading: false }));
+      }
+    } catch {
+      setPromo((p) => ({ ...p, loading: false, error: "Could not apply code. Try again." }));
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setPromo({ ...defaultPromo });
+  };
+
+  const discountedTotal = promo.applied ? Math.max(0, total - promo.discountValue) : total;
+
   // Proceed from info → payment: create payment intent + load Stripe
   const handleProceedToPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setStripeLoading(true);
     try {
-      // Fetch publishable key
       const configRes = await fetch(`${BASE}/api/config`);
       const config = await configRes.json();
 
@@ -225,11 +292,12 @@ export function Cart() {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({
-            items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
+            items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity, size: i.size ?? undefined })),
             shippingAddress: { name: info.name, line1: info.line1, line2: info.line2, city: info.city, state: info.state, zip: info.zip, country: info.country },
             email: info.email, phone: info.phone,
             createAccount: info.createAccount,
             password: info.createAccount ? info.password : undefined,
+            promoCode: promo.applied ? promo.code : undefined,
           }),
         });
         const orderData = await orderRes.json();
@@ -241,7 +309,6 @@ export function Cart() {
         return;
       }
 
-      // Create payment intent
       const intentRes = await fetch(`${BASE}/api/payments/intent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -298,7 +365,7 @@ export function Cart() {
                 </div>
               ) : (
                 items.map((item) => (
-                  <div key={item.product.id} className="flex gap-4" data-testid={`cart-item-${item.product.id}`}>
+                  <div key={`${item.product.id}-${item.size ?? ""}`} className="flex gap-4" data-testid={`cart-item-${item.product.id}`}>
                     <div className="w-20 h-24 bg-card flex-shrink-0 overflow-hidden">
                       {item.product.imageUrl
                         ? <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
@@ -306,20 +373,20 @@ export function Cart() {
                     </div>
                     <div className="flex flex-col flex-1 py-1 justify-between">
                       <div>
-                        <h3 className="font-medium text-sm font-sans uppercase">{item.product.name}</h3>
+                        <h3 className="font-medium text-sm font-sans uppercase">{item.product.name}{item.size ? <span className="text-muted-foreground font-normal"> — {item.size}</span> : null}</h3>
                         <p className="text-muted-foreground text-sm">${(item.product.price / 100).toFixed(2)}</p>
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center border border-border">
-                          <button className="px-2 py-1 hover:bg-secondary transition-colors" onClick={() => updateQuantity(item.product.id, item.quantity - 1)} data-testid={`button-minus-${item.product.id}`}>
+                          <button className="px-2 py-1 hover:bg-secondary transition-colors" onClick={() => updateQuantity(item.product.id!, item.quantity - 1, item.size)} data-testid={`button-minus-${item.product.id}`}>
                             <Minus className="w-3 h-3" />
                           </button>
                           <span className="px-3 text-sm">{item.quantity}</span>
-                          <button className="px-2 py-1 hover:bg-secondary transition-colors" onClick={() => updateQuantity(item.product.id, item.quantity + 1)} data-testid={`button-plus-${item.product.id}`}>
+                          <button className="px-2 py-1 hover:bg-secondary transition-colors" onClick={() => updateQuantity(item.product.id!, item.quantity + 1, item.size)} data-testid={`button-plus-${item.product.id}`}>
                             <Plus className="w-3 h-3" />
                           </button>
                         </div>
-                        <button className="text-xs text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest" onClick={() => removeFromCart(item.product.id)}>
+                        <button className="text-xs text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest" onClick={() => removeFromCart(item.product.id!, item.size)}>
                           Remove
                         </button>
                       </div>
@@ -329,11 +396,63 @@ export function Cart() {
               )}
             </div>
             {items.length > 0 && (
-              <div className="p-6 border-t border-border bg-card flex-shrink-0">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="font-sans text-sm tracking-wide text-muted-foreground">SUBTOTAL</span>
-                  <span className="font-medium">${total.toFixed(2)}</span>
+              <div className="p-6 border-t border-border bg-card flex-shrink-0 space-y-4">
+                {/* Promo code */}
+                {!promo.applied ? (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                        <Input
+                          placeholder="Promo code"
+                          value={promo.code}
+                          onChange={(e) => setPromo((p) => ({ ...p, code: e.target.value.toUpperCase(), error: "", message: "" }))}
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleApplyPromo(); } }}
+                          className="rounded-none h-10 text-sm font-sans pl-8 uppercase"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleApplyPromo}
+                        disabled={promo.loading || !promo.code.trim()}
+                        className="rounded-none font-sans text-xs uppercase tracking-widest h-10 px-4 border-border"
+                      >
+                        {promo.loading ? "..." : "Apply"}
+                      </Button>
+                    </div>
+                    {promo.error && <p className="font-sans text-xs text-red-400">{promo.error}</p>}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between border border-green-800 bg-green-950/30 px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <Tag className="w-3.5 h-3.5 text-green-400" />
+                      <span className="font-sans text-xs text-green-400 tracking-widest">{promo.code} — {promo.message}</span>
+                    </div>
+                    <button onClick={handleRemovePromo} className="text-xs text-muted-foreground hover:text-foreground transition-colors ml-2">×</button>
+                  </div>
+                )}
+
+                {/* Totals */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-sans text-sm tracking-wide text-muted-foreground">SUBTOTAL</span>
+                    <span className="font-medium">${total.toFixed(2)}</span>
+                  </div>
+                  {promo.applied && (
+                    <div className="flex items-center justify-between text-green-400">
+                      <span className="font-sans text-xs tracking-wide">DISCOUNT</span>
+                      <span className="font-medium text-sm">-${promo.discountValue.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {promo.applied && (
+                    <div className="flex items-center justify-between border-t border-border pt-1 mt-1">
+                      <span className="font-sans text-sm tracking-wide text-muted-foreground">TOTAL</span>
+                      <span className="font-semibold">${discountedTotal.toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
+
                 <Button className="w-full rounded-none font-display text-xl tracking-widest h-14 bg-foreground text-background hover:bg-primary hover:text-white transition-colors" onClick={() => setStep("info")} data-testid="button-checkout">
                   CHECKOUT
                 </Button>
@@ -425,6 +544,7 @@ export function Cart() {
               token={token}
               onSuccess={handlePaymentSuccess}
               onBack={() => setStep("info")}
+              promo={promo}
             />
           </Elements>
         )}
@@ -445,6 +565,11 @@ export function Cart() {
               {isLoggedIn && (
                 <Button onClick={() => { handleClose(); setLocation("/account/orders"); }} className="w-full rounded-none font-display tracking-widest bg-foreground text-background hover:bg-primary hover:text-white">
                   VIEW MY ORDERS
+                </Button>
+              )}
+              {!isLoggedIn && (
+                <Button variant="outline" onClick={() => { handleClose(); setLocation(`/orders/lookup`); }} className="w-full rounded-none font-display tracking-widest">
+                  TRACK ORDER
                 </Button>
               )}
               <Button variant="outline" onClick={() => { handleClose(); resetCart(); }} className="w-full rounded-none font-display tracking-widest">

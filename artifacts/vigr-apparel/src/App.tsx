@@ -15,6 +15,7 @@ import DevDashboard from "@/pages/dev-dashboard";
 import AccountLogin from "@/pages/account-login";
 import AccountRegister from "@/pages/account-register";
 import AccountOrders from "@/pages/account-orders";
+import OrderLookup from "@/pages/order-lookup";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/account/login" component={AccountLogin} />
       <Route path="/account/register" component={AccountRegister} />
       <Route path="/account/orders" component={AccountOrders} />
+      <Route path="/orders/lookup" component={OrderLookup} />
       <Route path="/dev" component={DevLogin} />
       <Route path="/dev/dashboard" component={DevDashboard} />
       <Route component={NotFound} />

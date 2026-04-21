@@ -243,6 +243,7 @@ export default function Home() {
           <div className="flex gap-8 font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground">
             <button onClick={scrollToProducts} className="hover:text-foreground transition-colors">Shop</button>
             <a href="#about" className="hover:text-foreground transition-colors">About</a>
+            <Link href="/orders/lookup" className="hover:text-foreground transition-colors">Track Order</Link>
             <Link href="/dev" className="hover:text-primary transition-colors opacity-40 hover:opacity-100">Dev</Link>
           </div>
           <p className="font-sans text-[10px] tracking-wider text-muted-foreground/50">
@@ -254,9 +255,21 @@ export default function Home() {
   );
 }
 
+const AVAILABLE_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
+
 function ProductCard({ product }: { product: any }) {
   const { addToCart } = useCart();
   const { toast } = useToast();
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+
+  const hasSizes = Array.isArray(product.sizes) && product.sizes.length > 0;
+  const canAdd = product.inStock && (!hasSizes || selectedSize !== null);
+
+  const handleAdd = () => {
+    if (!canAdd) return;
+    addToCart(product, hasSizes ? selectedSize : null);
+    toast({ title: "Added", description: `${product.name}${selectedSize ? ` (${selectedSize})` : ""} added to cart.` });
+  };
 
   return (
     <div
@@ -293,17 +306,30 @@ function ProductCard({ product }: { product: any }) {
             Only {product.stockCount} left
           </p>
         )}
+        {hasSizes && (
+          <div className="flex flex-wrap gap-1.5">
+            {product.sizes.map((size: string) => (
+              <button
+                key={size}
+                onClick={() => setSelectedSize(selectedSize === size ? null : size)}
+                className={`h-8 px-2.5 font-sans text-[10px] tracking-[0.2em] uppercase border transition-all duration-150 ${
+                  selectedSize === size
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border text-muted-foreground hover:border-foreground/50"
+                }`}
+              >
+                {size}
+              </button>
+            ))}
+          </div>
+        )}
         <button
-          onClick={() => {
-            if (!product.inStock) return;
-            addToCart(product);
-            toast({ title: "Added", description: `${product.name} added to cart.` });
-          }}
-          disabled={!product.inStock}
+          onClick={handleAdd}
+          disabled={!canAdd}
           data-testid={`button-add-to-cart-${product.id}`}
           className="w-full border border-border font-sans text-[10px] tracking-[0.3em] uppercase h-10 hover:bg-primary hover:border-primary hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
         >
-          {product.inStock ? "Add to Cart" : "Sold Out"}
+          {!product.inStock ? "Sold Out" : hasSizes && !selectedSize ? "Select a Size" : "Add to Cart"}
         </button>
       </div>
     </div>

@@ -49,17 +49,19 @@ function serializeProduct(product: any) {
     inStock: product.inStock,
     stockCount: product.stockCount ?? null,
     category: product.category,
+    sizes: product.sizes ?? null,
     createdAt: product.createdAt?.toISOString?.() ?? product.createdAt,
   };
 }
 
 router.post("/admin/products", adminAuthMiddleware, async (req, res) => {
-  const { name, description, price, imageUrl, inStock, stockCount, category } = req.body;
+  const { name, description, price, imageUrl, inStock, stockCount, category, sizes } = req.body;
   if (!name || price === undefined) return res.status(400).json({ error: "name and price required" });
   const normalizedStockCount =
     typeof stockCount === "number" && stockCount >= 0 ? Math.floor(stockCount) : null;
   const computedInStock =
     normalizedStockCount === null ? (inStock ?? true) : normalizedStockCount > 0;
+  const normalizedSizes = Array.isArray(sizes) && sizes.length > 0 ? sizes : null;
   const product = await storage.createProduct({
     name,
     description,
@@ -68,13 +70,17 @@ router.post("/admin/products", adminAuthMiddleware, async (req, res) => {
     inStock: computedInStock,
     stockCount: normalizedStockCount,
     category,
+    sizes: normalizedSizes,
   });
   res.status(201).json(serializeProduct(product));
 });
 
 router.put("/admin/products/:id", adminAuthMiddleware, async (req, res) => {
-  const { name, description, price, imageUrl, inStock, stockCount, category } = req.body;
+  const { name, description, price, imageUrl, inStock, stockCount, category, sizes } = req.body;
   const updates: any = { name, description, price, imageUrl, category };
+  if (sizes !== undefined) {
+    updates.sizes = Array.isArray(sizes) && sizes.length > 0 ? sizes : null;
+  }
   if (stockCount !== undefined) {
     updates.stockCount =
       typeof stockCount === "number" && stockCount >= 0 ? Math.floor(stockCount) : null;
