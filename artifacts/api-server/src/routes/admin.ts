@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { storage } from "../storage";
 import { verifyPassword, setPassword, createToken, adminAuthMiddleware } from "../auth";
-import { sendShippingNotification, sendNewsletterBlast } from "../lib/email";
+import { sendShippingNotification, sendDeliveryNotification, sendNewsletterBlast } from "../lib/email";
 import { logger } from "../lib/logger";
 import { rateLimit } from "../lib/rateLimit";
 import { hashPasswordAsync, generateTemporaryPassword } from "../lib/customerAuth";
@@ -157,6 +157,17 @@ router.put("/admin/orders/:id/status", adminAuthMiddleware, async (req, res) => 
     }).catch((err) => logger.error({ err }, "Failed to send shipping notification"));
   }
 
+  // Fire delivery notification on transition INTO "delivered"
+  if (status === "delivered" && existing.status !== "delivered") {
+    sendDeliveryNotification({
+      orderNumber: updated.orderNumber,
+      customerName: updated.customerName,
+      customerEmail: updated.customerEmail,
+      trackingNumber: updated.trackingNumber,
+      shippingAddress: updated.shippingAddress,
+    }).catch((err) => logger.error({ err }, "Failed to send delivery notification"));
+  }
+
   res.json({ success: true, order: updated });
 });
 
@@ -209,11 +220,25 @@ router.post("/admin/newsletter/send", adminAuthMiddleware, async (req, res) => {
   const subscribers = await storage.getAllNewsletterSubscribers();
   if (subscribers.length === 0) return res.status(400).json({ error: "No subscribers to send to" });
   try {
-    await sendNewsletterBlast({ subject, body, subscribers });
-    res.json({ success: true, sent: subscribers.length });
+    const result = await sendNewsletterBlast({ subject, body, subscribers });
+    if (result.sent === 0) {
+      const detail = result.errors[0] ?? "Unknown email provider error.";
+      return res.status(502).json({
+        error: `Newsletter failed for all ${result.failed} subscriber(s). ${detail}`,
+        sent: 0,
+        failed: result.failed,
+      });
+    }
+    res.json({
+      success: true,
+      sent: result.sent,
+      failed: result.failed,
+      total: subscribers.length,
+      errors: result.errors,
+    });
   } catch (err: any) {
     logger.error({ err }, "Newsletter blast failed");
-    res.status(500).json({ error: "Failed to send newsletter" });
+    res.status(500).json({ error: err?.message ?? "Failed to send newsletter" });
   }
 });
 

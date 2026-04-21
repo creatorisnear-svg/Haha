@@ -453,6 +453,7 @@ function OrdersTab({ token }: { token: string }) {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [view, setView] = useState<"active" | "archived">("active");
   const { toast } = useToast();
 
   const fetchOrders = () => {
@@ -494,8 +495,18 @@ function OrdersTab({ token }: { token: string }) {
       const data = await res.json().catch(() => ({}));
       setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status, trackingNumber: data.order?.trackingNumber ?? trackingNumber ?? o.trackingNumber } : o));
       toast({
-        title: status === "shipped" ? "Marked as shipped" : "Status updated",
-        description: status === "shipped" ? "Shipping email sent to the customer." : undefined,
+        title:
+          status === "shipped"
+            ? "Marked as shipped"
+            : status === "delivered"
+            ? "Marked as delivered & archived"
+            : "Status updated",
+        description:
+          status === "shipped"
+            ? "Shipping email sent to the customer."
+            : status === "delivered"
+            ? "Delivery email sent. Order moved to Archived tab."
+            : undefined,
       });
     } catch (e: any) {
       toast({ title: "Error", description: e?.message ?? "Failed to update status", variant: "destructive" });
@@ -506,20 +517,47 @@ function OrdersTab({ token }: { token: string }) {
 
   if (loading) return <div className="font-sans text-sm text-muted-foreground tracking-widest uppercase">Loading orders...</div>;
 
+  const activeOrders = orders.filter((o) => o.status !== "delivered");
+  const archivedOrders = orders.filter((o) => o.status === "delivered");
+  const visibleOrders = view === "active" ? activeOrders : archivedOrders;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="font-display text-2xl tracking-widest uppercase">Orders ({orders.length})</h2>
         <Button variant="outline" onClick={fetchOrders} className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4">Refresh</Button>
       </div>
 
-      {orders.length === 0 ? (
+      <div className="flex gap-0 border-b border-border">
+        <button
+          onClick={() => setView("active")}
+          className={`font-display tracking-widest text-sm uppercase px-4 py-2 border-b-2 -mb-px transition-colors ${
+            view === "active"
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Active ({activeOrders.length})
+        </button>
+        <button
+          onClick={() => setView("archived")}
+          className={`font-display tracking-widest text-sm uppercase px-4 py-2 border-b-2 -mb-px transition-colors ${
+            view === "archived"
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Archived ({archivedOrders.length})
+        </button>
+      </div>
+
+      {visibleOrders.length === 0 ? (
         <div className="border border-dashed border-border p-12 text-center font-sans text-sm text-muted-foreground tracking-widest uppercase">
-          No orders yet
+          {view === "active" ? "No active orders" : "No archived orders yet"}
         </div>
       ) : (
         <div className="space-y-4">
-          {orders.map((order) => (
+          {visibleOrders.map((order) => (
             <div key={order.id} className="border border-border bg-card p-6 space-y-4">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -948,10 +986,23 @@ function NewsletterTab({ token }: { token: string }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to send");
-      toast({ title: "Sent!", description: `Newsletter delivered to ${data.sent} subscriber(s).` });
-      setForm({ subject: "", body: "" });
+      const failed = typeof data.failed === "number" ? data.failed : 0;
+      if (failed > 0) {
+        toast({
+          title: `Sent to ${data.sent}, failed for ${failed}`,
+          description: (data.errors?.[0] as string) ?? "Some subscribers were not reachable.",
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Sent!", description: `Newsletter delivered to ${data.sent} subscriber(s).` });
+        setForm({ subject: "", body: "" });
+      }
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({
+        title: "Newsletter failed",
+        description: err.message ?? "Failed to send",
+        variant: "destructive",
+      });
     } finally {
       setSending(false);
     }

@@ -109,6 +109,7 @@ function adminHtml(data: OrderEmailData): string {
 
 async function sendViaResend(payload: {
   to: string | string[];
+  bcc?: string[];
   subject: string;
   html: string;
   replyTo?: string;
@@ -118,29 +119,34 @@ async function sendViaResend(payload: {
       { to: payload.to, subject: payload.subject },
       "RESEND_API_KEY not configured — email not sent (logging only)"
     );
-    return;
+    throw new Error(
+      "Email is not configured. Set the RESEND_API_KEY environment variable to enable sending."
+    );
   }
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: FROM,
-        to: Array.isArray(payload.to) ? payload.to : [payload.to],
-        subject: payload.subject,
-        html: payload.html,
-        reply_to: payload.replyTo ?? ADMIN_EMAIL,
-      }),
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      logger.error({ status: res.status, body: text }, "Resend API error");
-    }
-  } catch (err) {
-    logger.error({ err }, "Failed to send email via Resend");
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: FROM,
+      to: Array.isArray(payload.to) ? payload.to : [payload.to],
+      ...(payload.bcc && payload.bcc.length > 0 ? { bcc: payload.bcc } : {}),
+      subject: payload.subject,
+      html: payload.html,
+      reply_to: payload.replyTo ?? ADMIN_EMAIL,
+    }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    logger.error({ status: res.status, body: text, to: payload.to }, "Resend API error");
+    let detail = text;
+    try {
+      const parsed = JSON.parse(text);
+      detail = parsed?.message || parsed?.error || text;
+    } catch {}
+    throw new Error(`Resend ${res.status}: ${detail}`);
   }
 }
 
@@ -211,7 +217,11 @@ export async function sendNewsletterWelcome(email: string): Promise<void> {
   });
 }
 
-export async function sendNewsletterBlast(data: { subject: string; body: string; subscribers: string[] }): Promise<void> {
+export async function sendNewsletterBlast(data: {
+  subject: string;
+  body: string;
+  subscribers: string[];
+}): Promise<{ sent: number; failed: number; errors: string[] }> {
   const html = `<!doctype html>
 <html><body style="margin:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e5e5e5;">
   <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
@@ -228,9 +238,68 @@ export async function sendNewsletterBlast(data: { subject: string; body: string;
   </div>
 </body></html>`;
 
+  let sent = 0;
+  let failed = 0;
+  const errors: string[] = [];
   for (const email of data.subscribers) {
-    await sendViaResend({ to: email, subject: data.subject, html });
+    try {
+      await sendViaResend({ to: email, subject: data.subject, html });
+      sent++;
+    } catch (err: any) {
+      failed++;
+      const msg = err?.message ?? String(err);
+      logger.error({ err, email }, "Newsletter blast: failed for subscriber");
+      if (errors.length < 3) errors.push(`${email}: ${msg}`);
+    }
   }
+  return { sent, failed, errors };
+}
+
+interface DeliveryEmailData {
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  trackingNumber?: string | null;
+  shippingAddress: ShippingAddress;
+}
+
+function deliveredHtml(data: DeliveryEmailData): string {
+  const tracking = data.trackingNumber
+    ? `<div style="margin:24px 0;padding:24px;border:1px solid #2a2a2a;text-align:center;">
+         <p style="margin:0 0 8px;font-size:10px;letter-spacing:0.3em;color:#9a9a9a;text-transform:uppercase;">Tracking Number</p>
+         <p style="margin:0;color:#ffffff;font-size:18px;font-family:monospace;letter-spacing:0.1em;word-break:break-all;">${data.trackingNumber}</p>
+       </div>`
+    : "";
+  return `<!doctype html>
+<html><body style="margin:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e5e5e5;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
+    <div style="text-align:center;padding-bottom:24px;border-bottom:1px solid #2a2a2a;">
+      <h1 style="font-size:18px;letter-spacing:0.3em;margin:0;color:#ffffff;text-transform:uppercase;">VIGR Angel Apparel</h1>
+    </div>
+    <div style="padding:32px 0;text-align:center;">
+      <p style="font-size:11px;letter-spacing:0.4em;text-transform:uppercase;color:#9a9a9a;margin:0 0 8px;">Your Order Was Delivered</p>
+      <h2 style="font-size:28px;letter-spacing:0.2em;margin:0;color:#ffffff;">${data.orderNumber}</h2>
+    </div>
+    <p style="color:#c5c5c5;font-size:14px;line-height:1.6;">Hey ${data.customerName.split(" ")[0] || "there"},</p>
+    <p style="color:#c5c5c5;font-size:14px;line-height:1.6;">Your order <strong style="color:#ffffff;">${data.orderNumber}</strong> has been delivered. Welcome to the covenant — we hope you wear it well.</p>
+    ${tracking}
+    <div style="margin:24px 0;padding:16px;border:1px solid #2a2a2a;">
+      <p style="margin:0 0 8px;font-size:10px;letter-spacing:0.3em;color:#9a9a9a;text-transform:uppercase;">Delivered To</p>
+      <p style="margin:0;color:#e5e5e5;font-size:13px;line-height:1.6;">${renderAddress(data.shippingAddress)}</p>
+    </div>
+    <p style="color:#c5c5c5;font-size:14px;line-height:1.6;">If anything's wrong with your order, reply to this email and we'll make it right.</p>
+    <p style="color:#9a9a9a;font-size:12px;line-height:1.6;margin-top:32px;">Need help? Email us at <a href="mailto:vaaclothing.xyz@gmail.com" style="color:#c5c5c5;">vaaclothing.xyz@gmail.com</a></p>
+    <p style="color:#5a5a5a;font-size:11px;text-align:center;margin-top:32px;letter-spacing:0.2em;text-transform:uppercase;">VIGR Angel Apparel · Born in the grit</p>
+  </div>
+</body></html>`;
+}
+
+export async function sendDeliveryNotification(data: DeliveryEmailData): Promise<void> {
+  await sendViaResend({
+    to: data.customerEmail,
+    subject: `Your order ${data.orderNumber} was delivered — VIGR Angel Apparel`,
+    html: deliveredHtml(data),
+  });
 }
 
 export async function sendOrderConfirmation(data: OrderEmailData): Promise<void> {
