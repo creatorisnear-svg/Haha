@@ -1,9 +1,91 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { Package, Search, ChevronRight } from "lucide-react";
+import { Package, Search, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+type Carrier = "ups" | "usps" | "fedex" | "dhl" | "unknown";
+
+function detectCarrier(raw: string): Carrier {
+  const tn = raw.replace(/\s+/g, "").toUpperCase();
+  if (/^1Z[0-9A-Z]{16}$/.test(tn)) return "ups";
+  if (/^\d{12}$|^\d{15}$|^\d{20}$|^\d{22}$/.test(tn)) {
+    // FedEx: 12 or 15 digits
+    if (tn.length === 12 || tn.length === 15) return "fedex";
+    // USPS: 20 or 22 digits (often starts with 9)
+    if (tn.length === 20 || tn.length === 22) return "usps";
+  }
+  if (/^(94|93|92|95|82)\d{18,20}$/.test(tn)) return "usps";
+  if (/^\d{10,11}$/.test(tn)) return "dhl";
+  return "unknown";
+}
+
+const CARRIER_INFO: Record<Carrier, { name: string; url: (tn: string) => string }> = {
+  ups: { name: "UPS", url: (tn) => `https://www.ups.com/track?tracknum=${encodeURIComponent(tn)}` },
+  usps: { name: "USPS", url: (tn) => `https://tools.usps.com/go/TrackConfirmAction?tLabels=${encodeURIComponent(tn)}` },
+  fedex: { name: "FedEx", url: (tn) => `https://www.fedex.com/fedextrack/?trknbr=${encodeURIComponent(tn)}` },
+  dhl: { name: "DHL", url: (tn) => `https://www.dhl.com/en/express/tracking.html?AWB=${encodeURIComponent(tn)}` },
+  unknown: { name: "Carrier", url: (tn) => `https://parcelsapp.com/en/tracking/${encodeURIComponent(tn)}` },
+};
+
+function TrackingPanel({ trackingNumber }: { trackingNumber: string }) {
+  const tn = trackingNumber.replace(/\s+/g, "");
+  const carrier = detectCarrier(tn);
+  const info = CARRIER_INFO[carrier];
+  const universalUrl = `https://parcelsapp.com/en/tracking/${encodeURIComponent(tn)}`;
+
+  return (
+    <div className="border border-border bg-card">
+      <div className="p-4 border-b border-border">
+        <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground mb-1">Tracking Number</p>
+        <p className="font-mono text-sm break-all" data-testid="text-tracking-number">{trackingNumber}</p>
+        {carrier !== "unknown" && (
+          <p className="font-sans text-[10px] tracking-[0.3em] uppercase text-primary mt-2">
+            Detected carrier: {info.name}
+          </p>
+        )}
+      </div>
+
+      <div className="p-4 space-y-2">
+        <a
+          href={info.url(tn)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between gap-2 px-4 h-12 bg-foreground text-background font-display text-sm tracking-[0.2em] uppercase hover:bg-primary hover:text-white transition-colors"
+          data-testid="link-track-carrier"
+        >
+          <span>Track with {info.name}</span>
+          <ExternalLink className="w-4 h-4" />
+        </a>
+        {carrier !== "unknown" && (
+          <a
+            href={universalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between gap-2 px-4 h-12 border border-border font-sans text-xs tracking-[0.2em] uppercase text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
+            data-testid="link-track-universal"
+          >
+            <span>Universal tracker</span>
+            <ExternalLink className="w-4 h-4" />
+          </a>
+        )}
+      </div>
+
+      {/* Live tracker iframe (parcelsapp embeds cleanly) */}
+      <div className="border-t border-border bg-[#0a0a0a]">
+        <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground p-4 pb-2">Live Status</p>
+        <iframe
+          src={`https://parcelsapp.com/en/tracking/${encodeURIComponent(tn)}`}
+          title="Package tracking"
+          loading="lazy"
+          className="w-full h-[480px] bg-white border-0"
+          data-testid="iframe-tracker"
+        />
+      </div>
+    </div>
+  );
+}
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -166,12 +248,9 @@ export default function OrderLookup() {
                 <StatusTimeline status={order.status as OrderStatus} />
               </div>
 
-              {/* Tracking number */}
+              {/* Tracking number + live tracker */}
               {order.trackingNumber && (
-                <div className="border border-border p-4 space-y-1">
-                  <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground">Tracking Number</p>
-                  <p className="font-mono text-sm break-all">{order.trackingNumber}</p>
-                </div>
+                <TrackingPanel trackingNumber={order.trackingNumber} />
               )}
 
               {/* Items */}

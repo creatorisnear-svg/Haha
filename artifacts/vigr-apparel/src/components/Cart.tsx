@@ -348,7 +348,7 @@ export function Cart() {
 
   return (
     <Sheet open={isOpen} onOpenChange={handleClose}>
-      <SheetContent className="w-full sm:max-w-md border-l border-border bg-background flex flex-col p-0" data-testid="cart-drawer">
+      <SheetContent hideClose className="w-full sm:max-w-md border-l border-border bg-background flex flex-col p-0" data-testid="cart-drawer">
 
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border flex-shrink-0">
