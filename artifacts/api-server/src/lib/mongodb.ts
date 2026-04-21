@@ -1,10 +1,10 @@
 import { MongoClient, Db } from "mongodb";
 
-const MONGODB_URI =
-  process.env.MONGODB_URI ||
-  "mongodb+srv://creatorisnear_db_user:YHLbFYwcD6Efz0Dt@cluster0.zfris1s.mongodb.net/?appName=Cluster0";
+if (!process.env.MONGODB_URI) {
+  throw new Error("MONGODB_URI environment variable is required");
+}
 
-const client = new MongoClient(MONGODB_URI);
+const client = new MongoClient(process.env.MONGODB_URI);
 
 let db: Db;
 
