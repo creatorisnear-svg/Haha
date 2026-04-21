@@ -1,7 +1,7 @@
 import { Router } from "express";
 import Stripe from "stripe";
 import { storage } from "../storage";
-import { hashPassword, verifyCustomerToken, createCustomerToken } from "../lib/customerAuth";
+import { hashPasswordAsync, verifyCustomerToken, createCustomerToken } from "../lib/customerAuth";
 import { sendOrderConfirmation } from "../lib/email";
 import { logger } from "../lib/logger";
 
@@ -51,7 +51,10 @@ router.post("/checkout", async (req, res) => {
     if (existing) {
       return res.status(409).json({ error: "An account with that email already exists. Sign in instead." });
     }
-    const passwordHash = hashPassword(password);
+    if (typeof password !== "string" || password.length < 8) {
+      return res.status(400).json({ error: "Password must be at least 8 characters" });
+    }
+    const passwordHash = await hashPasswordAsync(password);
     const customer = await storage.createCustomer({ name: shippingAddress.name, email: email.toLowerCase(), passwordHash, phone });
     customerId = customer.id;
     newToken = createCustomerToken(customer.id);

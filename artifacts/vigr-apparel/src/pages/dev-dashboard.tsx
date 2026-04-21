@@ -745,15 +745,61 @@ const BASE_ADMIN = import.meta.env.BASE_URL.replace(/\/$/, "");
 function CustomersTab({ token }: { token: string }) {
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [resettingId, setResettingId] = useState<string | null>(null);
+  const [resetResult, setResetResult] = useState<{
+    customerId: string;
+    name: string;
+    email: string;
+    tempPassword: string;
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
 
-  useEffect(() => {
+  const fetchCustomers = () => {
     setLoading(true);
     fetch(`${BASE_ADMIN}/api/admin/customers`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((d) => setCustomers(d.data ?? []))
       .catch(() => setCustomers([]))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { fetchCustomers(); }, []);
+
+  const handleReset = async (c: any) => {
+    if (!confirm(
+      `Reset password for ${c.name} (${c.email})?\n\n` +
+      `Their current password will stop working immediately. ` +
+      `You'll be shown a one-time temporary password to share with them through a secure channel.`
+    )) return;
+    setResettingId(c.id);
+    try {
+      const res = await fetch(`${BASE_ADMIN}/api/admin/customers/${c.id}/reset-password`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to reset password");
+      setResetResult({ customerId: c.id, name: c.name, email: c.email, tempPassword: data.temporaryPassword });
+      setCopied(false);
+      fetchCustomers();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setResettingId(null);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!resetResult) return;
+    try {
+      await navigator.clipboard.writeText(resetResult.tempPassword);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast({ title: "Copy failed", description: "Select and copy manually.", variant: "destructive" });
+    }
+  };
 
   if (loading) return <div className="font-sans text-sm text-muted-foreground tracking-widest uppercase">Loading customers...</div>;
 
@@ -762,6 +808,17 @@ function CustomersTab({ token }: { token: string }) {
       <div className="flex items-center justify-between">
         <h2 className="font-display text-2xl tracking-widest uppercase">Customers ({customers.length})</h2>
       </div>
+
+      <div className="border border-border bg-card/50 p-4">
+        <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground mb-1">Note on Passwords</p>
+        <p className="font-sans text-xs text-muted-foreground leading-relaxed">
+          Customer passwords are stored as one-way encrypted hashes and cannot be viewed —
+          not by you, not by anyone. If a customer is locked out, use{" "}
+          <span className="text-foreground">Reset Password</span> to issue a one-time temporary
+          password you can share with them.
+        </p>
+      </div>
+
       {customers.length === 0 ? (
         <div className="border border-dashed border-border p-12 text-center font-sans text-sm text-muted-foreground tracking-widest uppercase">
           No registered customers yet
@@ -769,19 +826,93 @@ function CustomersTab({ token }: { token: string }) {
       ) : (
         <div className="space-y-3">
           {customers.map((c) => (
-            <div key={c.id} className="border border-border bg-card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
+            <div
+              key={c.id}
+              className="border border-border bg-card p-5 flex flex-col sm:flex-row sm:items-start justify-between gap-4"
+              data-testid={`customer-row-${c.id}`}
+            >
+              <div className="flex-1 min-w-0">
                 <p className="font-sans font-medium text-sm uppercase tracking-widest">{c.name}</p>
-                <p className="font-sans text-xs text-muted-foreground">{c.email}</p>
+                <p className="font-sans text-xs text-muted-foreground break-all">{c.email}</p>
                 {c.phone && <p className="font-sans text-xs text-muted-foreground">{c.phone}</p>}
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                  <p className="font-sans text-[11px] text-muted-foreground">
+                    Joined {new Date(c.createdAt).toLocaleDateString("en-US", { dateStyle: "medium" })}
+                  </p>
+                  <p className="font-sans text-[11px] text-muted-foreground">
+                    Password {c.passwordChangedAt
+                      ? `last changed ${new Date(c.passwordChangedAt).toLocaleDateString("en-US", { dateStyle: "medium" })}`
+                      : "never reset"}
+                  </p>
+                </div>
               </div>
-              <p className="font-sans text-xs text-muted-foreground flex-shrink-0">
-                Joined {new Date(c.createdAt).toLocaleDateString("en-US", { dateStyle: "medium" })}
-              </p>
+              <Button
+                variant="outline"
+                onClick={() => handleReset(c)}
+                disabled={resettingId === c.id}
+                className="rounded-none font-sans text-[11px] uppercase tracking-widest h-9 px-4 flex-shrink-0"
+                data-testid={`button-reset-password-${c.id}`}
+              >
+                {resettingId === c.id ? "Resetting..." : "Reset Password"}
+              </Button>
             </div>
           ))}
         </div>
       )}
+
+      <Dialog open={!!resetResult} onOpenChange={(open) => !open && setResetResult(null)}>
+        <DialogContent className="rounded-none border-border bg-card max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl tracking-widest uppercase">
+              Temporary Password
+            </DialogTitle>
+          </DialogHeader>
+          {resetResult && (
+            <div className="space-y-4">
+              <div>
+                <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground">Customer</p>
+                <p className="font-sans text-sm text-foreground">{resetResult.name}</p>
+                <p className="font-sans text-xs text-muted-foreground break-all">{resetResult.email}</p>
+              </div>
+              <div>
+                <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground mb-2">
+                  One-Time Password
+                </p>
+                <div className="flex gap-2">
+                  <code className="flex-1 border border-border bg-background px-3 py-2 font-mono text-sm break-all select-all">
+                    {resetResult.tempPassword}
+                  </code>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCopy}
+                    className="rounded-none font-sans text-[11px] uppercase tracking-widest h-auto px-3"
+                  >
+                    {copied ? "Copied" : "Copy"}
+                  </Button>
+                </div>
+              </div>
+              <div className="border border-yellow-900/40 bg-yellow-950/20 p-3">
+                <p className="font-sans text-[10px] tracking-[0.3em] uppercase text-yellow-500/80 mb-1">Important</p>
+                <ul className="font-sans text-xs text-muted-foreground space-y-1 list-disc pl-4">
+                  <li>This password will not be shown again.</li>
+                  <li>Share it through a secure channel (not public chat or email forwards).</li>
+                  <li>Tell the customer to log in and change it immediately.</li>
+                </ul>
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  onClick={() => setResetResult(null)}
+                  className="rounded-none font-sans text-xs uppercase tracking-widest"
+                >
+                  Done
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

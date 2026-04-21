@@ -3,12 +3,23 @@ import { storage } from "../storage";
 import { verifyPassword, setPassword, createToken, adminAuthMiddleware } from "../auth";
 import { sendShippingNotification, sendNewsletterBlast } from "../lib/email";
 import { logger } from "../lib/logger";
+import { rateLimit } from "../lib/rateLimit";
+import { hashPasswordAsync, generateTemporaryPassword } from "../lib/customerAuth";
 
 const router = Router();
 
-router.post("/admin/login", async (req, res) => {
+const adminLoginLimiter = rateLimit({
+  bucket: "admin-login",
+  max: 5,
+  windowMs: 15 * 60 * 1000, // 5 attempts per IP per 15 minutes
+  message: "Too many admin login attempts. Please wait before trying again.",
+});
+
+router.post("/admin/login", adminLoginLimiter, async (req, res) => {
   const { password } = req.body;
-  if (!password) return res.status(400).json({ error: "Password required" });
+  if (!password || typeof password !== "string") {
+    return res.status(400).json({ error: "Password required" });
+  }
   const valid = await verifyPassword(password);
   if (!valid) return res.status(401).json({ error: "Invalid password" });
   const token = createToken();
@@ -34,6 +45,9 @@ router.put("/admin/settings", adminAuthMiddleware, async (req, res) => {
     await storage.setSetting("stripe_secret_key", stripeSecretKey);
   }
   if (newPassword) {
+    if (typeof newPassword !== "string" || newPassword.length < 8) {
+      return res.status(400).json({ error: "Admin password must be at least 8 characters" });
+    }
     await setPassword(newPassword);
   }
   res.json({ success: true, message: "Settings updated" });
@@ -154,8 +168,34 @@ router.get("/admin/customers", adminAuthMiddleware, async (_req, res) => {
     email: c.email,
     phone: c.phone ?? null,
     createdAt: c.createdAt,
+    passwordChangedAt: c.passwordChangedAt ?? null,
   }));
   res.json({ data: safe });
+});
+
+// Admin-issued password reset. Generates a one-time temporary password,
+// stores its hash, and returns the plaintext to the admin ONCE so they can
+// share it with the customer through a separate channel. The plaintext is
+// never persisted and never appears in logs.
+router.post("/admin/customers/:id/reset-password", adminAuthMiddleware, async (req, res) => {
+  const customer = await storage.getCustomerById(req.params.id);
+  if (!customer) return res.status(404).json({ error: "Customer not found" });
+
+  const tempPassword = generateTemporaryPassword();
+  const hash = await hashPasswordAsync(tempPassword);
+  const ok = await storage.updateCustomerPassword(customer.id, hash);
+  if (!ok) return res.status(500).json({ error: "Failed to reset password" });
+
+  logger.info(
+    { customerId: customer.id, email: customer.email },
+    "Admin reset customer password",
+  );
+  res.json({
+    success: true,
+    temporaryPassword: tempPassword,
+    message:
+      "A temporary password has been set. Share it with the customer through a secure channel — it won't be shown again.",
+  });
 });
 
 router.get("/admin/newsletter/subscribers", adminAuthMiddleware, async (_req, res) => {

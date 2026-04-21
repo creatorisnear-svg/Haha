@@ -41,6 +41,7 @@ export interface Customer {
   passwordHash: string;
   phone?: string | null;
   createdAt: Date;
+  passwordChangedAt?: Date | null;
 }
 
 function docToCustomer(doc: any): Customer {
@@ -51,6 +52,7 @@ function docToCustomer(doc: any): Customer {
     passwordHash: doc.passwordHash,
     phone: doc.phone ?? null,
     createdAt: doc.createdAt,
+    passwordChangedAt: doc.passwordChangedAt ?? null,
   };
 }
 
@@ -226,14 +228,15 @@ export class Storage {
     );
   }
 
-  // Newsletter
-  async subscribeNewsletter(email: string): Promise<void> {
+  // Newsletter — returns true if a new subscriber was created.
+  async subscribeNewsletter(email: string): Promise<boolean> {
     const db = await getDb();
-    await db.collection("newsletter").updateOne(
+    const result = await db.collection("newsletter").updateOne(
       { email },
       { $setOnInsert: { email, subscribedAt: new Date() } },
       { upsert: true }
     );
+    return !!result.upsertedId;
   }
 
   async getAllNewsletterSubscribers(): Promise<string[]> {
@@ -268,6 +271,19 @@ export class Storage {
     const db = await getDb();
     const docs = await db.collection("customers").find().sort({ createdAt: -1 }).toArray();
     return docs.map(docToCustomer);
+  }
+
+  async updateCustomerPassword(customerId: string, passwordHash: string): Promise<boolean> {
+    const db = await getDb();
+    try {
+      const result = await db.collection("customers").updateOne(
+        { _id: new ObjectId(customerId) },
+        { $set: { passwordHash, passwordChangedAt: new Date() } },
+      );
+      return result.matchedCount > 0;
+    } catch {
+      return false;
+    }
   }
 
   // Orders
