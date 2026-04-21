@@ -439,7 +439,11 @@ function ProductCard({ product }: { product: any }) {
       className="group flex flex-col border border-border hover:border-foreground/40 transition-colors duration-200"
       data-testid={`card-product-${product.id}`}
     >
-      <div className="aspect-[3/4] bg-[#111] relative overflow-hidden">
+      <Link
+        href={`/products/${product.id}`}
+        className="aspect-[3/4] bg-[#111] relative overflow-hidden block cursor-pointer"
+        data-testid={`link-product-image-${product.id}`}
+      >
         {product.imageUrl ? (
           <img
             src={product.imageUrl}
@@ -453,14 +457,18 @@ function ProductCard({ product }: { product: any }) {
             </div>
           </div>
         )}
-      </div>
+      </Link>
       <div className="p-5 flex flex-col gap-4">
-        <div className="flex items-baseline justify-between">
+        <Link
+          href={`/products/${product.id}`}
+          className="flex items-baseline justify-between hover:text-primary transition-colors"
+          data-testid={`link-product-name-${product.id}`}
+        >
           <h3 className="font-sans text-xs font-semibold uppercase tracking-[0.2em] truncate pr-4">{product.name}</h3>
           <span className="font-sans text-xs text-muted-foreground whitespace-nowrap">
             ${(product.price / 100).toFixed(2)}
           </span>
-        </div>
+        </Link>
         {typeof product.stockCount === "number" && product.stockCount > 0 && product.stockCount < 5 && (
           <p
             className="font-sans text-[10px] tracking-[0.3em] uppercase text-primary"

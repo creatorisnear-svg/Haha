@@ -8,6 +8,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { Cart } from "@/components/Cart";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
+import ProductDetail from "@/pages/product-detail";
 import CheckoutSuccess from "@/pages/checkout-success";
 import CheckoutCancel from "@/pages/checkout-cancel";
 import DevLogin from "@/pages/dev-login";
@@ -23,6 +24,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/products/:id" component={ProductDetail} />
       <Route path="/checkout/success" component={CheckoutSuccess} />
       <Route path="/checkout/cancel" component={CheckoutCancel} />
       <Route path="/account/login" component={AccountLogin} />
