@@ -126,7 +126,7 @@ export default function Home() {
       </section>
 
       {/* ── THORN DIVIDER ── */}
-      <div className="text-foreground/30 px-0">
+      <div className="text-foreground/65 px-0">
         <ThornsDivider />
       </div>
 
@@ -151,7 +151,7 @@ export default function Home() {
       </div>
 
       {/* ── THORN DIVIDER ── */}
-      <div className="text-foreground/30">
+      <div className="text-foreground/65">
         <ThornsDivider flip />
       </div>
 
@@ -182,7 +182,7 @@ export default function Home() {
       </section>
 
       {/* ── THORN DIVIDER ── */}
-      <div className="text-foreground/30">
+      <div className="text-foreground/65">
         <ThornsDivider />
       </div>
 
@@ -219,7 +219,7 @@ export default function Home() {
       </section>
 
       {/* ── THORN DIVIDER ── */}
-      <div className="text-foreground/30">
+      <div className="text-foreground/65">
         <ThornsDivider flip />
       </div>
 
@@ -252,7 +252,7 @@ export default function Home() {
       </section>
 
       {/* ── THORN DIVIDER ── */}
-      <div className="text-foreground/30">
+      <div className="text-foreground/65">
         <ThornsDivider />
       </div>
 
