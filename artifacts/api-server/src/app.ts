@@ -32,6 +32,26 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Optional canonical-host redirect. When CANONICAL_HOST is set (e.g.
+// "vaaclothing.xyz"), any request whose Host header doesn't match is
+// 301-redirected to the canonical domain. This prevents visitors from
+// reaching the app via the raw *.koyeb.app URL, so Cloudflare always
+// sits in front. Leave unset in dev / pre-cutover.
+const canonicalHost = process.env["CANONICAL_HOST"];
+if (canonicalHost) {
+  app.use((req, res, next) => {
+    const host = req.headers.host?.toLowerCase();
+    if (
+      !host ||
+      host === canonicalHost.toLowerCase() ||
+      host === `www.${canonicalHost.toLowerCase()}`
+    ) {
+      return next();
+    }
+    res.redirect(301, `https://${canonicalHost}${req.originalUrl}`);
+  });
+}
+
 app.use("/api", router);
 
 // In production (single-service deployments like Koyeb/Render/Fly), serve the
