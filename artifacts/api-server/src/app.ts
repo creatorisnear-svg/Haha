@@ -63,6 +63,7 @@ app.get("/sitemap.xml", async (_req, res) => {
   const staticPaths: { loc: string; changefreq: string; priority: string }[] = [
     { loc: "/", changefreq: "daily", priority: "1.0" },
     { loc: "/orders/lookup", changefreq: "monthly", priority: "0.4" },
+    { loc: "/terms", changefreq: "yearly", priority: "0.3" },
     { loc: "/account/login", changefreq: "yearly", priority: "0.3" },
     { loc: "/account/register", changefreq: "yearly", priority: "0.3" },
   ];

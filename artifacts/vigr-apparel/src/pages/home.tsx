@@ -407,10 +407,11 @@ export default function Home() {
             <button onClick={scrollToProducts} className="hover:text-foreground transition-colors">Shop</button>
             <a href="#about" className="hover:text-foreground transition-colors">About</a>
             <Link href="/orders/lookup" className="hover:text-foreground transition-colors">Track Order</Link>
+            <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
             <Link href="/dev" className="hover:text-primary transition-colors opacity-40 hover:opacity-100">Dev</Link>
           </div>
           <p className="font-sans text-[10px] tracking-wider text-muted-foreground/50">
-            © {new Date().getFullYear()} VIGR Angel Apparel
+            © {new Date().getFullYear()} VIGR Angel Apparel · All sales final
           </p>
         </div>
       </footer>
