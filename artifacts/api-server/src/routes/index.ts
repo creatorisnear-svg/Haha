@@ -6,6 +6,7 @@ import checkoutRouter from "./checkout";
 import newsletterRouter from "./newsletter";
 import settingsRouter from "./settings";
 import customersRouter from "./customers";
+import paymentsRouter from "./payments";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(checkoutRouter);
 router.use(newsletterRouter);
 router.use(settingsRouter);
 router.use(customersRouter);
+router.use(paymentsRouter);
 
 export default router;

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Full-stack clothing brand website for VIGR Angel Apparel (VAA). pnpm workspace monorepo using TypeScript.
+Full-stack clothing brand e-commerce store for VIGR Angel Apparel (VAA). pnpm workspace monorepo using TypeScript.
 
 Domain: vaaclothing.xyz
 
@@ -13,51 +13,57 @@ Domain: vaaclothing.xyz
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
 - **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+- **Database**: MongoDB Atlas (MONGODB_URI secret)
 - **Frontend**: React + Vite + Tailwind CSS + shadcn/ui
-- **Payments**: Stripe (keys stored in DB, configured via admin panel)
+- **Payments**: Stripe (keys stored in MongoDB settings, configured via admin panel at `/dev/dashboard`)
 
 ## Architecture
 
 ### Frontend (`artifacts/vigr-apparel`)
-- React + Vite, Tailwind CSS
-- Wouter for routing
-- Cart state via React Context
-- Pages: `/` (home), `/dev` (admin login), `/dev/dashboard` (admin panel), `/checkout/success`, `/checkout/cancel`
+- React + Vite, Tailwind CSS, Wouter routing
+- Cart state via CartContext (`src/context/CartContext.tsx`)
+- Auth state via AuthContext (`src/context/AuthContext.tsx`) — localStorage tokens
+- Pages: `/` home, `/account/login`, `/account/register`, `/account/orders`, `/dev`, `/dev/dashboard`
+- Checkout is a multi-step cart drawer: cart → info+address → Stripe payment → confirmation
+- Guest checkout supported (no account required); optional account creation at checkout
 
 ### Backend (`artifacts/api-server`)
-- Express 5 API server
-- Routes: `/api/products`, `/api/admin/*`, `/api/checkout`, `/api/newsletter`, `/api/settings/stripe-public-key`
-- Admin auth: HMAC token (stored in localStorage as `vaa_admin_token`)
-- Default admin password: `vigr-admin` (change via Stripe Config tab in dashboard)
+- Express 5 API server on port 8080 (proxied by Vite in dev)
+- Routes registered in `src/routes/index.ts`
+  - `/api/products` — public product list
+  - `/api/admin/*` — admin CRUD (products, settings, orders) — requires admin JWT
+  - `/api/checkout` — guest or authenticated order placement (verifies Stripe PaymentIntent if Stripe configured)
+  - `/api/payments/intent` — creates Stripe PaymentIntent for checkout
+  - `/api/config` — returns Stripe publishable key for frontend
+  - `/api/customers/*` — customer register/login/orders
+  - `/api/newsletter` — email subscribe
+- Admin auth: HMAC token (`vaa_admin_token` in localStorage); password: `omar1267`
+- Customer auth: HMAC token (`vaa_customer_token` in localStorage)
 
-### Database (`lib/db`)
-- `products` table — product catalog
-- `settings` table — key/value for Stripe keys (`stripe_publishable_key`, `stripe_secret_key`), admin password hash
-- `newsletter` table — email subscribers
+### Database — MongoDB (`artifacts/api-server/src/lib/mongodb.ts`)
+Collections:
+- `products` — product catalog
+- `customers` — registered customer accounts
+- `orders` — all orders (guest or customer)
+- `settings` — key/value (stripe_publishable_key, stripe_secret_key, admin_password_hash)
+- `newsletter` — email subscribers
 
-## Stripe Configuration
+## Stripe Configuration (IMPORTANT)
 
-**NOT using Replit Stripe integration** (user dismissed it). Instead:
-- Developer goes to `/dev` on the website, logs in with the admin password
-- In the **Stripe Config** tab of the dashboard, they enter their Stripe Publishable Key and Secret Key
-- These are stored in the `settings` database table
-- The checkout route reads them from the DB at runtime
-
-To use Stripe in the future via Replit's integration, the user would need to authorize the Stripe connector in the Integrations tab.
+**NOT using Replit Stripe integration** (user dismissed it — will add keys via admin panel once hosted on Cloudflare). Instead:
+1. Go to `/dev` on the live site, log in with admin password `omar1267`
+2. In the **Settings** tab of the dashboard, enter Stripe Publishable Key and Secret Key
+3. These are stored in the MongoDB `settings` collection and read at runtime
+4. When Stripe is NOT configured, checkout still works (orders saved without payment — dev/testing mode)
+5. When Stripe IS configured, checkout requires a confirmed PaymentIntent before saving the order
 
 ## Key Commands
 
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- `pnpm --filter @workspace/api-server run dev` — run API server (builds then starts)
+- `pnpm --filter @workspace/vigr-apparel run dev` — run frontend
 
 ## Admin Access
 
 - URL: `/dev`
-- Default password: `vigr-admin`
-- Change password in the Stripe Config tab of `/dev/dashboard`
+- Password: `omar1267`
+- Change password in the Settings tab of `/dev/dashboard`

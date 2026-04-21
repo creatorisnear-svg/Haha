@@ -1,50 +1,94 @@
 import { Router } from "express";
+import Stripe from "stripe";
 import { storage } from "../storage";
-import { verifyCustomerToken } from "../lib/customerAuth";
+import { hashPassword, verifyCustomerToken, createCustomerToken } from "../lib/customerAuth";
 
 const router = Router();
 
+async function getStripe(): Promise<Stripe | null> {
+  const secret = await storage.getSetting("stripe_secret_key");
+  if (!secret) return null;
+  return new Stripe(secret, { apiVersion: "2025-03-31.basil" });
+}
+
 router.post("/checkout", async (req, res) => {
-  const { items, shippingAddress, phone } = req.body;
+  const { items, shippingAddress, email, phone, createAccount, password, paymentIntentId } = req.body;
+
   if (!items || !items.length) return res.status(400).json({ error: "No items provided" });
   if (!shippingAddress) return res.status(400).json({ error: "Shipping address required" });
+  if (!email) return res.status(400).json({ error: "Email required" });
 
-  const auth = req.headers["authorization"] ?? "";
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-  const customerId = verifyCustomerToken(token);
-  if (!customerId) return res.status(401).json({ error: "You must be logged in to checkout" });
+  // If Stripe is configured, verify the payment intent
+  const stripe = await getStripe();
+  if (stripe) {
+    if (!paymentIntentId) return res.status(400).json({ error: "Payment not completed" });
+    try {
+      const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+      if (pi.status !== "succeeded") return res.status(400).json({ error: "Payment not yet confirmed" });
+    } catch {
+      return res.status(400).json({ error: "Invalid payment reference" });
+    }
+  }
 
-  const customer = await storage.getCustomerById(customerId);
-  if (!customer) return res.status(401).json({ error: "Customer not found" });
+  // Resolve customer — check auth token, or look up by email, or create new account
+  const authHeader = req.headers["authorization"] ?? "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  const tokenCustomerId = verifyCustomerToken(token);
+  let customerId: string | null = null;
+  let customerName = shippingAddress.name;
+  let newToken: string | null = null;
+  let newCustomer: any = null;
 
-  const orderItems = await Promise.all(
-    items.map(async (item: { productId: string; quantity: number }) => {
-      const product = await storage.getProduct(item.productId);
-      if (!product) throw new Error(`Product not found`);
-      return {
-        productId: product.id,
-        productName: product.name,
-        price: product.price,
-        quantity: item.quantity,
-        imageUrl: product.imageUrl ?? null,
-      };
-    })
-  );
+  if (tokenCustomerId) {
+    const existing = await storage.getCustomerById(tokenCustomerId);
+    if (existing) { customerId = existing.id; customerName = existing.name; }
+  }
 
-  const total = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  if (!customerId && createAccount && password) {
+    const existing = await storage.getCustomerByEmail(email.toLowerCase());
+    if (existing) {
+      return res.status(409).json({ error: "An account with that email already exists. Sign in instead." });
+    }
+    const passwordHash = hashPassword(password);
+    const customer = await storage.createCustomer({ name: shippingAddress.name, email: email.toLowerCase(), passwordHash, phone });
+    customerId = customer.id;
+    newToken = createCustomerToken(customer.id);
+    newCustomer = { id: customer.id, name: customer.name, email: customer.email, phone: customer.phone };
+  }
+
+  if (!customerId) {
+    const existing = await storage.getCustomerByEmail(email.toLowerCase());
+    if (existing) customerId = existing.id;
+  }
+
+  // Build order items
+  let orderItems;
+  try {
+    orderItems = await Promise.all(
+      items.map(async (item: { productId: string; quantity: number }) => {
+        const product = await storage.getProduct(item.productId);
+        if (!product) throw new Error("Product not found");
+        return { productId: product.id, productName: product.name, price: product.price, quantity: item.quantity, imageUrl: product.imageUrl ?? null };
+      })
+    );
+  } catch (err: any) {
+    return res.status(400).json({ error: err.message });
+  }
+
+  const total = orderItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   const order = await storage.createOrder({
-    customerId: customer.id,
-    customerName: customer.name,
-    customerEmail: customer.email,
-    customerPhone: phone ?? customer.phone ?? null,
+    customerId,
+    customerName,
+    customerEmail: email.toLowerCase(),
+    customerPhone: phone ?? null,
     items: orderItems,
     shippingAddress,
     total,
     status: "pending",
   });
 
-  res.status(201).json({ order });
+  res.status(201).json({ order, token: newToken, customer: newCustomer });
 });
 
 export default router;

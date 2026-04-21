@@ -72,7 +72,7 @@ export interface ShippingAddress {
 export interface Order {
   id: string;
   orderNumber: string;
-  customerId: string;
+  customerId: string | null;
   customerName: string;
   customerEmail: string;
   customerPhone?: string | null;
