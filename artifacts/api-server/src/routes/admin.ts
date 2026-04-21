@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { storage } from "../storage";
 import { verifyPassword, setPassword, createToken, adminAuthMiddleware } from "../auth";
+import { sendShippingNotification } from "../lib/email";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -102,12 +104,40 @@ router.get("/admin/orders", adminAuthMiddleware, async (_req, res) => {
 });
 
 router.put("/admin/orders/:id/status", adminAuthMiddleware, async (req, res) => {
-  const { status } = req.body;
+  const { status, trackingNumber } = req.body;
   if (!["pending", "processing", "shipped", "delivered"].includes(status)) {
     return res.status(400).json({ error: "Invalid status" });
   }
-  await storage.updateOrderStatus(req.params.id, status);
-  res.json({ success: true });
+
+  const existing = await storage.getOrder(req.params.id);
+  if (!existing) return res.status(404).json({ error: "Order not found" });
+
+  const extra: { trackingNumber?: string | null } = {};
+  if (status === "shipped") {
+    const tn = typeof trackingNumber === "string" ? trackingNumber.trim() : "";
+    if (!tn) {
+      return res.status(400).json({ error: "Tracking number is required when marking an order as shipped." });
+    }
+    extra.trackingNumber = tn;
+  } else if (trackingNumber !== undefined) {
+    extra.trackingNumber = typeof trackingNumber === "string" && trackingNumber.trim() ? trackingNumber.trim() : null;
+  }
+
+  const updated = await storage.updateOrderStatus(req.params.id, status, extra);
+  if (!updated) return res.status(404).json({ error: "Order not found" });
+
+  // Fire shipping notification on transition INTO "shipped"
+  if (status === "shipped" && existing.status !== "shipped" && updated.trackingNumber) {
+    sendShippingNotification({
+      orderNumber: updated.orderNumber,
+      customerName: updated.customerName,
+      customerEmail: updated.customerEmail,
+      trackingNumber: updated.trackingNumber,
+      shippingAddress: updated.shippingAddress,
+    }).catch((err) => logger.error({ err }, "Failed to send shipping notification"));
+  }
+
+  res.json({ success: true, order: updated });
 });
 
 export default router;

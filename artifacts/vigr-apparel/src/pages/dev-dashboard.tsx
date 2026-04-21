@@ -409,18 +409,38 @@ function OrdersTab({ token }: { token: string }) {
   useEffect(() => { fetchOrders(); }, []);
 
   const updateStatus = async (id: string, status: string) => {
+    let trackingNumber: string | undefined;
+    if (status === "shipped") {
+      const tn = window.prompt(
+        "Enter the tracking number for this order.\n\nThe customer will receive a shipping confirmation email with this number."
+      );
+      if (tn === null) return;
+      const trimmed = tn.trim();
+      if (!trimmed) {
+        toast({ title: "Tracking number required", description: "A tracking number is required to mark an order as shipped.", variant: "destructive" });
+        return;
+      }
+      trackingNumber = trimmed;
+    }
     setUpdatingId(id);
     try {
       const res = await fetch(`/api/admin/orders/${id}/status`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, ...(trackingNumber ? { trackingNumber } : {}) }),
       });
-      if (!res.ok) throw new Error("Failed");
-      setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status } : o));
-      toast({ title: "Status updated" });
-    } catch {
-      toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? "Failed");
+      }
+      const data = await res.json().catch(() => ({}));
+      setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status, trackingNumber: data.order?.trackingNumber ?? trackingNumber ?? o.trackingNumber } : o));
+      toast({
+        title: status === "shipped" ? "Marked as shipped" : "Status updated",
+        description: status === "shipped" ? "Shipping email sent to the customer." : undefined,
+      });
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message ?? "Failed to update status", variant: "destructive" });
     } finally {
       setUpdatingId(null);
     }
@@ -475,6 +495,13 @@ function OrdersTab({ token }: { token: string }) {
                   <p className="font-sans text-xs text-muted-foreground">{order.shippingAddress.country}</p>
                 </div>
               </div>
+
+              {order.trackingNumber && (
+                <div className="border-t border-border pt-4">
+                  <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground mb-2">Tracking Number</p>
+                  <p className="font-mono text-sm break-all">{order.trackingNumber}</p>
+                </div>
+              )}
 
               <div className="border-t border-border pt-4">
                 <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground mb-2">Items</p>

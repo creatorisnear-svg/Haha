@@ -83,6 +83,8 @@ export interface Order {
   total: number;
   status: "pending" | "processing" | "shipped" | "delivered";
   notes?: string | null;
+  trackingNumber?: string | null;
+  shippedAt?: Date | null;
   createdAt: Date;
 }
 
@@ -99,6 +101,8 @@ function docToOrder(doc: any): Order {
     total: doc.total,
     status: doc.status,
     notes: doc.notes ?? null,
+    trackingNumber: doc.trackingNumber ?? null,
+    shippedAt: doc.shippedAt ?? null,
     createdAt: doc.createdAt,
   };
 }
@@ -245,11 +249,38 @@ export class Storage {
     return docs.map(docToOrder);
   }
 
-  async updateOrderStatus(id: string, status: Order["status"]): Promise<void> {
+  async updateOrderStatus(
+    id: string,
+    status: Order["status"],
+    extra?: { trackingNumber?: string | null }
+  ): Promise<Order | null> {
     const db = await getDb();
     try {
-      await db.collection("orders").updateOne({ _id: new ObjectId(id) }, { $set: { status } });
-    } catch {}
+      const _id = new ObjectId(id);
+      const update: any = { status };
+      if (extra && "trackingNumber" in extra) {
+        update.trackingNumber = extra.trackingNumber ?? null;
+      }
+      if (status === "shipped") {
+        update.shippedAt = new Date();
+      }
+      const result = await db.collection("orders").findOneAndUpdate(
+        { _id },
+        { $set: update },
+        { returnDocument: "after" }
+      );
+      return result ? docToOrder(result) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async getOrder(id: string): Promise<Order | null> {
+    const db = await getDb();
+    try {
+      const doc = await db.collection("orders").findOne({ _id: new ObjectId(id) });
+      return doc ? docToOrder(doc) : null;
+    } catch { return null; }
   }
 }
 
