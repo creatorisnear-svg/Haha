@@ -666,6 +666,29 @@ function OrdersTab({ token }: { token: string }) {
     }
   };
 
+  const deleteOrder = async (id: string, orderNumber: string) => {
+    if (!window.confirm(`Permanently delete order ${orderNumber}?\n\nThis removes it from the database and all reports (Overview, Tax Summary, etc.). Use this for test orders only — it cannot be undone.`)) {
+      return;
+    }
+    setUpdatingId(id);
+    try {
+      const res = await fetch(`/api/admin/orders/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? "Failed to delete");
+      }
+      setOrders((prev) => prev.filter((o) => o.id !== id));
+      toast({ title: "Order deleted", description: `${orderNumber} removed from your records.` });
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message ?? "Failed to delete order", variant: "destructive" });
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   if (loading) return <div className="font-sans text-sm text-muted-foreground tracking-widest uppercase">Loading orders...</div>;
 
   const activeOrders = orders.filter((o) => o.status !== "delivered");
@@ -786,6 +809,18 @@ function OrdersTab({ token }: { token: string }) {
                     </Button>
                   ))}
                 </div>
+              </div>
+
+              <div className="border-t border-border pt-4 flex justify-end">
+                <Button
+                  variant="outline"
+                  disabled={updatingId === order.id}
+                  onClick={() => deleteOrder(order.id, order.orderNumber)}
+                  className="rounded-none font-sans text-[10px] uppercase tracking-widest h-8 px-3 border-destructive text-destructive hover:bg-destructive hover:text-white"
+                  data-testid={`button-delete-order-${order.orderNumber}`}
+                >
+                  Delete Order
+                </Button>
               </div>
             </div>
           ))}

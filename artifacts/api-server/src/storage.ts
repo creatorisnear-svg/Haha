@@ -472,6 +472,16 @@ export class Storage {
     }
   }
 
+  async deleteOrder(id: string): Promise<boolean> {
+    const db = await getDb();
+    try {
+      const result = await db.collection("orders").deleteOne({ _id: new ObjectId(id) });
+      return result.deletedCount > 0;
+    } catch {
+      return false;
+    }
+  }
+
   async getOrder(id: string): Promise<Order | null> {
     const db = await getDb();
     try {

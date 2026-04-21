@@ -190,6 +190,12 @@ router.put("/admin/orders/:id/status", adminAuthMiddleware, async (req, res) => 
   res.json({ success: true, order: updated });
 });
 
+router.delete("/admin/orders/:id", adminAuthMiddleware, async (req, res) => {
+  const ok = await storage.deleteOrder(req.params.id);
+  if (!ok) return res.status(404).json({ error: "Order not found" });
+  res.json({ success: true });
+});
+
 router.get("/admin/customers", adminAuthMiddleware, async (_req, res) => {
   const customers = await storage.getAllCustomers();
   const safe = customers.map((c) => ({
