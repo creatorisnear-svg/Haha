@@ -71,21 +71,22 @@ export default function DevDashboard() {
           </Button>
         </header>
 
-        <Tabs defaultValue="products" className="w-full">
+        <Tabs defaultValue="orders" className="w-full">
           <TabsList className="bg-transparent border-b border-border rounded-none h-12 w-full justify-start gap-8 p-0">
-            <TabsTrigger 
-              value="products" 
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase"
-            >
+            <TabsTrigger value="orders" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase">
+              Orders
+            </TabsTrigger>
+            <TabsTrigger value="products" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase">
               Products
             </TabsTrigger>
-            <TabsTrigger 
-              value="settings" 
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase"
-            >
-              Stripe Config
+            <TabsTrigger value="settings" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase">
+              Settings
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="orders" className="pt-8">
+            <OrdersTab token={token} />
+          </TabsContent>
           
           <TabsContent value="products" className="pt-8">
             <ProductsTab products={productsData?.data || []} isLoading={isLoadingProducts} token={token} />
@@ -350,6 +351,132 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
               </div>
             ))
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  pending: "text-yellow-500 border-yellow-500",
+  processing: "text-blue-400 border-blue-400",
+  shipped: "text-purple-400 border-purple-400",
+  delivered: "text-green-400 border-green-400",
+};
+
+function OrdersTab({ token }: { token: string }) {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const fetchOrders = () => {
+    setLoading(true);
+    fetch("/api/admin/orders", { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => setOrders(d.data ?? []))
+      .catch(() => setOrders([]))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { fetchOrders(); }, []);
+
+  const updateStatus = async (id: string, status: string) => {
+    setUpdatingId(id);
+    try {
+      const res = await fetch(`/api/admin/orders/${id}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status } : o));
+      toast({ title: "Status updated" });
+    } catch {
+      toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  if (loading) return <div className="font-sans text-sm text-muted-foreground tracking-widest uppercase">Loading orders...</div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-2xl tracking-widest uppercase">Orders ({orders.length})</h2>
+        <Button variant="outline" onClick={fetchOrders} className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4">Refresh</Button>
+      </div>
+
+      {orders.length === 0 ? (
+        <div className="border border-dashed border-border p-12 text-center font-sans text-sm text-muted-foreground tracking-widest uppercase">
+          No orders yet
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {orders.map((order) => (
+            <div key={order.id} className="border border-border bg-card p-6 space-y-4">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="font-display text-xl tracking-widest">{order.orderNumber}</span>
+                    <span className={`font-sans text-[10px] tracking-widest uppercase border px-2 py-0.5 ${STATUS_COLORS[order.status] ?? ""}`}>
+                      {order.status}
+                    </span>
+                  </div>
+                  <p className="font-sans text-xs text-muted-foreground mt-1">
+                    {new Date(order.createdAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-sans text-lg font-semibold">${(order.total / 100).toFixed(2)}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-border pt-4">
+                <div>
+                  <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground mb-2">Customer</p>
+                  <p className="font-sans text-sm font-medium">{order.customerName}</p>
+                  <p className="font-sans text-xs text-muted-foreground">{order.customerEmail}</p>
+                  {order.customerPhone && <p className="font-sans text-xs text-muted-foreground">{order.customerPhone}</p>}
+                </div>
+                <div>
+                  <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground mb-2">Ship To</p>
+                  <p className="font-sans text-sm">{order.shippingAddress.name}</p>
+                  <p className="font-sans text-xs text-muted-foreground">{order.shippingAddress.line1}{order.shippingAddress.line2 ? `, ${order.shippingAddress.line2}` : ""}</p>
+                  <p className="font-sans text-xs text-muted-foreground">{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zip}</p>
+                  <p className="font-sans text-xs text-muted-foreground">{order.shippingAddress.country}</p>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-4">
+                <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground mb-2">Items</p>
+                {order.items.map((item: any, i: number) => (
+                  <div key={i} className="flex justify-between font-sans text-xs py-1">
+                    <span>{item.productName} × {item.quantity}</span>
+                    <span className="text-muted-foreground">${(item.price * item.quantity / 100).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t border-border pt-4">
+                <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground mb-2">Update Status</p>
+                <div className="flex flex-wrap gap-2">
+                  {["pending", "processing", "shipped", "delivered"].map((s) => (
+                    <Button
+                      key={s}
+                      variant={order.status === s ? "default" : "outline"}
+                      disabled={updatingId === order.id || order.status === s}
+                      onClick={() => updateStatus(order.id, s)}
+                      className="rounded-none font-sans text-[10px] uppercase tracking-widest h-8 px-3"
+                    >
+                      {s}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

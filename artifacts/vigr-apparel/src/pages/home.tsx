@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, User } from "lucide-react";
 import { useListProducts, useSubscribeNewsletter } from "@workspace/api-client-react";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +12,7 @@ import logoPath from "@assets/12214-removebg-preview_1776743232072.png";
 export default function Home() {
   const { data: productsData, isLoading } = useListProducts();
   const { itemCount, setIsOpen } = useCart();
+  const { isLoggedIn } = useAuth();
   const { toast } = useToast();
   const subscribeNewsletter = useSubscribeNewsletter();
   const [email, setEmail] = useState("");
@@ -74,7 +76,11 @@ export default function Home() {
             </a>
           </div>
 
-          {/* Cart */}
+          {/* Account + Cart */}
+          <div className="flex items-center gap-1">
+          <Link href={isLoggedIn ? "/account/orders" : "/account/login"} className="p-2 text-muted-foreground hover:text-foreground transition-colors">
+            <User className="w-5 h-5" />
+          </Link>
           <button
             className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"
             onClick={() => setIsOpen(true)}
@@ -87,6 +93,7 @@ export default function Home() {
               </span>
             )}
           </button>
+          </div>
         </div>
       </nav>
 

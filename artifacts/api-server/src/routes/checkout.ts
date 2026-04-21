@@ -1,49 +1,50 @@
 import { Router } from "express";
 import { storage } from "../storage";
-import Stripe from "stripe";
+import { verifyCustomerToken } from "../lib/customerAuth";
 
 const router = Router();
 
 router.post("/checkout", async (req, res) => {
-  const { items, successUrl, cancelUrl } = req.body;
+  const { items, shippingAddress, phone } = req.body;
   if (!items || !items.length) return res.status(400).json({ error: "No items provided" });
+  if (!shippingAddress) return res.status(400).json({ error: "Shipping address required" });
 
-  const secretKey = await storage.getSetting("stripe_secret_key");
-  if (!secretKey) return res.status(400).json({ error: "Stripe not configured. Please ask the developer to set up Stripe in the admin panel." });
+  const auth = req.headers["authorization"] ?? "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  const customerId = verifyCustomerToken(token);
+  if (!customerId) return res.status(401).json({ error: "You must be logged in to checkout" });
 
-  const stripe = new Stripe(secretKey);
+  const customer = await storage.getCustomerById(customerId);
+  if (!customer) return res.status(401).json({ error: "Customer not found" });
 
-  const domain = process.env.REPLIT_DOMAINS?.split(",")[0] ?? "vaaclothing.xyz";
-  const baseUrl = `https://${domain}`;
-
-  const lineItems = await Promise.all(
+  const orderItems = await Promise.all(
     items.map(async (item: { productId: string; quantity: number }) => {
       const product = await storage.getProduct(item.productId);
-      if (!product) throw new Error(`Product ${item.productId} not found`);
+      if (!product) throw new Error(`Product not found`);
       return {
-        price_data: {
-          currency: "usd",
-          unit_amount: product.price,
-          product_data: {
-            name: product.name,
-            description: product.description ?? undefined,
-            images: product.imageUrl ? [product.imageUrl] : [],
-          },
-        },
+        productId: product.id,
+        productName: product.name,
+        price: product.price,
         quantity: item.quantity,
+        imageUrl: product.imageUrl ?? null,
       };
     })
   );
 
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
-    line_items: lineItems,
-    mode: "payment",
-    success_url: successUrl ?? `${baseUrl}/?checkout=success`,
-    cancel_url: cancelUrl ?? `${baseUrl}/?checkout=cancel`,
+  const total = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  const order = await storage.createOrder({
+    customerId: customer.id,
+    customerName: customer.name,
+    customerEmail: customer.email,
+    customerPhone: phone ?? customer.phone ?? null,
+    items: orderItems,
+    shippingAddress,
+    total,
+    status: "pending",
   });
 
-  res.json({ url: session.url });
+  res.status(201).json({ order });
 });
 
 export default router;

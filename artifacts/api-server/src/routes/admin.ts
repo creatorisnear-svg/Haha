@@ -76,4 +76,18 @@ router.delete("/admin/products/:id", adminAuthMiddleware, async (req, res) => {
   res.json({ success: true, message: "Product deleted" });
 });
 
+router.get("/admin/orders", adminAuthMiddleware, async (_req, res) => {
+  const orders = await storage.getAllOrders();
+  res.json({ data: orders });
+});
+
+router.put("/admin/orders/:id/status", adminAuthMiddleware, async (req, res) => {
+  const { status } = req.body;
+  if (!["pending", "processing", "shipped", "delivered"].includes(status)) {
+    return res.status(400).json({ error: "Invalid status" });
+  }
+  await storage.updateOrderStatus(req.params.id, status);
+  res.json({ success: true });
+});
+
 export default router;
