@@ -60,10 +60,6 @@ export default function DevLogin() {
           </Button>
         </form>
 
-        <p className="text-center text-xs text-muted-foreground tracking-widest uppercase">
-          Default password: vigr-admin
-        </p>
-
         <div className="text-center pt-8">
           <Link href="/" className="text-xs text-muted-foreground hover:text-foreground tracking-widest uppercase transition-colors">
             RETURN TO SITE

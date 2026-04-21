@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { storage } from "./storage";
 
 const SECRET = process.env.SESSION_SECRET ?? "vigr-dev-secret";
-const DEFAULT_PASSWORD = "vigr-admin";
+const DEFAULT_PASSWORD = "omar1267";
 
 function hashPassword(password: string): string {
   return crypto.createHmac("sha256", SECRET).update(password).digest("hex");
