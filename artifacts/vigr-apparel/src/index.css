@@ -116,11 +116,41 @@
 }
 
 @layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
   * {
     @apply border-border cursor-crosshair;
   }
   body {
     @apply font-sans antialiased bg-background text-foreground selection:bg-primary selection:text-white cursor-crosshair;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  /* iOS Safari zooms in on focus when input font-size is < 16px.
+     Force 16px on form controls so the page doesn't jump-zoom. */
+  input, select, textarea {
+    font-size: 16px;
+  }
+  /* Tap targets feel snappier on touch devices */
+  a, button, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  /* Touch devices ignore custom cursors anyway, but disable on coarse pointers */
+  @media (pointer: coarse) {
+    *, body { cursor: auto; }
+  }
+  img, video {
+    max-width: 100%;
+    height: auto;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
@@ -138,6 +168,7 @@
   left: 0;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   pointer-events: none;
   z-index: 50;
   opacity: 0.04;
