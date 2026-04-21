@@ -18,10 +18,10 @@ ENV BASE_PATH=/
 
 RUN pnpm --filter @workspace/vigr-apparel run build
 
-RUN mkdir -p artifacts/api-server/public \
- && cp -r artifacts/vigr-apparel/dist/public/. artifacts/api-server/public/
-
 RUN pnpm --filter @workspace/api-server run build
+
+RUN mkdir -p artifacts/api-server/dist/public \
+ && cp -r artifacts/vigr-apparel/dist/public/. artifacts/api-server/dist/public/
 
 EXPOSE 8080
 
