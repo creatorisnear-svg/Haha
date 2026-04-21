@@ -15,6 +15,8 @@ function serialize(p: any) {
     stockCount: p.stockCount ?? null,
     category: p.category,
     sizes: p.sizes ?? null,
+    tag: p.tag ?? null,
+    tagColor: p.tagColor ?? null,
     createdAt: p.createdAt?.toISOString?.() ?? p.createdAt,
   };
 }

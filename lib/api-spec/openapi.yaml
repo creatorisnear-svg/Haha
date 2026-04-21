@@ -345,6 +345,14 @@ components:
           nullable: true
           items:
             type: string
+        tag:
+          type: string
+          nullable: true
+          description: Optional small badge text shown on product card and detail page (e.g. "Free shipping").
+        tagColor:
+          type: string
+          nullable: true
+          description: One of "blue" | "red" | "green" | "yellow" | "purple" | "white". Defaults to blue.
         createdAt:
           type: string
       required: [id, name, price, inStock]

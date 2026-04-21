@@ -65,8 +65,20 @@ function serializeProduct(product: any) {
     stockCount: product.stockCount ?? null,
     category: product.category,
     sizes: product.sizes ?? null,
+    tag: product.tag ?? null,
+    tagColor: product.tagColor ?? null,
     createdAt: product.createdAt?.toISOString?.() ?? product.createdAt,
   };
+}
+
+const VALID_TAG_COLORS = new Set(["blue", "red", "green", "yellow", "purple", "white"]);
+function normalizeTag(tag: any): string | null {
+  return typeof tag === "string" && tag.trim() ? tag.trim().slice(0, 60) : null;
+}
+function normalizeTagColor(color: any): string | null {
+  if (typeof color !== "string") return null;
+  const c = color.trim().toLowerCase();
+  return VALID_TAG_COLORS.has(c) ? c : null;
 }
 
 function normalizeImageUrls(imageUrls: any, imageUrl: any): string[] | null {
@@ -81,7 +93,7 @@ function normalizeImageUrls(imageUrls: any, imageUrl: any): string[] | null {
 }
 
 router.post("/admin/products", adminAuthMiddleware, async (req, res) => {
-  const { name, description, price, imageUrl, imageUrls, inStock, stockCount, category, sizes } = req.body;
+  const { name, description, price, imageUrl, imageUrls, inStock, stockCount, category, sizes, tag, tagColor } = req.body;
   if (!name || price === undefined) return res.status(400).json({ error: "name and price required" });
   const normalizedStockCount =
     typeof stockCount === "number" && stockCount >= 0 ? Math.floor(stockCount) : null;
@@ -89,6 +101,7 @@ router.post("/admin/products", adminAuthMiddleware, async (req, res) => {
     normalizedStockCount === null ? (inStock ?? true) : normalizedStockCount > 0;
   const normalizedSizes = Array.isArray(sizes) && sizes.length > 0 ? sizes : null;
   const normalizedImages = normalizeImageUrls(imageUrls, imageUrl);
+  const normalizedTag = normalizeTag(tag);
   const product = await storage.createProduct({
     name,
     description,
@@ -99,12 +112,14 @@ router.post("/admin/products", adminAuthMiddleware, async (req, res) => {
     stockCount: normalizedStockCount,
     category,
     sizes: normalizedSizes,
+    tag: normalizedTag,
+    tagColor: normalizedTag ? (normalizeTagColor(tagColor) ?? "blue") : null,
   });
   res.status(201).json(serializeProduct(product));
 });
 
 router.put("/admin/products/:id", adminAuthMiddleware, async (req, res) => {
-  const { name, description, price, imageUrl, imageUrls, inStock, stockCount, category, sizes } = req.body;
+  const { name, description, price, imageUrl, imageUrls, inStock, stockCount, category, sizes, tag, tagColor } = req.body;
   const updates: any = { name, description, price, category };
   if (imageUrls !== undefined || imageUrl !== undefined) {
     const normalizedImages = normalizeImageUrls(imageUrls, imageUrl);
@@ -113,6 +128,11 @@ router.put("/admin/products/:id", adminAuthMiddleware, async (req, res) => {
   }
   if (sizes !== undefined) {
     updates.sizes = Array.isArray(sizes) && sizes.length > 0 ? sizes : null;
+  }
+  if (tag !== undefined || tagColor !== undefined) {
+    const normalizedTag = normalizeTag(tag);
+    updates.tag = normalizedTag;
+    updates.tagColor = normalizedTag ? (normalizeTagColor(tagColor) ?? "blue") : null;
   }
   if (stockCount !== undefined) {
     updates.stockCount =

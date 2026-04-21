@@ -460,6 +460,23 @@ function ProductCard({ product }: { product: any }) {
         )}
       </Link>
       <div className="p-5 flex flex-col gap-4">
+        {(product as any).tag && (
+          <span
+            className={`font-sans text-[10px] uppercase tracking-[0.2em] font-semibold ${
+              ({
+                blue: "text-blue-500",
+                red: "text-red-500",
+                green: "text-green-500",
+                yellow: "text-yellow-400",
+                purple: "text-purple-400",
+                white: "text-white",
+              } as Record<string, string>)[(product as any).tagColor ?? "blue"] ?? "text-blue-500"
+            }`}
+            data-testid={`text-product-tag-${product.id}`}
+          >
+            {(product as any).tag}
+          </span>
+        )}
         <Link
           href={`/products/${product.id}`}
           className="flex items-baseline justify-between hover:text-primary transition-colors"

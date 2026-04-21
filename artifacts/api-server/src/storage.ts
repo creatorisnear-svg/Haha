@@ -13,6 +13,8 @@ export interface Product {
   stockCount?: number | null;
   category?: string | null;
   sizes?: string[] | null;
+  tag?: string | null;
+  tagColor?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,6 +40,8 @@ function docToProduct(doc: any): Product {
     stockCount: typeof doc.stockCount === "number" ? doc.stockCount : null,
     category: doc.category ?? null,
     sizes: Array.isArray(doc.sizes) && doc.sizes.length > 0 ? doc.sizes : null,
+    tag: typeof doc.tag === "string" && doc.tag.trim() ? doc.tag.trim() : null,
+    tagColor: typeof doc.tagColor === "string" && doc.tagColor.trim() ? doc.tagColor.trim() : null,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };

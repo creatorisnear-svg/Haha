@@ -247,6 +247,23 @@ export default function ProductDetail() {
               >
                 {product.name}
               </h1>
+              {(product as any).tag && (
+                <p
+                  className={`font-sans text-xs uppercase tracking-[0.3em] font-semibold mb-4 ${
+                    ({
+                      blue: "text-blue-500",
+                      red: "text-red-500",
+                      green: "text-green-500",
+                      yellow: "text-yellow-400",
+                      purple: "text-purple-400",
+                      white: "text-white",
+                    } as Record<string, string>)[(product as any).tagColor ?? "blue"] ?? "text-blue-500"
+                  }`}
+                  data-testid="text-product-tag"
+                >
+                  {(product as any).tag}
+                </p>
+              )}
               <p
                 className="font-sans text-2xl sm:text-3xl mb-6"
                 data-testid="text-product-price"

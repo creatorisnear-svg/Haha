@@ -174,6 +174,8 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
     inStock: true,
     stockCount: "",
     sizes: [] as string[],
+    tag: "",
+    tagColor: "blue",
   });
 
   const { toast } = useToast();
@@ -189,6 +191,8 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
       inStock: true,
       stockCount: "",
       sizes: [],
+      tag: "",
+      tagColor: "blue",
     });
     setEditingProduct(null);
   };
@@ -211,6 +215,8 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
         stockCount:
           typeof product.stockCount === "number" ? String(product.stockCount) : "",
         sizes: Array.isArray(product.sizes) ? product.sizes : [],
+        tag: (product as any).tag ?? "",
+        tagColor: (product as any).tagColor ?? "blue",
       });
     } else {
       resetForm();
@@ -273,6 +279,8 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
         inStock: parsedStock === null ? formData.inStock : parsedStock > 0,
         stockCount: parsedStock,
         sizes: formData.sizes.length > 0 ? formData.sizes : null,
+        tag: formData.tag.trim() || null,
+        tagColor: formData.tag.trim() ? formData.tagColor : null,
       };
 
       const url = editingProduct 
@@ -508,6 +516,53 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
                 <p className="text-[10px] text-muted-foreground tracking-wide">
                   Manage the available size list in the Sizes tab. Leave all unselected if this product has no size options.
                 </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tag" className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Tag <span className="lowercase tracking-normal">(optional badge, e.g. "Free shipping")</span>
+                </Label>
+                <div className="grid grid-cols-[1fr_auto] gap-2">
+                  <Input
+                    id="tag"
+                    maxLength={60}
+                    placeholder="Free shipping"
+                    value={formData.tag}
+                    onChange={(e) => setFormData({ ...formData, tag: e.target.value })}
+                    className="rounded-none border-border focus-visible:ring-1 focus-visible:ring-primary"
+                  />
+                  <select
+                    value={formData.tagColor}
+                    onChange={(e) => setFormData({ ...formData, tagColor: e.target.value })}
+                    disabled={!formData.tag.trim()}
+                    className="h-10 rounded-none border border-border bg-background text-foreground font-sans text-sm px-2 focus-visible:ring-1 focus-visible:ring-primary focus:outline-none disabled:opacity-50"
+                  >
+                    <option value="blue">Blue</option>
+                    <option value="red">Red</option>
+                    <option value="green">Green</option>
+                    <option value="yellow">Yellow</option>
+                    <option value="purple">Purple</option>
+                    <option value="white">White</option>
+                  </select>
+                </div>
+                {formData.tag.trim() && (
+                  <div className="pt-1">
+                    <span
+                      className={`inline-block font-sans text-[10px] uppercase tracking-[0.2em] font-semibold ${
+                        ({
+                          blue: "text-blue-500",
+                          red: "text-red-500",
+                          green: "text-green-500",
+                          yellow: "text-yellow-400",
+                          purple: "text-purple-400",
+                          white: "text-white",
+                        } as Record<string, string>)[formData.tagColor] ?? "text-blue-500"
+                      }`}
+                    >
+                      {formData.tag}
+                    </span>
+                    <span className="ml-2 text-[10px] text-muted-foreground tracking-wide">preview</span>
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="stockCount" className="text-xs uppercase tracking-widest text-muted-foreground">
