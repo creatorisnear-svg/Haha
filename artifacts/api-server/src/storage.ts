@@ -218,6 +218,64 @@ export class Storage {
     try { await db.collection("categories").deleteOne({ _id: new ObjectId(id) }); } catch {}
   }
 
+  // Sizes ────────────────────────────────────────────────────────────────────
+  async listSizes(): Promise<{ id: string; label: string; sortOrder: number; createdAt: Date }[]> {
+    const db = await getDb();
+    const docs = await db.collection("sizes").find().sort({ sortOrder: 1, label: 1 }).toArray();
+    return docs.map((d: any) => ({
+      id: d._id.toString(),
+      label: d.label,
+      sortOrder: typeof d.sortOrder === "number" ? d.sortOrder : 0,
+      createdAt: d.createdAt,
+    }));
+  }
+
+  async createSize(label: string): Promise<{ id: string; label: string; sortOrder: number; createdAt: Date }> {
+    const db = await getDb();
+    const trimmed = label.trim().toUpperCase();
+    if (!trimmed) throw new Error("Size label required");
+    if (trimmed.length > 16) throw new Error("Size label too long (max 16 characters)");
+    const existing = await db.collection("sizes").findOne({ label: trimmed });
+    if (existing) throw new Error("That size already exists");
+    const last = await db.collection("sizes").find().sort({ sortOrder: -1 }).limit(1).toArray();
+    const sortOrder = last.length > 0 ? (last[0].sortOrder ?? 0) + 1 : 0;
+    const now = new Date();
+    const result = await db.collection("sizes").insertOne({ label: trimmed, sortOrder, createdAt: now });
+    return { id: result.insertedId.toString(), label: trimmed, sortOrder, createdAt: now };
+  }
+
+  async updateSize(id: string, label: string): Promise<{ id: string; label: string; sortOrder: number; createdAt: Date } | null> {
+    const db = await getDb();
+    const trimmed = label.trim().toUpperCase();
+    if (!trimmed) throw new Error("Size label required");
+    if (trimmed.length > 16) throw new Error("Size label too long (max 16 characters)");
+    try {
+      const _id = new ObjectId(id);
+      const conflict = await db.collection("sizes").findOne({ label: trimmed, _id: { $ne: _id } });
+      if (conflict) throw new Error("That size already exists");
+      const result = await db.collection("sizes").findOneAndUpdate(
+        { _id },
+        { $set: { label: trimmed } },
+        { returnDocument: "after" }
+      );
+      if (!result) return null;
+      return {
+        id: result._id.toString(),
+        label: result.label,
+        sortOrder: typeof result.sortOrder === "number" ? result.sortOrder : 0,
+        createdAt: result.createdAt,
+      };
+    } catch (err: any) {
+      if (err?.message?.includes("already exists") || err?.message?.includes("required") || err?.message?.includes("too long")) throw err;
+      return null;
+    }
+  }
+
+  async deleteSize(id: string): Promise<void> {
+    const db = await getDb();
+    try { await db.collection("sizes").deleteOne({ _id: new ObjectId(id) }); } catch {}
+  }
+
   // Products
   async listProducts(): Promise<Product[]> {
     const db = await getDb();

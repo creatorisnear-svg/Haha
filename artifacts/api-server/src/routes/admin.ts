@@ -243,6 +243,40 @@ router.delete("/admin/categories/:id", adminAuthMiddleware, async (req, res) => 
   res.json({ success: true, message: "Category deleted" });
 });
 
+// ── Sizes ─────────────────────────────────────────────────────────────────────
+router.get("/admin/sizes", adminAuthMiddleware, async (_req, res) => {
+  const sizes = await storage.listSizes();
+  res.json({ data: sizes });
+});
+
+router.post("/admin/sizes", adminAuthMiddleware, async (req, res) => {
+  const { label } = req.body;
+  if (!label || typeof label !== "string") return res.status(400).json({ error: "Size label required" });
+  try {
+    const size = await storage.createSize(label);
+    res.status(201).json(size);
+  } catch (err: any) {
+    res.status(400).json({ error: err?.message ?? "Failed to create size" });
+  }
+});
+
+router.put("/admin/sizes/:id", adminAuthMiddleware, async (req, res) => {
+  const { label } = req.body;
+  if (!label || typeof label !== "string") return res.status(400).json({ error: "Size label required" });
+  try {
+    const size = await storage.updateSize(req.params.id, label);
+    if (!size) return res.status(404).json({ error: "Size not found" });
+    res.json(size);
+  } catch (err: any) {
+    res.status(400).json({ error: err?.message ?? "Failed to update size" });
+  }
+});
+
+router.delete("/admin/sizes/:id", adminAuthMiddleware, async (req, res) => {
+  await storage.deleteSize(req.params.id);
+  res.json({ success: true, message: "Size deleted" });
+});
+
 router.get("/admin/newsletter/subscribers", adminAuthMiddleware, async (_req, res) => {
   const emails = await storage.getAllNewsletterSubscribers();
   res.json({ data: emails, count: emails.length });

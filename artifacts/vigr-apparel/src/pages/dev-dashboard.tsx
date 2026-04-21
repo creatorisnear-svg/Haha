@@ -82,6 +82,9 @@ export default function DevDashboard() {
             <TabsTrigger value="categories" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
               Categories
             </TabsTrigger>
+            <TabsTrigger value="sizes" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
+              Sizes
+            </TabsTrigger>
             <TabsTrigger value="promos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
               Promos
             </TabsTrigger>
@@ -107,6 +110,10 @@ export default function DevDashboard() {
           <TabsContent value="categories" className="pt-8">
             <CategoriesTab token={token} />
           </TabsContent>
+
+          <TabsContent value="sizes" className="pt-8">
+            <SizesTab token={token} />
+          </TabsContent>
           
           <TabsContent value="promos" className="pt-8">
             <PromoCodesTab token={token} />
@@ -129,18 +136,26 @@ export default function DevDashboard() {
   );
 }
 
-const ALL_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
+const FALLBACK_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
 function ProductsTab({ products, isLoading, token }: { products: any[], isLoading: boolean, token: string }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [availableSizes, setAvailableSizes] = useState<string[]>(FALLBACK_SIZES);
 
   useEffect(() => {
     fetch("/api/categories")
       .then((r) => r.json())
       .then((d) => setCategories(d.data ?? []))
       .catch(() => setCategories([]));
+    fetch("/api/sizes")
+      .then((r) => r.json())
+      .then((d) => {
+        const list = (d.data ?? []).map((s: any) => s.label);
+        setAvailableSizes(list.length > 0 ? list : FALLBACK_SIZES);
+      })
+      .catch(() => setAvailableSizes(FALLBACK_SIZES));
   }, [isDialogOpen]);
   
   const [formData, setFormData] = useState({
@@ -367,23 +382,26 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
               <div className="space-y-2">
                 <Label className="text-xs uppercase tracking-widest text-muted-foreground">Sizes Available</Label>
                 <div className="flex flex-wrap gap-2">
-                  {ALL_SIZES.map((size) => (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => toggleSize(size)}
-                      className={`h-8 px-3 font-sans text-xs uppercase tracking-widest border transition-all ${
-                        formData.sizes.includes(size)
-                          ? "border-primary bg-primary text-white"
-                          : "border-border text-muted-foreground hover:border-foreground/50"
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
+                  {Array.from(new Set([...availableSizes, ...formData.sizes])).map((size) => {
+                    const isLegacy = !availableSizes.includes(size);
+                    return (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => toggleSize(size)}
+                        className={`h-8 px-3 font-sans text-xs uppercase tracking-widest border transition-all ${
+                          formData.sizes.includes(size)
+                            ? "border-primary bg-primary text-white"
+                            : "border-border text-muted-foreground hover:border-foreground/50"
+                        }`}
+                      >
+                        {size}{isLegacy ? " (legacy)" : ""}
+                      </button>
+                    );
+                  })}
                 </div>
                 <p className="text-[10px] text-muted-foreground tracking-wide">
-                  Leave all unselected if this product has no size options.
+                  Manage the available size list in the Sizes tab. Leave all unselected if this product has no size options.
                 </p>
               </div>
               <div className="space-y-2">
@@ -1503,6 +1521,183 @@ function CategoriesTab({ token }: { token: string }) {
                     <Button
                       variant="outline"
                       onClick={() => handleDelete(cat.id)}
+                      className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 border-destructive text-destructive hover:bg-destructive hover:text-white"
+                    >
+                      Delete
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SizesTab({ token }: { token: string }) {
+  const { toast } = useToast();
+  const [sizes, setSizes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newLabel, setNewLabel] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editLabel, setEditLabel] = useState("");
+
+  const fetchSizes = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/sizes", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setSizes(data.data ?? []);
+    } catch {
+      setSizes([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchSizes(); }, []);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const label = newLabel.trim();
+    if (!label) return;
+    try {
+      const res = await fetch("/api/admin/sizes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ label }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to create size");
+      toast({ title: "Size created", description: data.label });
+      setNewLabel("");
+      fetchSizes();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleUpdate = async (id: string) => {
+    const label = editLabel.trim();
+    if (!label) return;
+    try {
+      const res = await fetch(`/api/admin/sizes/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ label }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update size");
+      toast({ title: "Size updated" });
+      setEditingId(null);
+      setEditLabel("");
+      fetchSizes();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this size? Existing products keep their selected sizes.")) return;
+    try {
+      await fetch(`/api/admin/sizes/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast({ title: "Size deleted" });
+      fetchSizes();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-2xl tracking-widest uppercase">Sizes</h2>
+        <Button variant="outline" onClick={fetchSizes} className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4">
+          Refresh
+        </Button>
+      </div>
+
+      <p className="font-sans text-xs text-muted-foreground tracking-wider">
+        Sizes defined here appear as selectable options when creating or editing a product. If you add no sizes, the product form falls back to a default list (XS-XXL).
+      </p>
+
+      <form onSubmit={handleCreate} className="border border-border bg-card p-6 space-y-4">
+        <h3 className="font-display text-lg tracking-widest uppercase">New Size</h3>
+        <div className="flex gap-2">
+          <Input
+            placeholder="e.g. S, M, L, 32, ONE SIZE"
+            value={newLabel}
+            onChange={(e) => setNewLabel(e.target.value)}
+            className="rounded-none border-border focus-visible:ring-1 focus-visible:ring-primary uppercase"
+          />
+          <Button
+            type="submit"
+            className="rounded-none font-display tracking-widest h-10 px-6 bg-foreground text-background hover:bg-primary hover:text-white transition-colors whitespace-nowrap"
+          >
+            Add
+          </Button>
+        </div>
+      </form>
+
+      {loading ? (
+        <div className="font-sans text-sm text-muted-foreground tracking-widest uppercase">Loading...</div>
+      ) : sizes.length === 0 ? (
+        <div className="border border-dashed border-border p-12 text-center font-sans text-sm text-muted-foreground tracking-widest uppercase">
+          No sizes yet
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {sizes.map((s) => (
+            <div key={s.id} className="border border-border bg-card p-4 flex items-center justify-between gap-3">
+              {editingId === s.id ? (
+                <Input
+                  value={editLabel}
+                  onChange={(e) => setEditLabel(e.target.value)}
+                  className="rounded-none border-border h-9 uppercase"
+                  autoFocus
+                />
+              ) : (
+                <p className="font-sans uppercase tracking-widest text-sm font-medium" data-testid={`size-label-${s.id}`}>
+                  {s.label}
+                </p>
+              )}
+              <div className="flex gap-2">
+                {editingId === s.id ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleUpdate(s.id)}
+                      className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4"
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => { setEditingId(null); setEditLabel(""); }}
+                      className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 border-border"
+                    >
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => { setEditingId(s.id); setEditLabel(s.label); }}
+                      className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 border-border"
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleDelete(s.id)}
                       className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 border-destructive text-destructive hover:bg-destructive hover:text-white"
                     >
                       Delete
