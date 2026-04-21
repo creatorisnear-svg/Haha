@@ -93,7 +93,7 @@ const STATUS_STEPS = ["pending", "processing", "shipped", "delivered"] as const;
 type OrderStatus = typeof STATUS_STEPS[number];
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
-  pending: "Order Placed",
+  pending: "Placed",
   processing: "Processing",
   shipped: "Shipped",
   delivered: "Delivered",
@@ -102,24 +102,46 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 function StatusTimeline({ status }: { status: OrderStatus }) {
   const currentIndex = STATUS_STEPS.indexOf(status);
   return (
-    <div className="flex items-center gap-0 w-full mt-4">
-      {STATUS_STEPS.map((step, i) => {
-        const done = i <= currentIndex;
-        const isLast = i === STATUS_STEPS.length - 1;
-        return (
-          <div key={step} className="flex items-center flex-1 min-w-0">
-            <div className="flex flex-col items-center gap-1 flex-shrink-0">
-              <div className={`w-3 h-3 rounded-full border-2 transition-all ${done ? "bg-primary border-primary" : "border-border"}`} />
-              <span className={`font-sans text-[9px] tracking-widest uppercase whitespace-nowrap ${done ? "text-primary" : "text-muted-foreground"}`}>
-                {STATUS_LABELS[step]}
-              </span>
+    <div className="w-full mt-4">
+      {/* Dots + connector line */}
+      <div className="flex items-center w-full px-1">
+        {STATUS_STEPS.map((step, i) => {
+          const done = i <= currentIndex;
+          const isLast = i === STATUS_STEPS.length - 1;
+          return (
+            <div key={step} className="flex items-center flex-1 last:flex-none">
+              <div
+                className={`w-3 h-3 rounded-full border-2 flex-shrink-0 transition-all ${
+                  done ? "bg-primary border-primary" : "border-border"
+                }`}
+              />
+              {!isLast && (
+                <div
+                  className={`h-px flex-1 mx-1 transition-all ${
+                    i < currentIndex ? "bg-primary" : "bg-border"
+                  }`}
+                />
+              )}
             </div>
-            {!isLast && (
-              <div className={`h-px flex-1 mx-1 transition-all ${i < currentIndex ? "bg-primary" : "bg-border"}`} />
-            )}
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
+      {/* Labels under each dot */}
+      <div className="grid grid-cols-4 gap-1 mt-2">
+        {STATUS_STEPS.map((step, i) => {
+          const done = i <= currentIndex;
+          return (
+            <span
+              key={step}
+              className={`font-sans text-[9px] sm:text-[10px] tracking-[0.15em] uppercase text-center leading-tight ${
+                done ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              {STATUS_LABELS[step]}
+            </span>
+          );
+        })}
+      </div>
     </div>
   );
 }
