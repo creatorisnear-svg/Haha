@@ -115,13 +115,13 @@ function StatusTimeline({ status }: { status: OrderStatus }) {
         })}
       </div>
       {/* Labels under each dot */}
-      <div className="grid grid-cols-4 gap-1 mt-2">
+      <div className="grid grid-cols-4 gap-2 mt-2">
         {STATUS_STEPS.map((step, i) => {
           const done = i <= currentIndex;
           return (
             <span
               key={step}
-              className={`font-sans text-[9px] sm:text-[10px] tracking-[0.15em] uppercase text-center leading-tight ${
+              className={`font-sans text-[9px] sm:text-[10px] tracking-normal sm:tracking-[0.1em] uppercase text-center leading-tight break-words ${
                 done ? "text-primary" : "text-muted-foreground"
               }`}
             >

@@ -158,6 +158,27 @@ interface ShippingEmailData {
   shippingAddress: ShippingAddress;
 }
 
+function detectCarrierForEmail(raw: string): { name: string; url: string } {
+  const tn = raw.replace(/\s+/g, "").toUpperCase();
+  const enc = encodeURIComponent(tn);
+  if (/^TBA\d{10,14}$/.test(tn)) return { name: "Amazon Logistics", url: `https://track.amazon.com/tracking/${enc}` };
+  if (/^1Z[0-9A-Z]{16}$/.test(tn)) return { name: "UPS", url: `https://www.ups.com/track?tracknum=${enc}` };
+  if (/^(94|93|92|95|82)\d{18,20}$/.test(tn)) return { name: "USPS", url: `https://tools.usps.com/go/TrackConfirmAction?tLabels=${enc}` };
+  if (/^\d{12}$|^\d{15}$/.test(tn)) return { name: "FedEx", url: `https://www.fedex.com/fedextrack/?trknbr=${enc}` };
+  if (/^\d{20}$|^\d{22}$/.test(tn)) return { name: "USPS", url: `https://tools.usps.com/go/TrackConfirmAction?tLabels=${enc}` };
+  if (/^\d{10,11}$/.test(tn)) return { name: "DHL", url: `https://www.dhl.com/en/express/tracking.html?AWB=${enc}` };
+  return { name: "Carrier", url: `https://parcelsapp.com/en/tracking/${enc}` };
+}
+
+function trackingButtonHtml(trackingNumber: string): string {
+  const carrier = detectCarrierForEmail(trackingNumber);
+  return `<div style="margin:24px 0;padding:24px;border:1px solid #2a2a2a;text-align:center;">
+      <p style="margin:0 0 8px;font-size:10px;letter-spacing:0.3em;color:#9a9a9a;text-transform:uppercase;">Tracking Number</p>
+      <p style="margin:0 0 20px;color:#ffffff;font-size:18px;font-family:monospace;letter-spacing:0.1em;word-break:break-all;">${trackingNumber}</p>
+      <a href="${carrier.url}" style="display:inline-block;background:#ffffff;color:#0a0a0a;padding:14px 28px;font-size:12px;letter-spacing:0.2em;text-transform:uppercase;text-decoration:none;font-weight:600;">Track with ${carrier.name} →</a>
+    </div>`;
+}
+
 function shippingHtml(data: ShippingEmailData): string {
   return `<!doctype html>
 <html><body style="margin:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e5e5e5;">
@@ -170,11 +191,8 @@ function shippingHtml(data: ShippingEmailData): string {
       <h2 style="font-size:28px;letter-spacing:0.2em;margin:0;color:#ffffff;">${data.orderNumber}</h2>
     </div>
     <p style="color:#c5c5c5;font-size:14px;line-height:1.6;">Hey ${data.customerName.split(" ")[0] || "there"},</p>
-    <p style="color:#c5c5c5;font-size:14px;line-height:1.6;">Good news — your order is on the way. Use the tracking number below to follow your package.</p>
-    <div style="margin:24px 0;padding:24px;border:1px solid #2a2a2a;text-align:center;">
-      <p style="margin:0 0 8px;font-size:10px;letter-spacing:0.3em;color:#9a9a9a;text-transform:uppercase;">Tracking Number</p>
-      <p style="margin:0;color:#ffffff;font-size:18px;font-family:monospace;letter-spacing:0.1em;word-break:break-all;">${data.trackingNumber}</p>
-    </div>
+    <p style="color:#c5c5c5;font-size:14px;line-height:1.6;">Good news — your order is on the way. Tap the button below to track your package.</p>
+    ${trackingButtonHtml(data.trackingNumber)}
     <div style="margin:24px 0;padding:16px;border:1px solid #2a2a2a;">
       <p style="margin:0 0 8px;font-size:10px;letter-spacing:0.3em;color:#9a9a9a;text-transform:uppercase;">Ship To</p>
       <p style="margin:0;color:#e5e5e5;font-size:13px;line-height:1.6;">${renderAddress(data.shippingAddress)}</p>
@@ -264,12 +282,7 @@ interface DeliveryEmailData {
 }
 
 function deliveredHtml(data: DeliveryEmailData): string {
-  const tracking = data.trackingNumber
-    ? `<div style="margin:24px 0;padding:24px;border:1px solid #2a2a2a;text-align:center;">
-         <p style="margin:0 0 8px;font-size:10px;letter-spacing:0.3em;color:#9a9a9a;text-transform:uppercase;">Tracking Number</p>
-         <p style="margin:0;color:#ffffff;font-size:18px;font-family:monospace;letter-spacing:0.1em;word-break:break-all;">${data.trackingNumber}</p>
-       </div>`
-    : "";
+  const tracking = data.trackingNumber ? trackingButtonHtml(data.trackingNumber) : "";
   return `<!doctype html>
 <html><body style="margin:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e5e5e5;">
   <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
