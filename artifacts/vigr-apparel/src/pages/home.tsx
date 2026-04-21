@@ -46,10 +46,10 @@ export default function Home() {
         className="fixed top-0 left-0 right-0 z-40 border-b border-border"
         style={{ background: "rgba(10,10,10,0.95)" }}
       >
-        <div className="max-w-7xl mx-auto px-6 h-[72px] flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[64px] sm:h-[72px] flex items-center justify-between gap-2">
           {/* Logo + brand */}
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 flex-shrink-0">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0">
               <img
                 src={logoPath}
                 alt="VAA"
@@ -57,7 +57,10 @@ export default function Home() {
                 style={{ filter: "invert(1)" }}
               />
             </div>
-            <span className="font-display text-2xl tracking-[0.25em]">VIGR ANGEL APPAREL</span>
+            <span className="font-display text-sm sm:text-2xl tracking-[0.15em] sm:tracking-[0.25em] truncate">
+              <span className="sm:hidden">VIGR ANGEL</span>
+              <span className="hidden sm:inline">VIGR ANGEL APPAREL</span>
+            </span>
           </Link>
 
           {/* Nav links */}
@@ -98,9 +101,9 @@ export default function Home() {
       </nav>
 
       {/* ── HERO ── */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-[72px]">
-        <div className="flex flex-col items-center text-center">
-          <div className="w-52 h-52 sm:w-72 sm:h-72 mb-10">
+      <section className="relative min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 pt-[64px] sm:pt-[72px]">
+        <div className="flex flex-col items-center text-center w-full">
+          <div className="w-40 h-40 sm:w-72 sm:h-72 mb-8 sm:mb-10">
             <img
               src={logoPath}
               alt="VIGR Angel Apparel Logo"
@@ -109,32 +112,32 @@ export default function Home() {
             />
           </div>
 
-          <h1 className="font-display text-[clamp(3rem,10vw,8rem)] tracking-[0.08em] leading-[0.9] mb-6">
+          <h1 className="font-display text-[clamp(2.5rem,10vw,8rem)] tracking-[0.05em] sm:tracking-[0.08em] leading-[0.9] mb-6">
             VIGR ANGEL<br />APPAREL
           </h1>
-          <p className="font-sans text-[11px] tracking-[0.35em] uppercase text-muted-foreground mb-12">
+          <p className="font-sans text-[10px] sm:text-[11px] tracking-[0.25em] sm:tracking-[0.35em] uppercase text-muted-foreground mb-10 sm:mb-12 px-2">
             Born in the grit. Worn by the chosen.
           </p>
           <button
             onClick={scrollToProducts}
             data-testid="button-shop-now"
-            className="font-display text-2xl tracking-[0.2em] px-14 h-[56px] border border-foreground hover:bg-primary hover:border-primary hover:text-white transition-all duration-200"
+            className="font-display text-lg sm:text-2xl tracking-[0.15em] sm:tracking-[0.2em] px-10 sm:px-14 h-[48px] sm:h-[56px] border border-foreground hover:bg-primary hover:border-primary hover:text-white transition-all duration-200"
           >
             SHOP NOW
           </button>
         </div>
 
         {/* scroll hint */}
-        <p className="absolute bottom-8 font-sans text-[9px] tracking-[0.4em] uppercase text-muted-foreground/50 animate-bounce">
+        <p className="absolute bottom-6 sm:bottom-8 font-sans text-[9px] tracking-[0.4em] uppercase text-muted-foreground/50 animate-bounce">
           Scroll
         </p>
       </section>
 
       {/* ── MARQUEE ── */}
-      <div className="bg-foreground text-background py-4 overflow-hidden">
+      <div className="bg-foreground text-background py-3 sm:py-4 overflow-hidden">
         <div className="flex whitespace-nowrap" style={{ animation: "marquee 24s linear infinite" }}>
           {[...Array(2)].map((_, i) => (
-            <div key={i} className="flex items-center gap-10 pr-10 font-display text-2xl tracking-[0.3em]">
+            <div key={i} className="flex items-center gap-6 sm:gap-10 pr-6 sm:pr-10 font-display text-base sm:text-2xl tracking-[0.2em] sm:tracking-[0.3em]">
               <span>VIGR ANGEL APPAREL</span>
               <span className="text-primary">·</span>
               <span>VAA</span>
@@ -151,8 +154,8 @@ export default function Home() {
       </div>
 
       {/* ── PRODUCTS ── */}
-      <section id="products" className="py-28 px-6 max-w-7xl mx-auto w-full">
-        <div className="mb-16 text-center">
+      <section id="products" className="py-16 sm:py-28 px-4 sm:px-6 max-w-7xl mx-auto w-full">
+        <div className="mb-10 sm:mb-16 text-center">
           <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">Collection</p>
           <h2 className="font-display text-[clamp(2.5rem,6vw,5rem)] tracking-[0.15em]">THE COLLECTION</h2>
         </div>
@@ -177,8 +180,8 @@ export default function Home() {
       </section>
 
       {/* ── ABOUT ── */}
-      <section id="about" className="py-28 px-6" style={{ background: "rgba(255,255,255,0.02)" }}>
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+      <section id="about" className="py-16 sm:py-28 px-4 sm:px-6" style={{ background: "rgba(255,255,255,0.02)" }}>
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 sm:gap-16 items-center">
           {/* Text */}
           <div className="space-y-8">
             <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground">About</p>
@@ -196,7 +199,7 @@ export default function Home() {
 
           {/* Logo block */}
           <div className="flex justify-center items-center">
-            <div className="w-64 h-64">
+            <div className="w-40 h-40 sm:w-64 sm:h-64">
               <img
                 src={logoPath}
                 alt="VAA Mark"
@@ -209,13 +212,13 @@ export default function Home() {
       </section>
 
       {/* ── NEWSLETTER ── */}
-      <section className="py-28 px-6 flex flex-col items-center text-center">
-        <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">Stay Connected</p>
-        <h2 className="font-display text-[clamp(2rem,5vw,4rem)] tracking-[0.15em] mb-3">JOIN THE COVENANT</h2>
-        <p className="font-sans text-xs tracking-[0.2em] text-muted-foreground mb-10">
+      <section className="py-16 sm:py-28 px-4 sm:px-6 flex flex-col items-center text-center">
+        <p className="font-sans text-[10px] tracking-[0.4em] sm:tracking-[0.5em] uppercase text-muted-foreground mb-3">Stay Connected</p>
+        <h2 className="font-display text-[clamp(1.75rem,5vw,4rem)] tracking-[0.1em] sm:tracking-[0.15em] mb-3">JOIN THE COVENANT</h2>
+        <p className="font-sans text-[11px] sm:text-xs tracking-[0.15em] sm:tracking-[0.2em] text-muted-foreground mb-8 sm:mb-10 px-2">
           Exclusive drops. Raw transmissions. No noise.
         </p>
-        <form onSubmit={handleSubscribe} className="flex w-full max-w-sm">
+        <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row w-full max-w-sm gap-2 sm:gap-0">
           <Input
             type="email"
             placeholder="your@email.com"
@@ -229,7 +232,7 @@ export default function Home() {
             type="submit"
             disabled={subscribeNewsletter.isPending}
             data-testid="button-newsletter-submit"
-            className="rounded-none font-display text-xl tracking-[0.2em] h-12 px-8 bg-foreground text-background hover:bg-primary hover:text-white transition-colors"
+            className="rounded-none font-display text-lg sm:text-xl tracking-[0.2em] h-12 px-8 bg-foreground text-background hover:bg-primary hover:text-white transition-colors"
           >
             {subscribeNewsletter.isPending ? "..." : "JOIN"}
           </Button>
@@ -237,10 +240,10 @@ export default function Home() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="py-12 px-6 border-t border-border">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
-          <span className="font-display text-xl tracking-[0.2em]">VIGR ANGEL APPAREL</span>
-          <div className="flex gap-8 font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground">
+      <footer className="py-10 sm:py-12 px-4 sm:px-6 border-t border-border">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 md:gap-6 text-center md:text-left">
+          <span className="font-display text-base sm:text-xl tracking-[0.2em]">VIGR ANGEL APPAREL</span>
+          <div className="flex flex-wrap justify-center gap-x-5 gap-y-3 sm:gap-8 font-sans text-[10px] tracking-[0.25em] sm:tracking-[0.3em] uppercase text-muted-foreground">
             <button onClick={scrollToProducts} className="hover:text-foreground transition-colors">Shop</button>
             <a href="#about" className="hover:text-foreground transition-colors">About</a>
             <Link href="/orders/lookup" className="hover:text-foreground transition-colors">Track Order</Link>
