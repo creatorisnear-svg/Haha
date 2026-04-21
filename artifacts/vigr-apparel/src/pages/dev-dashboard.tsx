@@ -630,9 +630,20 @@ function OrdersTab({ token }: { token: string }) {
               <div className="border-t border-border pt-4">
                 <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground mb-2">Items</p>
                 {order.items.map((item: any, i: number) => (
-                  <div key={i} className="flex justify-between font-sans text-xs py-1">
-                    <span>{item.productName} × {item.quantity}</span>
-                    <span className="text-muted-foreground">${(item.price * item.quantity / 100).toFixed(2)}</span>
+                  <div key={i} className="flex justify-between items-baseline font-sans text-xs py-1 gap-3">
+                    <span className="flex-1">
+                      {item.productName}
+                      {item.size && (
+                        <span
+                          className="ml-2 inline-block border border-border px-1.5 py-0.5 text-[9px] tracking-[0.2em] uppercase text-muted-foreground"
+                          data-testid={`order-item-size-${i}`}
+                        >
+                          Size: {item.size}
+                        </span>
+                      )}
+                      <span className="ml-2 text-muted-foreground">× {item.quantity}</span>
+                    </span>
+                    <span className="text-muted-foreground whitespace-nowrap">${(item.price * item.quantity / 100).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
