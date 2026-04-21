@@ -1397,10 +1397,17 @@ function CategoriesTab({ token }: { token: string }) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ name }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create category");
-      toast({ title: "Category created", description: name });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Failed to create category (HTTP ${res.status})`);
+      toast({ title: "Category created", description: data.name ?? name });
       setNewName("");
+      // Optimistic update — show the new category immediately
+      if (data && data.id) {
+        setCategories((prev) => {
+          const next = [...prev.filter((c) => c.id !== data.id), data];
+          return next.sort((a, b) => a.name.localeCompare(b.name));
+        });
+      }
       fetchCategories();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -1416,11 +1423,16 @@ function CategoriesTab({ token }: { token: string }) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ name }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to update category");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Failed to update category (HTTP ${res.status})`);
       toast({ title: "Category updated" });
       setEditingId(null);
       setEditName("");
+      if (data && data.id) {
+        setCategories((prev) =>
+          prev.map((c) => (c.id === data.id ? data : c)).sort((a, b) => a.name.localeCompare(b.name)),
+        );
+      }
       fetchCategories();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -1430,10 +1442,12 @@ function CategoriesTab({ token }: { token: string }) {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this category? Existing products keep their category label.")) return;
     try {
-      await fetch(`/api/admin/categories/${id}`, {
+      const res = await fetch(`/api/admin/categories/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) throw new Error(`Failed to delete category (HTTP ${res.status})`);
+      setCategories((prev) => prev.filter((c) => c.id !== id));
       toast({ title: "Category deleted" });
       fetchCategories();
     } catch (err: any) {
@@ -1571,10 +1585,13 @@ function SizesTab({ token }: { token: string }) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ label }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create size");
-      toast({ title: "Size created", description: data.label });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Failed to create size (HTTP ${res.status})`);
+      toast({ title: "Size created", description: data.label ?? label });
       setNewLabel("");
+      if (data && data.id) {
+        setSizes((prev) => [...prev.filter((s) => s.id !== data.id), data]);
+      }
       fetchSizes();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -1590,11 +1607,14 @@ function SizesTab({ token }: { token: string }) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ label }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to update size");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Failed to update size (HTTP ${res.status})`);
       toast({ title: "Size updated" });
       setEditingId(null);
       setEditLabel("");
+      if (data && data.id) {
+        setSizes((prev) => prev.map((s) => (s.id === data.id ? data : s)));
+      }
       fetchSizes();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -1604,10 +1624,12 @@ function SizesTab({ token }: { token: string }) {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this size? Existing products keep their selected sizes.")) return;
     try {
-      await fetch(`/api/admin/sizes/${id}`, {
+      const res = await fetch(`/api/admin/sizes/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) throw new Error(`Failed to delete size (HTTP ${res.status})`);
+      setSizes((prev) => prev.filter((s) => s.id !== id));
       toast({ title: "Size deleted" });
       fetchSizes();
     } catch (err: any) {
