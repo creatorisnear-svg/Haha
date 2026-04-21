@@ -60,6 +60,7 @@ function serializeProduct(product: any) {
     description: product.description,
     price: product.price,
     imageUrl: product.imageUrl,
+    imageUrls: product.imageUrls ?? (product.imageUrl ? [product.imageUrl] : null),
     inStock: product.inStock,
     stockCount: product.stockCount ?? null,
     category: product.category,
@@ -68,19 +69,32 @@ function serializeProduct(product: any) {
   };
 }
 
+function normalizeImageUrls(imageUrls: any, imageUrl: any): string[] | null {
+  let list: string[] = [];
+  if (Array.isArray(imageUrls)) {
+    list = imageUrls.filter((u: any) => typeof u === "string" && u.trim().length > 0);
+  }
+  if (list.length === 0 && typeof imageUrl === "string" && imageUrl.trim().length > 0) {
+    list = [imageUrl.trim()];
+  }
+  return list.length > 0 ? list : null;
+}
+
 router.post("/admin/products", adminAuthMiddleware, async (req, res) => {
-  const { name, description, price, imageUrl, inStock, stockCount, category, sizes } = req.body;
+  const { name, description, price, imageUrl, imageUrls, inStock, stockCount, category, sizes } = req.body;
   if (!name || price === undefined) return res.status(400).json({ error: "name and price required" });
   const normalizedStockCount =
     typeof stockCount === "number" && stockCount >= 0 ? Math.floor(stockCount) : null;
   const computedInStock =
     normalizedStockCount === null ? (inStock ?? true) : normalizedStockCount > 0;
   const normalizedSizes = Array.isArray(sizes) && sizes.length > 0 ? sizes : null;
+  const normalizedImages = normalizeImageUrls(imageUrls, imageUrl);
   const product = await storage.createProduct({
     name,
     description,
     price,
-    imageUrl,
+    imageUrl: normalizedImages?.[0] ?? null,
+    imageUrls: normalizedImages,
     inStock: computedInStock,
     stockCount: normalizedStockCount,
     category,
@@ -90,8 +104,13 @@ router.post("/admin/products", adminAuthMiddleware, async (req, res) => {
 });
 
 router.put("/admin/products/:id", adminAuthMiddleware, async (req, res) => {
-  const { name, description, price, imageUrl, inStock, stockCount, category, sizes } = req.body;
-  const updates: any = { name, description, price, imageUrl, category };
+  const { name, description, price, imageUrl, imageUrls, inStock, stockCount, category, sizes } = req.body;
+  const updates: any = { name, description, price, category };
+  if (imageUrls !== undefined || imageUrl !== undefined) {
+    const normalizedImages = normalizeImageUrls(imageUrls, imageUrl);
+    updates.imageUrls = normalizedImages;
+    updates.imageUrl = normalizedImages?.[0] ?? null;
+  }
   if (sizes !== undefined) {
     updates.sizes = Array.isArray(sizes) && sizes.length > 0 ? sizes : null;
   }

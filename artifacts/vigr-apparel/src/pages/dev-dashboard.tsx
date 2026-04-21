@@ -162,7 +162,7 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
     name: "",
     description: "",
     price: "",
-    imageUrl: "",
+    imageUrls: [""] as string[],
     category: "",
     inStock: true,
     stockCount: "",
@@ -177,7 +177,7 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
       name: "",
       description: "",
       price: "",
-      imageUrl: "",
+      imageUrls: [""],
       category: "",
       inStock: true,
       stockCount: "",
@@ -189,11 +189,16 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
   const handleOpenDialog = (product?: any) => {
     if (product) {
       setEditingProduct(product);
+      const existingImages: string[] = Array.isArray(product.imageUrls) && product.imageUrls.length > 0
+        ? product.imageUrls
+        : product.imageUrl
+        ? [product.imageUrl]
+        : [""];
       setFormData({
         name: product.name,
         description: product.description || "",
         price: (product.price / 100).toString(),
-        imageUrl: product.imageUrl || "",
+        imageUrls: existingImages.length > 0 ? existingImages : [""],
         category: product.category || "",
         inStock: product.inStock,
         stockCount:
@@ -204,6 +209,35 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
       resetForm();
     }
     setIsDialogOpen(true);
+  };
+
+  const updateImageUrl = (index: number, value: string) => {
+    setFormData((prev) => {
+      const next = [...prev.imageUrls];
+      next[index] = value;
+      return { ...prev, imageUrls: next };
+    });
+  };
+
+  const addImageUrl = () => {
+    setFormData((prev) => ({ ...prev, imageUrls: [...prev.imageUrls, ""] }));
+  };
+
+  const removeImageUrl = (index: number) => {
+    setFormData((prev) => {
+      const next = prev.imageUrls.filter((_, i) => i !== index);
+      return { ...prev, imageUrls: next.length > 0 ? next : [""] };
+    });
+  };
+
+  const moveImageUrl = (index: number, dir: -1 | 1) => {
+    setFormData((prev) => {
+      const next = [...prev.imageUrls];
+      const target = index + dir;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return { ...prev, imageUrls: next };
+    });
   };
 
   const toggleSize = (size: string) => {
@@ -221,11 +255,13 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
     try {
       const trimmedStock = formData.stockCount.trim();
       const parsedStock = trimmedStock === "" ? null : Math.max(0, Math.floor(Number(trimmedStock)));
+      const cleanedImages = formData.imageUrls.map((u) => u.trim()).filter((u) => u.length > 0);
       const payload = {
         name: formData.name,
         description: formData.description || undefined,
         price: Math.round(parseFloat(formData.price) * 100),
-        imageUrl: formData.imageUrl || undefined,
+        imageUrls: cleanedImages,
+        imageUrl: cleanedImages[0] ?? undefined,
         category: formData.category || undefined,
         inStock: parsedStock === null ? formData.inStock : parsedStock > 0,
         stockCount: parsedStock,
@@ -371,13 +407,72 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="imageUrl" className="text-xs uppercase tracking-widest text-muted-foreground">Image URL</Label>
-                <Input 
-                  id="imageUrl" 
-                  value={formData.imageUrl} 
-                  onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
-                  className="rounded-none border-border focus-visible:ring-1 focus-visible:ring-primary"
-                />
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                    Images <span className="lowercase tracking-normal">(first one is the main image)</span>
+                  </Label>
+                  <button
+                    type="button"
+                    onClick={addImageUrl}
+                    className="font-sans text-[10px] uppercase tracking-widest text-primary hover:underline"
+                    data-testid="button-add-image"
+                  >
+                    + Add image
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {formData.imageUrls.map((url, idx) => (
+                    <div key={idx} className="flex gap-2 items-start">
+                      <div className="flex-1 space-y-1">
+                        <Input
+                          value={url}
+                          placeholder={idx === 0 ? "Main image URL" : `Image ${idx + 1} URL`}
+                          onChange={(e) => updateImageUrl(idx, e.target.value)}
+                          className="rounded-none border-border focus-visible:ring-1 focus-visible:ring-primary"
+                          data-testid={`input-image-url-${idx}`}
+                        />
+                        {url.trim() && (
+                          <div className="w-16 h-16 border border-border bg-[#111] overflow-hidden">
+                            <img
+                              src={url}
+                              alt=""
+                              className="w-full h-full object-cover"
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "0.2"; }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <button
+                          type="button"
+                          onClick={() => moveImageUrl(idx, -1)}
+                          disabled={idx === 0}
+                          aria-label="Move up"
+                          className="w-7 h-7 border border-border text-xs hover:bg-foreground/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveImageUrl(idx, 1)}
+                          disabled={idx === formData.imageUrls.length - 1}
+                          aria-label="Move down"
+                          className="w-7 h-7 border border-border text-xs hover:bg-foreground/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          ↓
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeImageUrl(idx)}
+                          aria-label="Remove image"
+                          className="w-7 h-7 border border-destructive text-destructive text-xs hover:bg-destructive hover:text-white"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
               <div className="space-y-2">
                 <Label className="text-xs uppercase tracking-widest text-muted-foreground">Sizes Available</Label>

@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link, useRoute, useLocation } from "wouter";
-import { ArrowLeft, ShoppingCart, User, Menu } from "lucide-react";
+import { ArrowLeft, ShoppingCart, User, Menu, ChevronLeft, ChevronRight } from "lucide-react";
 import { useGetProduct, getGetProductQueryKey } from "@workspace/api-client-react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -25,6 +25,23 @@ export default function ProductDetail() {
 
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [activeImage, setActiveImage] = useState(0);
+
+  const images = useMemo<string[]>(() => {
+    if (!product) return [];
+    const list: string[] = Array.isArray((product as any).imageUrls)
+      ? (product as any).imageUrls.filter((u: any) => typeof u === "string" && u.trim().length > 0)
+      : [];
+    if (list.length > 0) return list;
+    return product.imageUrl ? [product.imageUrl] : [];
+  }, [product]);
+
+  useEffect(() => {
+    if (activeImage >= images.length) setActiveImage(0);
+  }, [images.length, activeImage]);
+
+  const goPrev = () => setActiveImage((i) => (images.length === 0 ? 0 : (i - 1 + images.length) % images.length));
+  const goNext = () => setActiveImage((i) => (images.length === 0 ? 0 : (i + 1) % images.length));
 
   const sizes = (product as any)?.sizes;
   const hasSizes = Array.isArray(sizes) && sizes.length > 0;
@@ -117,25 +134,97 @@ export default function ProductDetail() {
           </div>
         ) : (
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-16 grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-16">
-            {/* Image */}
-            <div className="aspect-[3/4] bg-[#111] relative overflow-hidden border border-border">
-              {product.imageUrl ? (
-                <img
-                  src={product.imageUrl}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                  data-testid="img-product-detail"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <div className="w-32 h-32 opacity-20">
-                    <img
-                      src={logoPath}
-                      alt=""
-                      className="w-full h-full object-contain"
-                      style={{ filter: "invert(1)" }}
-                    />
+            {/* Image gallery */}
+            <div className="space-y-3">
+              <div className="aspect-[3/4] bg-[#111] relative overflow-hidden border border-border group">
+                {images.length > 0 ? (
+                  <>
+                    <div
+                      className="flex h-full w-full transition-transform duration-300 ease-out"
+                      style={{ transform: `translateX(-${activeImage * 100}%)` }}
+                    >
+                      {images.map((src, i) => (
+                        <img
+                          key={i}
+                          src={src}
+                          alt={`${product.name} – ${i + 1}`}
+                          className="w-full h-full object-cover flex-shrink-0"
+                          data-testid={`img-product-detail-${i}`}
+                          draggable={false}
+                        />
+                      ))}
+                    </div>
+
+                    {images.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={goPrev}
+                          aria-label="Previous image"
+                          data-testid="button-prev-image"
+                          className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-background/70 hover:bg-background border border-border text-foreground transition-all opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={goNext}
+                          aria-label="Next image"
+                          data-testid="button-next-image"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-background/70 hover:bg-background border border-border text-foreground transition-all opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+
+                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                          {images.map((_, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => setActiveImage(i)}
+                              aria-label={`View image ${i + 1}`}
+                              className={`h-1.5 transition-all ${
+                                activeImage === i
+                                  ? "w-6 bg-foreground"
+                                  : "w-1.5 bg-foreground/40 hover:bg-foreground/60"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="w-32 h-32 opacity-20">
+                      <img
+                        src={logoPath}
+                        alt=""
+                        className="w-full h-full object-contain"
+                        style={{ filter: "invert(1)" }}
+                      />
+                    </div>
                   </div>
+                )}
+              </div>
+
+              {images.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                  {images.map((src, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setActiveImage(i)}
+                      data-testid={`button-thumb-${i}`}
+                      className={`flex-shrink-0 w-16 h-20 sm:w-20 sm:h-24 border bg-[#111] overflow-hidden transition-all ${
+                        activeImage === i
+                          ? "border-foreground"
+                          : "border-border opacity-60 hover:opacity-100"
+                      }`}
+                    >
+                      <img src={src} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
                 </div>
               )}
             </div>

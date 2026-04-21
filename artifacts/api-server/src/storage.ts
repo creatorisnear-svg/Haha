@@ -8,6 +8,7 @@ export interface Product {
   description?: string | null;
   price: number;
   imageUrl?: string | null;
+  imageUrls?: string[] | null;
   inStock: boolean;
   stockCount?: number | null;
   category?: string | null;
@@ -18,12 +19,21 @@ export interface Product {
 export type InsertProduct = Omit<Product, "id" | "createdAt" | "updatedAt">;
 
 function docToProduct(doc: any): Product {
+  // Normalize images: prefer imageUrls (multi), fall back to imageUrl (legacy single)
+  const imagesRaw: string[] = Array.isArray(doc.imageUrls)
+    ? doc.imageUrls.filter((u: any) => typeof u === "string" && u.trim().length > 0)
+    : [];
+  const legacyUrl =
+    typeof doc.imageUrl === "string" && doc.imageUrl.trim().length > 0 ? doc.imageUrl : null;
+  const merged = imagesRaw.length > 0 ? imagesRaw : legacyUrl ? [legacyUrl] : [];
+
   return {
     id: doc._id.toString(),
     name: doc.name,
     description: doc.description ?? null,
     price: doc.price,
-    imageUrl: doc.imageUrl ?? null,
+    imageUrl: merged[0] ?? null,
+    imageUrls: merged.length > 0 ? merged : null,
     inStock: doc.inStock,
     stockCount: typeof doc.stockCount === "number" ? doc.stockCount : null,
     category: doc.category ?? null,
