@@ -1,0 +1,20 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "VErUsIcZWP2x5swc9WOTv"
+uri = "file://artifacts/vigr-apparel/src/assets/hero-bg.png"
+type = "image"
+title = "dark cinematic angel statue"
+
+[[generated]]
+id = "6elauzGu7GIKVXxNw20Vc"
+uri = "file://artifacts/vigr-apparel/src/assets/about-texture.png"
+type = "image"
+title = "dark fabric texture"
+
+[[generated]]
+id = "zYgbpaEdtejRDpSAtpOH_"
+uri = "file://artifacts/vigr-apparel/src/assets/manifesto-bg.png"
+type = "image"
+title = "grunge wall street art"
