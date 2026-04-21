@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dev
+Disallow: /dev/
+Disallow: /account/
+Disallow: /checkout/
+Disallow: /api/
+
+Sitemap: https://vaaclothing.xyz/sitemap.xml
