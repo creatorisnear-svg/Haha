@@ -86,7 +86,7 @@ function customerHtml(data: OrderEmailData): string {
       <p style="margin:0 0 8px;font-size:10px;letter-spacing:0.3em;color:#9a9a9a;text-transform:uppercase;">Ship To</p>
       <p style="margin:0;color:#e5e5e5;font-size:13px;line-height:1.6;">${renderAddress(data.shippingAddress)}</p>
     </div>
-    <p style="color:#9a9a9a;font-size:12px;line-height:1.6;margin-top:32px;">Questions? Reply to this email — it goes straight to us.</p>
+    <p style="color:#9a9a9a;font-size:12px;line-height:1.6;margin-top:32px;">Need help? Email us at <a href="mailto:vaaclothing.xyz@gmail.com" style="color:#c5c5c5;">vaaclothing.xyz@gmail.com</a> — we're happy to assist.</p>
     <p style="color:#5a5a5a;font-size:11px;text-align:center;margin-top:32px;letter-spacing:0.2em;text-transform:uppercase;">VIGR Angel Apparel · Born in the grit</p>
   </div>
 </body></html>`;
@@ -173,7 +173,7 @@ function shippingHtml(data: ShippingEmailData): string {
       <p style="margin:0 0 8px;font-size:10px;letter-spacing:0.3em;color:#9a9a9a;text-transform:uppercase;">Ship To</p>
       <p style="margin:0;color:#e5e5e5;font-size:13px;line-height:1.6;">${renderAddress(data.shippingAddress)}</p>
     </div>
-    <p style="color:#9a9a9a;font-size:12px;line-height:1.6;margin-top:32px;">Questions? Reply to this email — it goes straight to us.</p>
+    <p style="color:#9a9a9a;font-size:12px;line-height:1.6;margin-top:32px;">Need help? Email us at <a href="mailto:vaaclothing.xyz@gmail.com" style="color:#c5c5c5;">vaaclothing.xyz@gmail.com</a> — we're happy to assist.</p>
     <p style="color:#5a5a5a;font-size:11px;text-align:center;margin-top:32px;letter-spacing:0.2em;text-transform:uppercase;">VIGR Angel Apparel · Born in the grit</p>
   </div>
 </body></html>`;
@@ -185,6 +185,28 @@ export async function sendShippingNotification(data: ShippingEmailData): Promise
     subject: `Your order ${data.orderNumber} has shipped — VIGR Angel Apparel`,
     html: shippingHtml(data),
   });
+}
+
+export async function sendNewsletterBlast(data: { subject: string; body: string; subscribers: string[] }): Promise<void> {
+  const html = `<!doctype html>
+<html><body style="margin:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e5e5e5;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
+    <div style="text-align:center;padding-bottom:24px;border-bottom:1px solid #2a2a2a;">
+      <h1 style="font-size:18px;letter-spacing:0.3em;margin:0;color:#ffffff;text-transform:uppercase;">VIGR Angel Apparel</h1>
+    </div>
+    <div style="padding:32px 0;">
+      ${data.body.split("\n").map((line) => `<p style="color:#c5c5c5;font-size:14px;line-height:1.7;margin:0 0 12px;">${line}</p>`).join("")}
+    </div>
+    <div style="border-top:1px solid #2a2a2a;padding-top:24px;margin-top:16px;">
+      <p style="color:#9a9a9a;font-size:12px;line-height:1.6;">Need help? Email us at <a href="mailto:vaaclothing.xyz@gmail.com" style="color:#c5c5c5;">vaaclothing.xyz@gmail.com</a></p>
+      <p style="color:#5a5a5a;font-size:11px;text-align:center;margin-top:24px;letter-spacing:0.2em;text-transform:uppercase;">VIGR Angel Apparel · Born in the grit</p>
+    </div>
+  </div>
+</body></html>`;
+
+  for (const email of data.subscribers) {
+    await sendViaResend({ to: email, subject: data.subject, html });
+  }
 }
 
 export async function sendOrderConfirmation(data: OrderEmailData): Promise<void> {

@@ -236,6 +236,12 @@ export class Storage {
     );
   }
 
+  async getAllNewsletterSubscribers(): Promise<string[]> {
+    const db = await getDb();
+    const docs = await db.collection("newsletter").find().sort({ subscribedAt: 1 }).toArray();
+    return docs.map((d) => d.email);
+  }
+
   // Customers
   async createCustomer(data: { name: string; email: string; passwordHash: string; phone?: string }): Promise<Customer> {
     const db = await getDb();
@@ -256,6 +262,12 @@ export class Storage {
       const doc = await db.collection("customers").findOne({ _id: new ObjectId(id) });
       return doc ? docToCustomer(doc) : null;
     } catch { return null; }
+  }
+
+  async getAllCustomers(): Promise<Customer[]> {
+    const db = await getDb();
+    const docs = await db.collection("customers").find().sort({ createdAt: -1 }).toArray();
+    return docs.map(docToCustomer);
   }
 
   // Orders

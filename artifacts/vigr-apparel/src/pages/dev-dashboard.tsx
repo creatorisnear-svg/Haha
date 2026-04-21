@@ -82,6 +82,12 @@ export default function DevDashboard() {
             <TabsTrigger value="promos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
               Promos
             </TabsTrigger>
+            <TabsTrigger value="customers" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
+              Customers
+            </TabsTrigger>
+            <TabsTrigger value="newsletter" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
+              Newsletter
+            </TabsTrigger>
             <TabsTrigger value="settings" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
               Settings
             </TabsTrigger>
@@ -97,6 +103,14 @@ export default function DevDashboard() {
           
           <TabsContent value="promos" className="pt-8">
             <PromoCodesTab token={token} />
+          </TabsContent>
+
+          <TabsContent value="customers" className="pt-8">
+            <CustomersTab token={token} />
+          </TabsContent>
+
+          <TabsContent value="newsletter" className="pt-8">
+            <NewsletterTab token={token} />
           </TabsContent>
 
           <TabsContent value="settings" className="pt-8">
@@ -727,6 +741,157 @@ function SettingsTab({ settings, isLoading, token }: { settings: any, isLoading:
 }
 
 const BASE_ADMIN = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+function CustomersTab({ token }: { token: string }) {
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`${BASE_ADMIN}/api/admin/customers`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => setCustomers(d.data ?? []))
+      .catch(() => setCustomers([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="font-sans text-sm text-muted-foreground tracking-widest uppercase">Loading customers...</div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-2xl tracking-widest uppercase">Customers ({customers.length})</h2>
+      </div>
+      {customers.length === 0 ? (
+        <div className="border border-dashed border-border p-12 text-center font-sans text-sm text-muted-foreground tracking-widest uppercase">
+          No registered customers yet
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {customers.map((c) => (
+            <div key={c.id} className="border border-border bg-card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <p className="font-sans font-medium text-sm uppercase tracking-widest">{c.name}</p>
+                <p className="font-sans text-xs text-muted-foreground">{c.email}</p>
+                {c.phone && <p className="font-sans text-xs text-muted-foreground">{c.phone}</p>}
+              </div>
+              <p className="font-sans text-xs text-muted-foreground flex-shrink-0">
+                Joined {new Date(c.createdAt).toLocaleDateString("en-US", { dateStyle: "medium" })}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NewsletterTab({ token }: { token: string }) {
+  const [subscribers, setSubscribers] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [form, setForm] = useState({ subject: "", body: "" });
+  const { toast } = useToast();
+
+  const fetchSubscribers = () => {
+    setLoading(true);
+    fetch(`${BASE_ADMIN}/api/admin/newsletter/subscribers`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => setSubscribers(d.data ?? []))
+      .catch(() => setSubscribers([]))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { fetchSubscribers(); }, []);
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.subject.trim() || !form.body.trim()) return;
+    if (!confirm(`Send this email to all ${subscribers.length} subscriber(s)?`)) return;
+    setSending(true);
+    try {
+      const res = await fetch(`${BASE_ADMIN}/api/admin/newsletter/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ subject: form.subject, body: form.body }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send");
+      toast({ title: "Sent!", description: `Newsletter delivered to ${data.sent} subscriber(s).` });
+      setForm({ subject: "", body: "" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8 max-w-2xl">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-display text-2xl tracking-widest uppercase">Newsletter</h2>
+          {!loading && (
+            <p className="font-sans text-xs text-muted-foreground mt-1 tracking-widest">
+              {subscribers.length} subscriber{subscribers.length !== 1 ? "s" : ""}
+            </p>
+          )}
+        </div>
+        <Button variant="outline" onClick={fetchSubscribers} className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4">
+          Refresh
+        </Button>
+      </div>
+
+      {subscribers.length === 0 && !loading ? (
+        <div className="border border-dashed border-border p-8 text-center font-sans text-sm text-muted-foreground tracking-widest uppercase">
+          No subscribers yet
+        </div>
+      ) : (
+        <>
+          <div className="border border-border bg-card p-4 max-h-40 overflow-y-auto space-y-1">
+            <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground mb-2">Subscriber List</p>
+            {subscribers.map((email) => (
+              <p key={email} className="font-sans text-xs text-muted-foreground">{email}</p>
+            ))}
+          </div>
+
+          <form onSubmit={handleSend} className="space-y-4 border border-border bg-card p-6">
+            <h3 className="font-display text-lg tracking-widest uppercase">Send Email Blast</h3>
+            <div className="space-y-2">
+              <Label className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground">Subject</Label>
+              <Input
+                required
+                placeholder="e.g. New Drop — VAA Summer Collection"
+                value={form.subject}
+                onChange={(e) => setForm((p) => ({ ...p, subject: e.target.value }))}
+                className="rounded-none border-border focus-visible:ring-1 focus-visible:ring-primary"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground">Message Body</Label>
+              <Textarea
+                required
+                rows={8}
+                placeholder="Write your message here. Each line will become a paragraph."
+                value={form.body}
+                onChange={(e) => setForm((p) => ({ ...p, body: e.target.value }))}
+                className="rounded-none border-border focus-visible:ring-1 focus-visible:ring-primary min-h-[160px]"
+              />
+              <p className="font-sans text-[10px] text-muted-foreground">Each line break becomes a new paragraph in the email.</p>
+            </div>
+            <Button
+              type="submit"
+              disabled={sending || subscribers.length === 0}
+              className="rounded-none font-display tracking-widest h-12 px-8 bg-foreground text-background hover:bg-primary hover:text-white transition-colors"
+            >
+              {sending ? "SENDING..." : `SEND TO ${subscribers.length} SUBSCRIBER${subscribers.length !== 1 ? "S" : ""}`}
+            </Button>
+          </form>
+        </>
+      )}
+    </div>
+  );
+}
 
 function PromoCodesTab({ token }: { token: string }) {
   const { toast } = useToast();

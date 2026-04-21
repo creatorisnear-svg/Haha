@@ -69,8 +69,8 @@ router.post("/admin/promo", adminAuthMiddleware, async (req, res) => {
     code: String(code).trim().toUpperCase(),
     discountType,
     discountAmount: Number(discountAmount),
-    minOrderValue: minOrderValue !== undefined && minOrderValue !== "" ? Number(minOrderValue) : null,
-    usageLimit: usageLimit !== undefined && usageLimit !== "" ? Number(usageLimit) : null,
+    minOrderValue: minOrderValue !== undefined && minOrderValue !== "" && minOrderValue !== null ? Number(minOrderValue) : null,
+    usageLimit: usageLimit !== undefined && usageLimit !== "" && usageLimit !== null ? Number(usageLimit) : null,
     expiresAt: expiresAt ? new Date(expiresAt) : null,
     active: active !== false,
   });

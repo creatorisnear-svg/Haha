@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { storage } from "../storage";
 import { verifyPassword, setPassword, createToken, adminAuthMiddleware } from "../auth";
-import { sendShippingNotification } from "../lib/email";
+import { sendShippingNotification, sendNewsletterBlast } from "../lib/email";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -144,6 +144,37 @@ router.put("/admin/orders/:id/status", adminAuthMiddleware, async (req, res) => 
   }
 
   res.json({ success: true, order: updated });
+});
+
+router.get("/admin/customers", adminAuthMiddleware, async (_req, res) => {
+  const customers = await storage.getAllCustomers();
+  const safe = customers.map((c) => ({
+    id: c.id,
+    name: c.name,
+    email: c.email,
+    phone: c.phone ?? null,
+    createdAt: c.createdAt,
+  }));
+  res.json({ data: safe });
+});
+
+router.get("/admin/newsletter/subscribers", adminAuthMiddleware, async (_req, res) => {
+  const emails = await storage.getAllNewsletterSubscribers();
+  res.json({ data: emails, count: emails.length });
+});
+
+router.post("/admin/newsletter/send", adminAuthMiddleware, async (req, res) => {
+  const { subject, body } = req.body;
+  if (!subject || !body) return res.status(400).json({ error: "subject and body are required" });
+  const subscribers = await storage.getAllNewsletterSubscribers();
+  if (subscribers.length === 0) return res.status(400).json({ error: "No subscribers to send to" });
+  try {
+    await sendNewsletterBlast({ subject, body, subscribers });
+    res.json({ success: true, sent: subscribers.length });
+  } catch (err: any) {
+    logger.error({ err }, "Newsletter blast failed");
+    res.status(500).json({ error: "Failed to send newsletter" });
+  }
 });
 
 export default router;
