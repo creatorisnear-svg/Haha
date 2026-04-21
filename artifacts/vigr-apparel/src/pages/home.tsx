@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import ThornsDivider from "@/components/ThornsDevider";
-import logoPath from "@assets/vaa-logo.png";
+import logoPath from "@assets/12214-removebg-preview_1776743232072.png";
 
 export default function Home() {
   const { data: productsData, isLoading } = useListProducts();
