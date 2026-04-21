@@ -312,7 +312,10 @@ export function Cart() {
       const intentRes = await fetch(`${BASE}/api/payments/intent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity })) }),
+        body: JSON.stringify({
+          items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
+          promoCode: promo.applied ? promo.code : undefined,
+        }),
       });
       const intentData = await intentRes.json();
       if (!intentRes.ok) throw new Error(intentData.error || "Payment setup failed");

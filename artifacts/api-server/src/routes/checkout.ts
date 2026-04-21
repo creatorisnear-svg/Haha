@@ -4,6 +4,7 @@ import { storage } from "../storage";
 import { hashPasswordAsync, verifyCustomerToken, createCustomerToken } from "../lib/customerAuth";
 import { sendOrderConfirmation } from "../lib/email";
 import { logger } from "../lib/logger";
+import { computePricing } from "../lib/pricing";
 
 const router = Router();
 
@@ -20,13 +21,15 @@ router.post("/checkout", async (req, res) => {
   if (!shippingAddress) return res.status(400).json({ error: "Shipping address required" });
   if (!email) return res.status(400).json({ error: "Email required" });
 
-  // If Stripe is configured, verify the payment intent
+  // If Stripe is configured, verify the payment intent (status check below;
+  // amount check happens after we re-compute pricing server-side).
   const stripe = await getStripe();
+  let paymentIntent: Stripe.PaymentIntent | null = null;
   if (stripe) {
     if (!paymentIntentId) return res.status(400).json({ error: "Payment not completed" });
     try {
-      const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
-      if (pi.status !== "succeeded") return res.status(400).json({ error: "Payment not yet confirmed" });
+      paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      if (paymentIntent.status !== "succeeded") return res.status(400).json({ error: "Payment not yet confirmed" });
     } catch {
       return res.status(400).json({ error: "Invalid payment reference" });
     }
@@ -87,33 +90,27 @@ router.post("/checkout", async (req, res) => {
     return res.status(400).json({ error: err.message });
   }
 
-  let subtotal = orderItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
-
-  // Apply promo code if provided
-  let discountAmountCents = 0;
-  let appliedPromoCode: string | null = null;
-
-  if (promoCode) {
-    const promo = await storage.getPromoCodeByCode(String(promoCode).trim());
-    if (promo && promo.active) {
-      const now = new Date();
-      const notExpired = !promo.expiresAt || promo.expiresAt >= now;
-      const underLimit = promo.usageLimit === null || promo.usageCount < promo.usageLimit;
-      const subtotalDollars = subtotal / 100;
-      const meetsMin = promo.minOrderValue === null || promo.minOrderValue === undefined || subtotalDollars >= promo.minOrderValue;
-
-      if (notExpired && underLimit && meetsMin) {
-        if (promo.discountType === "percent") {
-          discountAmountCents = Math.round(subtotal * (promo.discountAmount / 100));
-        } else {
-          discountAmountCents = Math.min(Math.round(promo.discountAmount * 100), subtotal);
-        }
-        appliedPromoCode = promo.code;
-      }
-    }
+  // Re-compute pricing server-side (single source of truth)
+  let pricing;
+  try {
+    pricing = await computePricing(
+      items.map((i: any) => ({ productId: i.productId, quantity: i.quantity })),
+      promoCode,
+    );
+  } catch (err: any) {
+    return res.status(400).json({ error: err.message });
   }
 
-  const total = Math.max(0, subtotal - discountAmountCents);
+  // If Stripe was used, make sure the customer was actually charged the right amount
+  if (paymentIntent && paymentIntent.amount !== pricing.total) {
+    logger.error(
+      { paymentIntentAmount: paymentIntent.amount, computedTotal: pricing.total, paymentIntentId },
+      "Payment amount mismatch — refusing to place order",
+    );
+    return res.status(400).json({
+      error: "Payment amount does not match order total. Please refresh and try again.",
+    });
+  }
 
   const order = await storage.createOrder({
     customerId,
@@ -122,11 +119,14 @@ router.post("/checkout", async (req, res) => {
     customerPhone: phone ?? null,
     items: orderItems,
     shippingAddress,
-    total,
-    discountAmount: discountAmountCents > 0 ? discountAmountCents : null,
-    promoCode: appliedPromoCode,
+    total: pricing.total,
+    discountAmount: pricing.discountAmount > 0 ? pricing.discountAmount : null,
+    promoCode: pricing.appliedPromoCode,
     status: "pending",
   });
+
+  const appliedPromoCode = pricing.appliedPromoCode;
+  const total = pricing.total;
 
   // Decrement stock for each item (best-effort — order is already placed)
   for (const item of orderItems) {
