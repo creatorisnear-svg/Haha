@@ -57,7 +57,7 @@ export default function Home() {
                 style={{ filter: "invert(1)" }}
               />
             </div>
-            <span className="font-display text-2xl tracking-[0.25em]">VAA</span>
+            <span className="font-display text-2xl tracking-[0.25em]">VIGR ANGEL APPAREL</span>
           </Link>
 
           {/* Nav links */}

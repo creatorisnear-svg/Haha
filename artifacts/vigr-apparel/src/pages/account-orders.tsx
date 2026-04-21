@@ -33,7 +33,7 @@ export default function AccountOrders() {
     <div className="min-h-screen bg-background text-foreground">
       <nav className="fixed top-0 left-0 right-0 z-40 border-b border-border" style={{ background: "rgba(10,10,10,0.95)" }}>
         <div className="max-w-4xl mx-auto px-6 h-[72px] flex items-center justify-between">
-          <Link href="/" className="font-display text-xl tracking-[0.25em]">VAA</Link>
+          <Link href="/" className="font-display text-xl tracking-[0.25em]">VIGR ANGEL APPAREL</Link>
           <div className="flex items-center gap-6">
             <span className="font-sans text-xs text-muted-foreground tracking-widest uppercase hidden sm:block">{customer?.name}</span>
             <Button variant="ghost" onClick={handleLogout} className="font-sans text-xs tracking-widest uppercase text-muted-foreground hover:text-foreground h-8 px-3">
