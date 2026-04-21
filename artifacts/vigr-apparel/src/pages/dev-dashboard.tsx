@@ -307,13 +307,13 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
               + Add Product
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px] rounded-none border-border bg-background p-0">
-            <DialogHeader className="p-6 border-b border-border">
+          <DialogContent className="sm:max-w-[500px] rounded-none border-border bg-background p-0 max-h-[90vh] flex flex-col">
+            <DialogHeader className="p-6 border-b border-border flex-shrink-0">
               <DialogTitle className="font-display text-2xl tracking-widest uppercase">
                 {editingProduct ? "Edit Product" : "New Product"}
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-xs uppercase tracking-widest text-muted-foreground">Name</Label>
                 <Input 
