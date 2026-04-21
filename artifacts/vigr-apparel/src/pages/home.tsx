@@ -154,7 +154,7 @@ export default function Home() {
       <section id="products" className="py-28 px-6 max-w-7xl mx-auto w-full">
         <div className="mb-16 text-center">
           <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">Collection</p>
-          <h2 className="font-display text-[clamp(2.5rem,6vw,5rem)] tracking-[0.15em]">THE DROP</h2>
+          <h2 className="font-display text-[clamp(2.5rem,6vw,5rem)] tracking-[0.15em]">THE COLLECTION</h2>
         </div>
 
         {isLoading ? (
