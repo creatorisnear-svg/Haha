@@ -462,7 +462,7 @@ export default function Home() {
           <p className="font-sans text-[10px] tracking-[0.4em] sm:tracking-[0.5em] uppercase text-muted-foreground mb-3">Stay Connected</p>
           <h2 className="font-display text-[clamp(1.75rem,5vw,4rem)] tracking-[0.1em] sm:tracking-[0.15em] mb-3">JOIN THE COVENANT</h2>
           <p className="font-sans text-[11px] sm:text-xs tracking-[0.15em] sm:tracking-[0.2em] text-muted-foreground mb-8 sm:mb-10 px-2 max-w-md">
-            Exclusive drops. Raw transmissions. No noise.
+            Be the first to know when new pieces release. No spam.
           </p>
           <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row w-full max-w-sm gap-2 sm:gap-0">
             <Input
@@ -471,6 +471,8 @@ export default function Home() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              inputMode="email"
               data-testid="input-newsletter-email"
               className="rounded-none border border-border bg-transparent font-sans text-xs tracking-widest h-12 flex-1 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
             />

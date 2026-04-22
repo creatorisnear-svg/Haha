@@ -56,6 +56,8 @@ export default function AccountLogin() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            autoComplete="email"
+            inputMode="email"
             className="rounded-none border-border bg-transparent font-sans text-sm tracking-widest h-12"
           />
           <Input
@@ -64,6 +66,7 @@ export default function AccountLogin() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            autoComplete="current-password"
             className="rounded-none border-border bg-transparent font-sans text-sm tracking-widest h-12"
           />
           <Button

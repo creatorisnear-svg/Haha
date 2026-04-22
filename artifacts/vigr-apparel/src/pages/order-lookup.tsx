@@ -165,9 +165,9 @@ export default function OrderLookup() {
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <nav className="fixed top-0 left-0 right-0 z-40 border-b border-border" style={{ background: "rgba(10,10,10,0.95)" }}>
         <div className="max-w-7xl mx-auto px-6 h-[72px] flex items-center justify-between">
-          <Link href="/" className="font-display text-xl tracking-[0.25em]">VIGR ANGEL APPAREL</Link>
-          <Link href="/" className="font-sans text-[11px] tracking-[0.3em] uppercase text-muted-foreground hover:text-foreground transition-colors">
-            ← Back to Shop
+          <Link href="/" className="font-display text-base sm:text-xl tracking-[0.2em] sm:tracking-[0.25em] whitespace-nowrap">VIGR ANGEL APPAREL</Link>
+          <Link href="/" className="font-sans text-[10px] sm:text-[11px] tracking-[0.25em] sm:tracking-[0.3em] uppercase text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
+            ← <span className="hidden sm:inline">Back to </span>Shop
           </Link>
         </div>
       </nav>
@@ -211,6 +211,8 @@ export default function OrderLookup() {
                 required
                 value={form.email}
                 onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+                autoComplete="email"
+                inputMode="email"
                 className="rounded-none h-11 font-sans text-sm"
               />
             </div>

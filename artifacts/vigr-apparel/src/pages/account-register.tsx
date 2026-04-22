@@ -58,6 +58,7 @@ export default function AccountRegister() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
+            autoComplete="name"
             className="rounded-none border-border bg-transparent font-sans text-sm tracking-widest h-12"
           />
           <Input
@@ -66,6 +67,8 @@ export default function AccountRegister() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            autoComplete="email"
+            inputMode="email"
             className="rounded-none border-border bg-transparent font-sans text-sm tracking-widest h-12"
           />
           <Input
@@ -73,6 +76,8 @@ export default function AccountRegister() {
             placeholder="PHONE (optional)"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
+            autoComplete="tel"
+            inputMode="tel"
             className="rounded-none border-border bg-transparent font-sans text-sm tracking-widest h-12"
           />
           <Input
@@ -82,6 +87,7 @@ export default function AccountRegister() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
+            autoComplete="new-password"
             className="rounded-none border-border bg-transparent font-sans text-sm tracking-widest h-12"
           />
           <Button

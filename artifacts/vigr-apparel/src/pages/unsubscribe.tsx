@@ -94,6 +94,8 @@ export default function Unsubscribe() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                inputMode="email"
                 data-testid="input-unsubscribe-email"
                 className="rounded-none border border-border bg-transparent font-sans text-xs tracking-widest h-12 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
               />

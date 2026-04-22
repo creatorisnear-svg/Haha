@@ -47,6 +47,7 @@ export default function DevLogin() {
             placeholder="PASSWORD"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
             className="rounded-none border-border bg-transparent text-center font-sans tracking-widest h-12 uppercase focus-visible:ring-1 focus-visible:ring-primary"
             data-testid="input-password"
           />
