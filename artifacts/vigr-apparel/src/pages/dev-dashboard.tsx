@@ -1660,34 +1660,64 @@ function PromoCodesTab({ token }: { token: string }) {
                             No orders have used this code yet.
                           </p>
                         ) : (
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                              <thead>
-                                <tr className="border-b border-border text-left">
-                                  <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2 pr-4">Order #</th>
-                                  <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2 pr-4">Customer</th>
-                                  <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2 pr-4">Email</th>
-                                  <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2 pr-4">Date</th>
-                                  <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2 pr-4">Discount</th>
-                                  <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2 pr-4">Total</th>
-                                  <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2">Status</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {detail.data.orders.map((o: any) => (
-                                  <tr key={o.id} className="border-b border-border/40">
-                                    <td className="py-2 pr-4 font-mono text-xs">{o.orderNumber}</td>
-                                    <td className="py-2 pr-4">{o.customerName}</td>
-                                    <td className="py-2 pr-4 text-muted-foreground">{o.customerEmail}</td>
-                                    <td className="py-2 pr-4 text-muted-foreground">{new Date(o.createdAt).toLocaleDateString()}</td>
-                                    <td className="py-2 pr-4 text-primary">−${Number(o.discountAmount ?? 0).toFixed(2)}</td>
-                                    <td className="py-2 pr-4">${Number(o.total).toFixed(2)}</td>
-                                    <td className="py-2 capitalize text-muted-foreground">{o.status}</td>
+                          <>
+                            {/* Mobile: stacked cards */}
+                            <div className="space-y-3 md:hidden">
+                              {detail.data.orders.map((o: any) => (
+                                <div key={o.id} className="border border-border p-3 space-y-2">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <span className="font-mono text-xs">{o.orderNumber}</span>
+                                    <span className="font-sans text-[9px] uppercase tracking-widest text-muted-foreground capitalize">
+                                      {o.status}
+                                    </span>
+                                  </div>
+                                  <div className="space-y-0.5">
+                                    <p className="text-sm font-medium truncate">{o.customerName}</p>
+                                    <p className="text-xs text-muted-foreground truncate">{o.customerEmail}</p>
+                                  </div>
+                                  <div className="flex items-center justify-between pt-2 border-t border-border/40 text-xs">
+                                    <span className="text-muted-foreground">
+                                      {new Date(o.createdAt).toLocaleDateString()}
+                                    </span>
+                                    <span className="text-primary">
+                                      −${Number(o.discountAmount ?? 0).toFixed(2)}
+                                    </span>
+                                    <span className="font-medium">${Number(o.total).toFixed(2)}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Desktop: table */}
+                            <div className="hidden md:block overflow-x-auto">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="border-b border-border text-left">
+                                    <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2 pr-4">Order #</th>
+                                    <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2 pr-4">Customer</th>
+                                    <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2 pr-4">Email</th>
+                                    <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2 pr-4">Date</th>
+                                    <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2 pr-4">Discount</th>
+                                    <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2 pr-4">Total</th>
+                                    <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2">Status</th>
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
+                                </thead>
+                                <tbody>
+                                  {detail.data.orders.map((o: any) => (
+                                    <tr key={o.id} className="border-b border-border/40">
+                                      <td className="py-2 pr-4 font-mono text-xs">{o.orderNumber}</td>
+                                      <td className="py-2 pr-4">{o.customerName}</td>
+                                      <td className="py-2 pr-4 text-muted-foreground">{o.customerEmail}</td>
+                                      <td className="py-2 pr-4 text-muted-foreground">{new Date(o.createdAt).toLocaleDateString()}</td>
+                                      <td className="py-2 pr-4 text-primary">−${Number(o.discountAmount ?? 0).toFixed(2)}</td>
+                                      <td className="py-2 pr-4">${Number(o.total).toFixed(2)}</td>
+                                      <td className="py-2 capitalize text-muted-foreground">{o.status}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </>
                         )}
                       </>
                     )}
