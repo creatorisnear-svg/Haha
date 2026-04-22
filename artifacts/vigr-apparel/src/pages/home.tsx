@@ -181,12 +181,12 @@ export default function Home() {
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-primary/10" />
-                <div className="relative z-10 p-3 sm:p-4 w-full">
-                  <p className="font-sans text-[8px] tracking-[0.35em] uppercase text-muted-foreground mb-0.5 group-hover:text-primary/80 transition-colors">Shop</p>
-                  <h3 className="font-display text-sm sm:text-lg tracking-[0.1em] leading-none text-foreground group-hover:text-primary transition-colors duration-200">
+                <div className="relative z-10 p-2.5 sm:p-4 w-full">
+                  <p className="hidden sm:block font-sans text-[8px] tracking-[0.35em] uppercase text-muted-foreground mb-0.5 group-hover:text-primary/80 transition-colors">Shop</p>
+                  <h3 className="font-display text-[11px] sm:text-lg tracking-[0.05em] sm:tracking-[0.1em] leading-tight text-foreground group-hover:text-primary transition-colors duration-200 line-clamp-2">
                     {cat.name.toUpperCase()}
                   </h3>
-                  <div className="mt-2 h-px w-0 group-hover:w-full bg-primary transition-all duration-500" />
+                  <div className="mt-1.5 sm:mt-2 h-px w-0 group-hover:w-full bg-primary transition-all duration-500" />
                 </div>
               </Link>
             ))}

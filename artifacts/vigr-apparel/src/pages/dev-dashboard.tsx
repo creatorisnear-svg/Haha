@@ -1958,50 +1958,49 @@ function CategoriesTab({ token }: { token: string }) {
       ) : (
         <div className="space-y-2">
           {categories.map((cat) => (
-            <div key={cat.id} className="border border-border bg-card p-4 flex items-center justify-between gap-3">
+            <div key={cat.id} className="border border-border bg-card p-4 flex flex-col sm:flex-row sm:items-center gap-3">
               {editingId === cat.id ? (
-                <Input
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="rounded-none border-border h-9"
-                  autoFocus
-                />
-              ) : (
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-12 h-12 flex-shrink-0 border border-border bg-secondary overflow-hidden relative">
-                    {cat.imageUrl ? (
-                      <img src={cat.imageUrl} alt={cat.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[9px] text-muted-foreground uppercase tracking-wide">Img</div>
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-sans uppercase tracking-widest text-sm font-medium">{cat.name}</p>
-                    <p className="font-sans text-[10px] text-muted-foreground tracking-wider">/{cat.slug}</p>
-                  </div>
-                </div>
-              )}
-              <div className="flex gap-2">
-                {editingId === cat.id ? (
-                  <>
+                <>
+                  <Input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="rounded-none border-border h-9 flex-1"
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
                     <Button
                       variant="outline"
                       onClick={() => handleUpdate(cat.id)}
-                      className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4"
+                      className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 flex-1 sm:flex-none"
                     >
                       Save
                     </Button>
                     <Button
                       variant="outline"
                       onClick={() => { setEditingId(null); setEditName(""); }}
-                      className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 border-border"
+                      className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 flex-1 sm:flex-none border-border"
                     >
                       Cancel
                     </Button>
-                  </>
-                ) : (
-                  <>
-                    <label className="cursor-pointer">
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-12 h-12 flex-shrink-0 border border-border bg-secondary overflow-hidden">
+                      {cat.imageUrl ? (
+                        <img src={cat.imageUrl} alt={cat.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[9px] text-muted-foreground uppercase tracking-wide">Img</div>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-sans uppercase tracking-widest text-sm font-medium truncate">{cat.name}</p>
+                      <p className="font-sans text-[10px] text-muted-foreground tracking-wider truncate">/{cat.slug}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    <label className="cursor-pointer flex-1 sm:flex-none">
                       <input
                         type="file"
                         accept="image/*"
@@ -2029,27 +2028,27 @@ function CategoriesTab({ token }: { token: string }) {
                           e.target.value = "";
                         }}
                       />
-                      <span className="inline-flex items-center rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 border border-border bg-transparent hover:bg-secondary transition-colors whitespace-nowrap">
+                      <span className="flex items-center justify-center w-full rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 border border-border bg-transparent hover:bg-secondary transition-colors whitespace-nowrap">
                         Photo
                       </span>
                     </label>
                     <Button
                       variant="outline"
                       onClick={() => { setEditingId(cat.id); setEditName(cat.name); }}
-                      className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 border-border"
+                      className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 flex-1 sm:flex-none border-border"
                     >
                       Edit
                     </Button>
                     <Button
                       variant="outline"
                       onClick={() => handleDelete(cat.id)}
-                      className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 border-destructive text-destructive hover:bg-destructive hover:text-white"
+                      className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 flex-1 sm:flex-none border-destructive text-destructive hover:bg-destructive hover:text-white"
                     >
                       Delete
                     </Button>
-                  </>
-                )}
-              </div>
+                  </div>
+                </>
+              )}
             </div>
           ))}
         </div>
