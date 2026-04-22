@@ -12,7 +12,13 @@ export function ProductCard({ product }: { product: any }) {
   const { toast } = useToast();
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
-  const hasSizes = Array.isArray(product.sizes) && product.sizes.length > 0;
+  const rawSizes = product.sizes;
+  const sizes: string[] = Array.isArray(rawSizes)
+    ? rawSizes
+    : typeof rawSizes === "string" && rawSizes.length > 0
+      ? rawSizes.split(",").map((s: string) => s.trim()).filter(Boolean)
+      : [];
+  const hasSizes = sizes.length > 0;
   const releaseDate: Date | null = product.releaseDate ? new Date(product.releaseDate) : null;
   const isPreRelease = !!releaseDate && releaseDate.getTime() > Date.now();
   const canAdd = product.inStock && !isPreRelease && (!hasSizes || selectedSize !== null);
@@ -120,7 +126,7 @@ export function ProductCard({ product }: { product: any }) {
         </Link>
         {hasSizes && (
           <div className="flex flex-wrap gap-2">
-            {product.sizes.map((size: string) => (
+            {sizes.map((size: string) => (
               <button
                 key={size}
                 onClick={() => setSelectedSize(selectedSize === size ? null : size)}

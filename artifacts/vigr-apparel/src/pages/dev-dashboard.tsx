@@ -87,6 +87,7 @@ export default function DevDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const token = localStorage.getItem("vaa_admin_token");
+  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     if (!token) {
@@ -131,7 +132,7 @@ export default function DevDashboard() {
           </Button>
         </header>
 
-        <Tabs defaultValue="overview" className="w-full">
+        <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="bg-transparent border-b border-border rounded-none h-12 w-full justify-start gap-5 sm:gap-8 p-0 overflow-x-auto scrollbar-thin -mx-4 px-4 sm:mx-0 sm:px-0">
             <TabsTrigger value="overview" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-sm sm:text-lg px-0 h-full uppercase flex-shrink-0">
               Overview
@@ -177,7 +178,7 @@ export default function DevDashboard() {
           </TabsContent>
           
           <TabsContent value="products" className="pt-8">
-            <ProductsTab products={productsData?.data || []} isLoading={isLoadingProducts} token={token} />
+            <ProductsTab products={productsData?.data || []} isLoading={isLoadingProducts} token={token} activeTab={activeTab} />
           </TabsContent>
 
           <TabsContent value="categories" className="pt-8">
@@ -219,17 +220,13 @@ export default function DevDashboard() {
 
 const FALLBACK_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
-function ProductsTab({ products, isLoading, token }: { products: any[], isLoading: boolean, token: string }) {
+function ProductsTab({ products, isLoading, token, activeTab }: { products: any[], isLoading: boolean, token: string, activeTab: string }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
   const [availableSizes, setAvailableSizes] = useState<string[]>(FALLBACK_SIZES);
 
-  useEffect(() => {
-    fetch("/api/categories")
-      .then((r) => r.json())
-      .then((d) => setCategories(d.data ?? []))
-      .catch(() => setCategories([]));
+  const fetchSizes = () => {
     fetch("/api/sizes")
       .then((r) => r.json())
       .then((d) => {
@@ -237,6 +234,22 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
         setAvailableSizes(list.length > 0 ? list : FALLBACK_SIZES);
       })
       .catch(() => setAvailableSizes(FALLBACK_SIZES));
+  };
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((d) => setCategories(d.data ?? []))
+      .catch(() => setCategories([]));
+    fetchSizes();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "products") fetchSizes();
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (isDialogOpen) fetchSizes();
   }, [isDialogOpen]);
   
   const [formData, setFormData] = useState({

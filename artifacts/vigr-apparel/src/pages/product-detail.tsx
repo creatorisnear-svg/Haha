@@ -84,8 +84,13 @@ export default function ProductDetail() {
     setZoom({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
   };
 
-  const sizes = (product as any)?.sizes;
-  const hasSizes = Array.isArray(sizes) && sizes.length > 0;
+  const rawSizes = (product as any)?.sizes;
+  const sizes: string[] = Array.isArray(rawSizes)
+    ? rawSizes
+    : typeof rawSizes === "string" && rawSizes.length > 0
+      ? rawSizes.split(",").map((s: string) => s.trim()).filter(Boolean)
+      : [];
+  const hasSizes = sizes.length > 0;
   const inStock = !!product?.inStock;
   const stockCount = (product as any)?.stockCount;
   const releaseDateRaw = (product as any)?.releaseDate;
