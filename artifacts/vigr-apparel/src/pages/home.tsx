@@ -202,7 +202,7 @@ export default function Home() {
           {/* Logo + brand */}
           <Link
             href="/"
-            className="absolute left-1/2 -translate-x-1/2 sm:static sm:translate-x-0 flex items-center gap-2 sm:gap-3 min-w-0"
+            className="flex items-center gap-2 sm:gap-3 min-w-0"
           >
             <div className="hidden sm:block w-10 h-10 flex-shrink-0">
               <img
