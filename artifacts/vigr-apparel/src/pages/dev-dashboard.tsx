@@ -7,6 +7,7 @@ import {
   getListProductsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useUpload } from "@workspace/object-storage-web";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,50 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+
+function ImageUploadButton({ index, onUploaded }: { index: number; onUploaded: (url: string) => void }) {
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const { uploadFile, isUploading } = useUpload({
+    onSuccess: (response) => {
+      onUploaded(`/api/storage${response.objectPath}`);
+      toast({ title: "Image uploaded", description: response.metadata.name });
+    },
+    onError: (err) => {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await uploadFile(file);
+    }
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
+  return (
+    <>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFile}
+        className="hidden"
+        data-testid={`input-image-file-${index}`}
+      />
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={isUploading}
+        className="font-sans text-[10px] uppercase tracking-widest border border-border px-3 hover:bg-foreground/10 disabled:opacity-50"
+        data-testid={`button-upload-image-${index}`}
+      >
+        {isUploading ? "Uploading…" : "Upload"}
+      </button>
+    </>
+  );
+}
 
 export default function DevDashboard() {
   const [, setLocation] = useLocation();
@@ -466,13 +511,19 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
                   {formData.imageUrls.map((url, idx) => (
                     <div key={idx} className="flex gap-2 items-start">
                       <div className="flex-1 space-y-1">
-                        <Input
-                          value={url}
-                          placeholder={idx === 0 ? "Main image URL" : `Image ${idx + 1} URL`}
-                          onChange={(e) => updateImageUrl(idx, e.target.value)}
-                          className="rounded-none border-border focus-visible:ring-1 focus-visible:ring-primary"
-                          data-testid={`input-image-url-${idx}`}
-                        />
+                        <div className="flex gap-2">
+                          <Input
+                            value={url}
+                            placeholder={idx === 0 ? "Main image URL or upload" : `Image ${idx + 1} URL or upload`}
+                            onChange={(e) => updateImageUrl(idx, e.target.value)}
+                            className="rounded-none border-border focus-visible:ring-1 focus-visible:ring-primary"
+                            data-testid={`input-image-url-${idx}`}
+                          />
+                          <ImageUploadButton
+                            index={idx}
+                            onUploaded={(url) => updateImageUrl(idx, url)}
+                          />
+                        </div>
                         {url.trim() && (
                           <div className="w-16 h-16 border border-border bg-[#111] overflow-hidden">
                             <img

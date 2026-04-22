@@ -8,6 +8,45 @@
 import * as zod from "zod";
 
 /**
+ * Returns a presigned GCS URL for direct upload. The client sends JSON
+metadata here, then uploads the file directly to the returned URL.
+
+ * @summary Request a presigned URL for file upload
+ */
+
+export const RequestUploadUrlBody = zod.object({
+  name: zod.string().min(1),
+  size: zod.number().min(1),
+  contentType: zod.string().min(1),
+});
+
+export const RequestUploadUrlResponse = zod.object({
+  uploadURL: zod.string().url(),
+  objectPath: zod.string(),
+  metadata: zod
+    .object({
+      name: zod.string().min(1),
+      size: zod.number().min(1),
+      contentType: zod.string().min(1),
+    })
+    .optional(),
+});
+
+/**
+ * @summary Serve a public asset from PUBLIC_OBJECT_SEARCH_PATHS
+ */
+export const GetPublicObjectParams = zod.object({
+  filePath: zod.coerce.string(),
+});
+
+/**
+ * @summary Serve an object entity from PRIVATE_OBJECT_DIR
+ */
+export const GetStorageObjectParams = zod.object({
+  objectPath: zod.coerce.string(),
+});
+
+/**
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -46,6 +85,12 @@ export const ListProductsResponse = zod.object({
         .nullish()
         .describe(
           'One of \"blue\" | \"red\" | \"green\" | \"yellow\" | \"purple\" | \"white\". Defaults to blue.',
+        ),
+      featured: zod
+        .boolean()
+        .optional()
+        .describe(
+          'When true, the product appears in the \"Recently Added\" section on the home page.',
         ),
       createdAt: zod.string().optional(),
     }),
@@ -86,6 +131,12 @@ export const GetProductResponse = zod.object({
     .nullish()
     .describe(
       'One of \"blue\" | \"red\" | \"green\" | \"yellow\" | \"purple\" | \"white\". Defaults to blue.',
+    ),
+  featured: zod
+    .boolean()
+    .optional()
+    .describe(
+      'When true, the product appears in the \"Recently Added\" section on the home page.',
     ),
   createdAt: zod.string().optional(),
 });
@@ -223,6 +274,12 @@ export const UpdateAdminProductResponse = zod.object({
     .nullish()
     .describe(
       'One of \"blue\" | \"red\" | \"green\" | \"yellow\" | \"purple\" | \"white\". Defaults to blue.',
+    ),
+  featured: zod
+    .boolean()
+    .optional()
+    .describe(
+      'When true, the product appears in the \"Recently Added\" section on the home page.',
     ),
   createdAt: zod.string().optional(),
 });

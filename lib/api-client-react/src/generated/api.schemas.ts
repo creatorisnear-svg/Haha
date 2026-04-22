@@ -26,6 +26,8 @@ export interface Product {
   tag?: string | null;
   /** One of "blue" | "red" | "green" | "yellow" | "purple" | "white". Defaults to blue. */
   tagColor?: string | null;
+  /** When true, the product appears in the "Recently Added" section on the home page. */
+  featured?: boolean;
   createdAt?: string;
 }
 
@@ -85,6 +87,21 @@ export interface SuccessResponse {
 
 export interface ErrorResponse {
   error: string;
+}
+
+export interface UploadUrlRequest {
+  /** @minLength 1 */
+  name: string;
+  /** @minimum 1 */
+  size: number;
+  /** @minLength 1 */
+  contentType: string;
+}
+
+export interface UploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+  metadata?: UploadUrlRequest;
 }
 
 export type ListProducts200 = {

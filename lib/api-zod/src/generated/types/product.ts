@@ -23,5 +23,7 @@ export interface Product {
   tag?: string | null;
   /** One of "blue" | "red" | "green" | "yellow" | "purple" | "white". Defaults to blue. */
   tagColor?: string | null;
+  /** When true, the product appears in the "Recently Added" section on the home page. */
+  featured?: boolean;
   createdAt?: string;
 }

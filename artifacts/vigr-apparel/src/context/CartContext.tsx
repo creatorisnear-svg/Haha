@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { Product } from "@workspace/api-client-react/src/generated/api.schemas";
+import { Product } from "@workspace/api-client-react";
 
 export interface CartItem {
   product: Product;

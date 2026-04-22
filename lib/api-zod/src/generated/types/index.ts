@@ -21,3 +21,5 @@ export * from "./newsletterRequest";
 export * from "./product";
 export * from "./successResponse";
 export * from "./updateAdminSettingsRequest";
+export * from "./uploadUrlRequest";
+export * from "./uploadUrlResponse";
