@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { ShoppingCart, User, Menu, Search, X, Truck, Shield, Flame, Instagram, Music2, Eye } from "lucide-react";
+import { ShoppingCart, User, Menu, Search, X, Truck, Shield, Flame, Music2, Eye } from "lucide-react";
 import { useListProducts, useSubscribeNewsletter } from "@workspace/api-client-react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
-import ThornsDivider from "@/components/ThornsDevider";
 import logoPath from "@assets/12214-removebg-preview_1776743232072.png";
 
 interface Category { id: string; name: string; slug: string; }
@@ -72,11 +71,7 @@ export default function Home() {
       {/* ── ANNOUNCEMENT BAR ── */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-primary/90 backdrop-blur-sm text-white">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 h-7 flex items-center justify-center gap-2 sm:gap-6 font-sans text-[8.5px] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.3em] uppercase overflow-hidden whitespace-nowrap">
-          <span className="hidden sm:inline">Free shipping over $75</span>
-          <span className="hidden sm:inline opacity-50">·</span>
-          <span className="truncate">New drop · Crown of Thorns</span>
-          <span className="hidden sm:inline opacity-50">·</span>
-          <span className="hidden sm:inline">Worn by the chosen</span>
+          <span className="truncate">Created like Heaven · Worn With Faith</span>
         </div>
       </div>
 
@@ -237,7 +232,7 @@ export default function Home() {
         </div>
         {/* corner runes — desktop only to avoid mobile collisions */}
         <div aria-hidden="true" className="hidden md:block absolute top-28 left-10 font-sans text-[9px] tracking-[0.5em] uppercase text-muted-foreground/40 fade-up">
-          Est. 2024 — Underground
+          VIGR Angel Apparel
         </div>
         <div aria-hidden="true" className="hidden md:block absolute top-28 right-10 font-sans text-[9px] tracking-[0.5em] uppercase text-muted-foreground/40 fade-up">
           Faith / Grit / Grace
@@ -257,7 +252,7 @@ export default function Home() {
             VIGR ANGEL<br />APPAREL
           </h1>
           <p className="fade-up-d2 font-sans text-[10px] sm:text-[11px] tracking-[0.25em] sm:tracking-[0.35em] uppercase text-muted-foreground mb-10 sm:mb-12 px-2">
-            Born in the grit. <span className="text-primary">·</span> Worn by the chosen.
+            Created like Heaven <span className="text-primary">·</span> Worn With Faith
           </p>
           <div className="fade-up-d3 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full max-w-xs sm:max-w-none px-2 sm:px-0">
             <button
@@ -285,25 +280,18 @@ export default function Home() {
         </div>
       </section>
 
-      {/* thorn divider into marquee */}
-      <div className="text-foreground/60 -mb-1">
-        <ThornsDivider />
-      </div>
-
       {/* ── MARQUEE ── */}
-      <div className="bg-foreground text-background py-3 sm:py-4 overflow-hidden">
+      <div className="bg-foreground text-background py-3 sm:py-4 overflow-hidden border-y border-border">
         <div className="flex whitespace-nowrap" style={{ animation: "marquee 24s linear infinite" }}>
           {[...Array(2)].map((_, i) => (
             <div key={i} className="flex items-center gap-6 sm:gap-10 pr-6 sm:pr-10 font-display text-base sm:text-2xl tracking-[0.2em] sm:tracking-[0.3em]">
               <span>VIGR ANGEL APPAREL</span>
               <span className="text-primary">·</span>
+              <span>CREATED LIKE HEAVEN</span>
+              <span className="text-primary">·</span>
               <span>VAA</span>
               <span className="text-primary">·</span>
-              <span>CROWN OF THORNS</span>
-              <span className="text-primary">·</span>
-              <span>GRIT AND GRACE</span>
-              <span className="text-primary">·</span>
-              <span>UNDERGROUND FAITH</span>
+              <span>WORN WITH FAITH</span>
               <span className="text-primary">·</span>
             </div>
           ))}
@@ -314,9 +302,9 @@ export default function Home() {
       <section className="py-10 sm:py-16 px-4 sm:px-6 border-b border-border">
         <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-6 divide-y sm:divide-y-0 sm:divide-x divide-border">
           {[
-            { Icon: Truck, title: "Free Shipping", sub: "On orders over $75" },
+            { Icon: Truck, title: "Fast Shipping", sub: "Tracked worldwide" },
             { Icon: Shield, title: "Secure Checkout", sub: "Stripe encrypted" },
-            { Icon: Flame, title: "Limited Drops", sub: "Forged, never restocked" },
+            { Icon: Flame, title: "Made With Faith", sub: "Created like Heaven" },
           ].map(({ Icon, title, sub }, idx) => (
             <div
               key={title}
@@ -419,12 +407,12 @@ export default function Home() {
             </h2>
             <div className="space-y-5 font-sans text-sm text-muted-foreground leading-relaxed">
               <p>
-                VIGR Angel Apparel is more than fabric and thread. It is a testament to resilience, forged in the fires of the underground and sustained by unwavering faith.
+                VIGR Angel Apparel is more than fabric and thread — it is a quiet testament to faith carried into everyday life.
               </p>
               <p>
-                We build for the outcasts, the believers, and those who carry their cross with pride. Our garments are armor for the modern world — raw, unapologetic, stripped of pretense.
+                We make clothing for believers and seekers alike: pieces designed with intention, worn with conviction.
               </p>
-              <p className="text-foreground/80 italic">No glitz. No excess. Just truth woven into streetwear.</p>
+              <p className="text-foreground/80 italic">Created like Heaven, worn with faith.</p>
             </div>
 
             {/* tenets */}
@@ -498,11 +486,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* thorn divider into footer */}
-      <div className="text-foreground/50">
-        <ThornsDivider flip />
-      </div>
-
       {/* ── FOOTER ── */}
       <footer className="pt-12 pb-8 px-4 sm:px-6 border-t border-border">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-6 items-start">
@@ -515,20 +498,11 @@ export default function Home() {
               <span className="font-display text-lg tracking-[0.25em]">VIGR ANGEL APPAREL</span>
             </Link>
             <p className="font-sans text-[11px] text-muted-foreground max-w-xs leading-relaxed">
-              Underground faith. Streetwear forged for the chosen.
+              Created like Heaven, worn with faith.
             </p>
             <div className="flex items-center gap-3 pt-2">
               <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Instagram"
-                className="w-9 h-9 flex items-center justify-center border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
-              >
-                <Instagram className="w-4 h-4" />
-              </a>
-              <a
-                href="https://tiktok.com"
+                href="https://www.tiktok.com/@vigr.angel.apperl"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="TikTok"
@@ -563,7 +537,7 @@ export default function Home() {
             © {new Date().getFullYear()} VIGR Angel Apparel · All sales final
           </p>
           <p className="font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground/40">
-            Forged in the underground
+            Created like Heaven · Worn With Faith
           </p>
         </div>
       </footer>

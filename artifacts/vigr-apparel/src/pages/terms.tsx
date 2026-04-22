@@ -106,7 +106,7 @@ export default function Terms() {
 
         <div className="mt-16 pt-8 border-t border-border">
           <p className="font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground/60 text-center">
-            VIGR Angel Apparel · Born in the grit
+            VIGR Angel Apparel · Created like Heaven, Worn With Faith
           </p>
         </div>
       </main>
