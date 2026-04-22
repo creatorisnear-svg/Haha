@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { ShoppingCart, User, Menu, Search, X } from "lucide-react";
+import { ShoppingCart, User, Menu, Search, X, Truck, Shield, Flame, Instagram, Music2, Eye } from "lucide-react";
 import { useListProducts, useSubscribeNewsletter } from "@workspace/api-client-react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
+import ThornsDivider from "@/components/ThornsDevider";
 import logoPath from "@assets/12214-removebg-preview_1776743232072.png";
 
 interface Category { id: string; name: string; slug: string; }
@@ -68,10 +69,21 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
 
+      {/* ── ANNOUNCEMENT BAR ── */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-primary/90 backdrop-blur-sm text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-7 flex items-center justify-center gap-3 sm:gap-6 font-sans text-[9px] sm:text-[10px] tracking-[0.3em] uppercase overflow-hidden whitespace-nowrap">
+          <span className="hidden sm:inline">Free shipping over $75</span>
+          <span className="hidden sm:inline opacity-50">·</span>
+          <span>New drop · Crown of Thorns collection</span>
+          <span className="hidden sm:inline opacity-50">·</span>
+          <span className="hidden sm:inline">Worn by the chosen</span>
+        </div>
+      </div>
+
       {/* ── NAV ── */}
       <nav
-        className="fixed top-0 left-0 right-0 z-40 border-b border-border"
-        style={{ background: "rgba(10,10,10,0.95)" }}
+        className="fixed top-7 left-0 right-0 z-40 border-b border-border backdrop-blur-md"
+        style={{ background: "rgba(10,10,10,0.85)" }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[64px] sm:h-[72px] flex items-center justify-between gap-2">
           {/* Hamburger menu */}
@@ -215,37 +227,68 @@ export default function Home() {
       </nav>
 
       {/* ── HERO ── */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 pt-[64px] sm:pt-[72px]">
-        <div className="flex flex-col items-center text-center w-full">
-          <div className="w-40 h-40 sm:w-72 sm:h-72 mb-8 sm:mb-10">
+      <section className="relative min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 pt-[92px] sm:pt-[100px] overflow-hidden">
+        {/* radial glow */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+        >
+          <div className="hero-radial glow-pulse w-[80vw] h-[80vw] max-w-[900px] max-h-[900px]" />
+        </div>
+        {/* corner runes */}
+        <div aria-hidden="true" className="absolute top-24 left-4 sm:left-10 font-sans text-[9px] tracking-[0.5em] uppercase text-muted-foreground/40 fade-up">
+          Est. 2024 — Underground
+        </div>
+        <div aria-hidden="true" className="absolute top-24 right-4 sm:right-10 font-sans text-[9px] tracking-[0.5em] uppercase text-muted-foreground/40 fade-up">
+          Faith / Grit / Grace
+        </div>
+
+        <div className="relative flex flex-col items-center text-center w-full">
+          <div className="w-40 h-40 sm:w-72 sm:h-72 mb-6 sm:mb-8 fade-up">
             <img
               src={logoPath}
               alt="VIGR Angel Apparel Logo"
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain drop-shadow-[0_0_40px_rgba(154,33,46,0.35)]"
               style={{ filter: "invert(1)" }}
             />
           </div>
 
-          <h1 className="font-display text-[clamp(2.5rem,10vw,8rem)] tracking-[0.05em] sm:tracking-[0.08em] leading-[0.9] mb-6">
+          <h1 className="fade-up-d1 font-display text-[clamp(2.5rem,10vw,8rem)] tracking-[0.05em] sm:tracking-[0.08em] leading-[0.9] mb-6">
             VIGR ANGEL<br />APPAREL
           </h1>
-          <p className="font-sans text-[10px] sm:text-[11px] tracking-[0.25em] sm:tracking-[0.35em] uppercase text-muted-foreground mb-10 sm:mb-12 px-2">
-            Born in the grit. Worn by the chosen.
+          <p className="fade-up-d2 font-sans text-[10px] sm:text-[11px] tracking-[0.25em] sm:tracking-[0.35em] uppercase text-muted-foreground mb-10 sm:mb-12 px-2">
+            Born in the grit. <span className="text-primary">·</span> Worn by the chosen.
           </p>
-          <button
-            onClick={scrollToProducts}
-            data-testid="button-shop-now"
-            className="font-display text-lg sm:text-2xl tracking-[0.15em] sm:tracking-[0.2em] px-10 sm:px-14 h-[48px] sm:h-[56px] border border-foreground hover:bg-primary hover:border-primary hover:text-white transition-all duration-200"
-          >
-            SHOP NOW
-          </button>
+          <div className="fade-up-d3 flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
+            <button
+              onClick={scrollToProducts}
+              data-testid="button-shop-now"
+              className="font-display text-lg sm:text-2xl tracking-[0.15em] sm:tracking-[0.2em] px-10 sm:px-14 h-[48px] sm:h-[56px] border border-foreground bg-foreground text-background hover:bg-primary hover:border-primary hover:text-white transition-all duration-200"
+            >
+              SHOP NOW
+            </button>
+            <a
+              href="#about"
+              className="font-display text-lg sm:text-2xl tracking-[0.15em] sm:tracking-[0.2em] px-10 sm:px-14 h-[48px] sm:h-[56px] flex items-center justify-center border border-foreground/40 text-foreground/80 hover:border-foreground hover:text-foreground transition-all duration-200"
+            >
+              OUR STORY
+            </a>
+          </div>
         </div>
 
         {/* scroll hint */}
-        <p className="absolute bottom-6 sm:bottom-8 font-sans text-[9px] tracking-[0.4em] uppercase text-muted-foreground/50 animate-bounce">
-          Scroll
-        </p>
+        <div className="absolute bottom-6 sm:bottom-8 flex flex-col items-center gap-2 fade-up-d4">
+          <span className="block w-px h-8 bg-foreground/30" />
+          <p className="font-sans text-[9px] tracking-[0.4em] uppercase text-muted-foreground/60">
+            Scroll
+          </p>
+        </div>
       </section>
+
+      {/* thorn divider into marquee */}
+      <div className="text-foreground/60 -mb-1">
+        <ThornsDivider />
+      </div>
 
       {/* ── MARQUEE ── */}
       <div className="bg-foreground text-background py-3 sm:py-4 overflow-hidden">
@@ -266,6 +309,32 @@ export default function Home() {
           ))}
         </div>
       </div>
+
+      {/* ── TENETS / PILLARS ── */}
+      <section className="py-12 sm:py-16 px-4 sm:px-6 border-b border-border">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6">
+          {[
+            { Icon: Truck, title: "Free Shipping", sub: "On orders over $75" },
+            { Icon: Shield, title: "Secure Checkout", sub: "Stripe encrypted" },
+            { Icon: Flame, title: "Limited Drops", sub: "Forged, never restocked" },
+          ].map(({ Icon, title, sub }) => (
+            <div
+              key={title}
+              className="flex items-center gap-4 sm:gap-5 justify-center sm:justify-start"
+            >
+              <div className="w-11 h-11 flex items-center justify-center border border-border text-foreground">
+                <Icon className="w-5 h-5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-display text-base tracking-[0.2em]">{title}</span>
+                <span className="font-sans text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
+                  {sub}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* ── PRODUCTS ── */}
       <section id="products" className="py-16 sm:py-28 px-4 sm:px-6 max-w-7xl mx-auto w-full">
@@ -340,12 +409,14 @@ export default function Home() {
       </section>
 
       {/* ── ABOUT ── */}
-      <section id="about" className="py-16 sm:py-28 px-4 sm:px-6" style={{ background: "rgba(255,255,255,0.02)" }}>
+      <section id="about" className="relative py-16 sm:py-28 px-4 sm:px-6 overflow-hidden" style={{ background: "rgba(255,255,255,0.02)" }}>
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 sm:gap-16 items-center">
           {/* Text */}
           <div className="space-y-8">
             <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground">About</p>
-            <h2 className="font-display text-[clamp(2.5rem,5vw,4.5rem)] tracking-[0.1em] leading-none">ABOUT VAA</h2>
+            <h2 className="font-display text-[clamp(2.5rem,5vw,4.5rem)] tracking-[0.1em] leading-none">
+              ABOUT <span className="text-primary">VAA</span>
+            </h2>
             <div className="space-y-5 font-sans text-sm text-muted-foreground leading-relaxed">
               <p>
                 VIGR Angel Apparel is more than fabric and thread. It is a testament to resilience, forged in the fires of the underground and sustained by unwavering faith.
@@ -353,18 +424,35 @@ export default function Home() {
               <p>
                 We build for the outcasts, the believers, and those who carry their cross with pride. Our garments are armor for the modern world — raw, unapologetic, stripped of pretense.
               </p>
-              <p>No glitz. No excess. Just truth woven into streetwear.</p>
+              <p className="text-foreground/80 italic">No glitz. No excess. Just truth woven into streetwear.</p>
+            </div>
+
+            {/* tenets */}
+            <div className="grid grid-cols-3 gap-4 sm:gap-6 pt-6 border-t border-border">
+              {[
+                { word: "FAITH", line: "Anchor" },
+                { word: "GRIT", line: "Forge" },
+                { word: "GRACE", line: "Crown" },
+              ].map((t) => (
+                <div key={t.word} className="flex flex-col items-center text-center">
+                  <span className="font-display text-2xl sm:text-3xl tracking-[0.2em] text-foreground">{t.word}</span>
+                  <span className="font-sans text-[9px] tracking-[0.4em] uppercase text-muted-foreground mt-1">{t.line}</span>
+                </div>
+              ))}
             </div>
           </div>
 
           {/* Logo block */}
-          <div className="flex justify-center items-center">
-            <div className="w-40 h-40 sm:w-64 sm:h-64">
+          <div className="relative flex justify-center items-center">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="hero-radial w-[420px] h-[420px] opacity-60" />
+            </div>
+            <div className="relative w-44 h-44 sm:w-72 sm:h-72">
               <img
                 src={logoPath}
                 alt="VAA Mark"
                 className="w-full h-full object-contain"
-                style={{ filter: "invert(1)", opacity: 0.85 }}
+                style={{ filter: "invert(1)", opacity: 0.92 }}
               />
             </div>
           </div>
@@ -372,46 +460,110 @@ export default function Home() {
       </section>
 
       {/* ── NEWSLETTER ── */}
-      <section className="py-16 sm:py-28 px-4 sm:px-6 flex flex-col items-center text-center">
-        <p className="font-sans text-[10px] tracking-[0.4em] sm:tracking-[0.5em] uppercase text-muted-foreground mb-3">Stay Connected</p>
-        <h2 className="font-display text-[clamp(1.75rem,5vw,4rem)] tracking-[0.1em] sm:tracking-[0.15em] mb-3">JOIN THE COVENANT</h2>
-        <p className="font-sans text-[11px] sm:text-xs tracking-[0.15em] sm:tracking-[0.2em] text-muted-foreground mb-8 sm:mb-10 px-2">
-          Exclusive drops. Raw transmissions. No noise.
-        </p>
-        <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row w-full max-w-sm gap-2 sm:gap-0">
-          <Input
-            type="email"
-            placeholder="your@email.com"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            data-testid="input-newsletter-email"
-            className="rounded-none border border-border bg-transparent font-sans text-xs tracking-widest h-12 flex-1 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
-          />
-          <Button
-            type="submit"
-            disabled={subscribeNewsletter.isPending}
-            data-testid="button-newsletter-submit"
-            className="rounded-none font-display text-lg sm:text-xl tracking-[0.2em] h-12 px-8 bg-foreground text-background hover:bg-primary hover:text-white transition-colors"
-          >
-            {subscribeNewsletter.isPending ? "..." : "JOIN"}
-          </Button>
-        </form>
+      <section className="py-16 sm:py-28 px-4 sm:px-6 flex justify-center">
+        <div className="relative w-full max-w-2xl border border-border p-8 sm:p-14 flex flex-col items-center text-center">
+          {/* corner accents */}
+          <span aria-hidden="true" className="absolute -top-px -left-px w-5 h-5 border-t border-l border-primary" />
+          <span aria-hidden="true" className="absolute -top-px -right-px w-5 h-5 border-t border-r border-primary" />
+          <span aria-hidden="true" className="absolute -bottom-px -left-px w-5 h-5 border-b border-l border-primary" />
+          <span aria-hidden="true" className="absolute -bottom-px -right-px w-5 h-5 border-b border-r border-primary" />
+
+          <p className="font-sans text-[10px] tracking-[0.4em] sm:tracking-[0.5em] uppercase text-muted-foreground mb-3">Stay Connected</p>
+          <h2 className="font-display text-[clamp(1.75rem,5vw,4rem)] tracking-[0.1em] sm:tracking-[0.15em] mb-3">JOIN THE COVENANT</h2>
+          <p className="font-sans text-[11px] sm:text-xs tracking-[0.15em] sm:tracking-[0.2em] text-muted-foreground mb-8 sm:mb-10 px-2 max-w-md">
+            Exclusive drops. Raw transmissions. No noise.
+          </p>
+          <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row w-full max-w-sm gap-2 sm:gap-0">
+            <Input
+              type="email"
+              placeholder="your@email.com"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              data-testid="input-newsletter-email"
+              className="rounded-none border border-border bg-transparent font-sans text-xs tracking-widest h-12 flex-1 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
+            />
+            <Button
+              type="submit"
+              disabled={subscribeNewsletter.isPending}
+              data-testid="button-newsletter-submit"
+              className="rounded-none font-display text-lg sm:text-xl tracking-[0.2em] h-12 px-8 bg-foreground text-background hover:bg-primary hover:text-white transition-colors"
+            >
+              {subscribeNewsletter.isPending ? "..." : "JOIN"}
+            </Button>
+          </form>
+          <p className="mt-6 font-sans text-[9px] tracking-[0.3em] uppercase text-muted-foreground/60">
+            No spam · Unsubscribe anytime
+          </p>
+        </div>
       </section>
 
+      {/* thorn divider into footer */}
+      <div className="text-foreground/50">
+        <ThornsDivider flip />
+      </div>
+
       {/* ── FOOTER ── */}
-      <footer className="py-10 sm:py-12 px-4 sm:px-6 border-t border-border">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 md:gap-6 text-center md:text-left">
-          <span className="font-display text-base sm:text-xl tracking-[0.2em]">VIGR ANGEL APPAREL</span>
-          <div className="flex flex-wrap justify-center gap-x-5 gap-y-3 sm:gap-8 font-sans text-[10px] tracking-[0.25em] sm:tracking-[0.3em] uppercase text-muted-foreground">
-            <button onClick={scrollToProducts} className="hover:text-foreground transition-colors">Shop</button>
-            <a href="#about" className="hover:text-foreground transition-colors">About</a>
-            <Link href="/orders/lookup" className="hover:text-foreground transition-colors">Track Order</Link>
-            <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
-            <Link href="/dev" className="hover:text-primary transition-colors opacity-40 hover:opacity-100">Dev</Link>
+      <footer className="pt-12 pb-8 px-4 sm:px-6 border-t border-border">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-6 items-start">
+          {/* Brand */}
+          <div className="flex flex-col items-center md:items-start gap-4 text-center md:text-left">
+            <Link href="/" className="flex items-center gap-3">
+              <div className="w-9 h-9">
+                <img src={logoPath} alt="VAA" className="w-full h-full object-contain" style={{ filter: "invert(1)" }} />
+              </div>
+              <span className="font-display text-lg tracking-[0.25em]">VIGR ANGEL APPAREL</span>
+            </Link>
+            <p className="font-sans text-[11px] text-muted-foreground max-w-xs leading-relaxed">
+              Underground faith. Streetwear forged for the chosen.
+            </p>
+            <div className="flex items-center gap-3 pt-2">
+              <a
+                href="https://instagram.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+                className="w-9 h-9 flex items-center justify-center border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
+              >
+                <Instagram className="w-4 h-4" />
+              </a>
+              <a
+                href="https://tiktok.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="TikTok"
+                className="w-9 h-9 flex items-center justify-center border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
+              >
+                <Music2 className="w-4 h-4" />
+              </a>
+            </div>
           </div>
-          <p className="font-sans text-[10px] tracking-wider text-muted-foreground/50">
+
+          {/* Shop links */}
+          <div className="flex flex-col items-center md:items-start gap-3">
+            <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground/70 mb-1">Shop</p>
+            <button onClick={scrollToProducts} className="font-sans text-xs tracking-[0.25em] uppercase text-muted-foreground hover:text-foreground transition-colors">All Products</button>
+            <a href="#about" className="font-sans text-xs tracking-[0.25em] uppercase text-muted-foreground hover:text-foreground transition-colors">About</a>
+            <Link href="/orders/lookup" className="font-sans text-xs tracking-[0.25em] uppercase text-muted-foreground hover:text-foreground transition-colors">Track Order</Link>
+          </div>
+
+          {/* Help */}
+          <div className="flex flex-col items-center md:items-start gap-3">
+            <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground/70 mb-1">Help</p>
+            <Link href="/terms" className="font-sans text-xs tracking-[0.25em] uppercase text-muted-foreground hover:text-foreground transition-colors">Terms</Link>
+            <Link href={isLoggedIn ? "/account/orders" : "/account/login"} className="font-sans text-xs tracking-[0.25em] uppercase text-muted-foreground hover:text-foreground transition-colors">
+              {isLoggedIn ? "My Account" : "Sign In"}
+            </Link>
+            <Link href="/dev" className="font-sans text-xs tracking-[0.25em] uppercase text-muted-foreground/40 hover:text-primary transition-colors">Dev</Link>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto mt-10 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-center">
+          <p className="font-sans text-[10px] tracking-[0.25em] uppercase text-muted-foreground/60">
             © {new Date().getFullYear()} VIGR Angel Apparel · All sales final
+          </p>
+          <p className="font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground/40">
+            Forged in the underground
           </p>
         </div>
       </footer>
@@ -437,7 +589,7 @@ function ProductCard({ product }: { product: any }) {
 
   return (
     <div
-      className="group flex flex-col border border-border hover:border-foreground/40 transition-colors duration-200"
+      className="group flex flex-col border border-border hover:border-foreground/60 transition-all duration-300 hover:-translate-y-1"
       data-testid={`card-product-${product.id}`}
     >
       <Link
@@ -449,7 +601,7 @@ function ProductCard({ product }: { product: any }) {
           <img
             src={product.imageUrl}
             alt={product.name}
-            className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.03] transition-all duration-500"
+            className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.05] transition-all duration-700"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
@@ -458,6 +610,21 @@ function ProductCard({ product }: { product: any }) {
             </div>
           </div>
         )}
+
+        {/* sold out overlay */}
+        {!product.inStock && (
+          <div className="absolute inset-0 bg-background/70 backdrop-blur-[1px] flex items-center justify-center">
+            <span className="font-display text-xl tracking-[0.3em] text-foreground border border-foreground/60 px-5 py-2">
+              SOLD OUT
+            </span>
+          </div>
+        )}
+
+        {/* hover quick view */}
+        <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-foreground/95 text-background py-2.5 flex items-center justify-center gap-2 font-sans text-[10px] tracking-[0.3em] uppercase">
+          <Eye className="w-3.5 h-3.5" />
+          Quick View
+        </div>
       </Link>
       <div className="p-5 flex flex-col gap-4">
         {(product as any).tag && (
