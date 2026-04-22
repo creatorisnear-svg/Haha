@@ -1378,6 +1378,8 @@ function PromoCodesTab({ token }: { token: string }) {
   const [promos, setPromos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [details, setDetails] = useState<Record<string, { loading: boolean; data: any | null }>>({});
   const [form, setForm] = useState({
     code: "",
     discountType: "percent" as "percent" | "fixed",
@@ -1386,6 +1388,28 @@ function PromoCodesTab({ token }: { token: string }) {
     usageLimit: "",
     expiresAt: "",
   });
+
+  const loadDetails = async (id: string) => {
+    setDetails((prev) => ({ ...prev, [id]: { loading: true, data: prev[id]?.data ?? null } }));
+    try {
+      const res = await fetch(`${BASE_ADMIN}/api/admin/promo/${id}/orders`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setDetails((prev) => ({ ...prev, [id]: { loading: false, data } }));
+    } catch {
+      setDetails((prev) => ({ ...prev, [id]: { loading: false, data: null } }));
+    }
+  };
+
+  const toggleExpanded = (id: string) => {
+    if (expandedId === id) {
+      setExpandedId(null);
+    } else {
+      setExpandedId(id);
+      if (!details[id]?.data) loadDetails(id);
+    }
+  };
 
   const fetchPromos = async () => {
     setLoading(true);
@@ -1563,40 +1587,115 @@ function PromoCodesTab({ token }: { token: string }) {
         </div>
       ) : (
         <div className="space-y-3">
-          {promos.map((promo) => (
-            <div key={promo.id} className="border border-border bg-card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="font-mono text-lg tracking-widest font-bold">{promo.code}</span>
-                  <span className={`font-sans text-[10px] tracking-widest border px-2 py-0.5 ${promo.active ? "border-green-700 text-green-400" : "border-border text-muted-foreground"}`}>
-                    {promo.active ? "Active" : "Inactive"}
-                  </span>
+          {promos.map((promo) => {
+            const isExpanded = expandedId === promo.id;
+            const detail = details[promo.id];
+            return (
+              <div key={promo.id} className="border border-border bg-card">
+                <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className="font-mono text-lg tracking-widest font-bold">{promo.code}</span>
+                      <span className={`font-sans text-[10px] tracking-widest border px-2 py-0.5 ${promo.active ? "border-green-700 text-green-400" : "border-border text-muted-foreground"}`}>
+                        {promo.active ? "Active" : "Inactive"}
+                      </span>
+                    </div>
+                    <p className="font-sans text-sm text-muted-foreground">
+                      {promo.discountType === "percent" ? `${promo.discountAmount}% off` : `$${promo.discountAmount.toFixed(2)} off`}
+                      {promo.minOrderValue ? ` · Min $${promo.minOrderValue.toFixed(2)}` : ""}
+                      {promo.usageLimit ? ` · ${promo.usageCount}/${promo.usageLimit} used` : ` · ${promo.usageCount} used`}
+                      {promo.expiresAt ? ` · Expires ${new Date(promo.expiresAt).toLocaleDateString()}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => toggleExpanded(promo.id)}
+                      className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 border-border"
+                      data-testid={`button-toggle-promo-${promo.id}`}
+                    >
+                      {isExpanded ? "Hide Usage" : "View Usage"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => toggleActive(promo)}
+                      className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 border-border"
+                    >
+                      {promo.active ? "Disable" : "Enable"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleDelete(promo.id)}
+                      className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 border-destructive text-destructive hover:bg-destructive hover:text-white"
+                    >
+                      Delete
+                    </Button>
+                  </div>
                 </div>
-                <p className="font-sans text-sm text-muted-foreground">
-                  {promo.discountType === "percent" ? `${promo.discountAmount}% off` : `$${promo.discountAmount.toFixed(2)} off`}
-                  {promo.minOrderValue ? ` · Min $${promo.minOrderValue.toFixed(2)}` : ""}
-                  {promo.usageLimit ? ` · ${promo.usageCount}/${promo.usageLimit} used` : ` · ${promo.usageCount} used`}
-                  {promo.expiresAt ? ` · Expires ${new Date(promo.expiresAt).toLocaleDateString()}` : ""}
-                </p>
+
+                {isExpanded && (
+                  <div className="border-t border-border bg-background/40 p-5 space-y-5">
+                    {detail?.loading || !detail?.data ? (
+                      <p className="font-sans text-xs uppercase tracking-widest text-muted-foreground">
+                        Loading usage...
+                      </p>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          {[
+                            { label: "Orders", value: detail.data.stats.totalOrders },
+                            { label: "Customers", value: detail.data.stats.uniqueCustomers },
+                            { label: "Gross Revenue", value: `$${Number(detail.data.stats.grossRevenue).toFixed(2)}` },
+                            { label: "Discount Given", value: `$${Number(detail.data.stats.totalDiscount).toFixed(2)}` },
+                          ].map((s) => (
+                            <div key={s.label} className="border border-border p-3">
+                              <p className="font-sans text-[9px] tracking-widest uppercase text-muted-foreground">{s.label}</p>
+                              <p className="font-display text-lg tracking-widest mt-1">{s.value}</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {detail.data.orders.length === 0 ? (
+                          <p className="font-sans text-xs uppercase tracking-widest text-muted-foreground">
+                            No orders have used this code yet.
+                          </p>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-border text-left">
+                                  <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2 pr-4">Order #</th>
+                                  <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2 pr-4">Customer</th>
+                                  <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2 pr-4">Email</th>
+                                  <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2 pr-4">Date</th>
+                                  <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2 pr-4">Discount</th>
+                                  <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2 pr-4">Total</th>
+                                  <th className="font-sans text-[10px] uppercase tracking-widest text-muted-foreground py-2">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {detail.data.orders.map((o: any) => (
+                                  <tr key={o.id} className="border-b border-border/40">
+                                    <td className="py-2 pr-4 font-mono text-xs">{o.orderNumber}</td>
+                                    <td className="py-2 pr-4">{o.customerName}</td>
+                                    <td className="py-2 pr-4 text-muted-foreground">{o.customerEmail}</td>
+                                    <td className="py-2 pr-4 text-muted-foreground">{new Date(o.createdAt).toLocaleDateString()}</td>
+                                    <td className="py-2 pr-4 text-primary">−${Number(o.discountAmount ?? 0).toFixed(2)}</td>
+                                    <td className="py-2 pr-4">${Number(o.total).toFixed(2)}</td>
+                                    <td className="py-2 capitalize text-muted-foreground">{o.status}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => toggleActive(promo)}
-                  className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 border-border"
-                >
-                  {promo.active ? "Disable" : "Enable"}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => handleDelete(promo.id)}
-                  className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 border-destructive text-destructive hover:bg-destructive hover:text-white"
-                >
-                  Delete
-                </Button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

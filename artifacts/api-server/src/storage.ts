@@ -535,6 +535,16 @@ export class Storage {
     return docs.map(docToOrder);
   }
 
+  async getOrdersByPromoCode(code: string): Promise<Order[]> {
+    const db = await getDb();
+    const docs = await db
+      .collection("orders")
+      .find({ promoCode: code.toUpperCase() })
+      .sort({ createdAt: -1 })
+      .toArray();
+    return docs.map(docToOrder);
+  }
+
   async updateOrderStatus(
     id: string,
     status: Order["status"],

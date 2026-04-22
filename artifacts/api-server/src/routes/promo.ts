@@ -54,6 +54,37 @@ router.get("/admin/promo", adminAuthMiddleware, async (_req, res) => {
   res.json({ data: codes });
 });
 
+router.get("/admin/promo/:id/orders", adminAuthMiddleware, async (req, res) => {
+  const promo = await storage.getAllPromoCodes().then((all) => all.find((p) => p.id === req.params.id));
+  if (!promo) return res.status(404).json({ error: "Promo code not found" });
+
+  const orders = await storage.getOrdersByPromoCode(promo.code);
+  const totalOrders = orders.length;
+  const grossRevenue = orders.reduce((sum, o) => sum + (o.total ?? 0), 0);
+  const totalDiscount = orders.reduce((sum, o) => sum + (o.discountAmount ?? 0), 0);
+  const uniqueCustomers = new Set(orders.map((o) => o.customerEmail.toLowerCase())).size;
+
+  res.json({
+    code: promo.code,
+    stats: {
+      totalOrders,
+      uniqueCustomers,
+      grossRevenue: parseFloat(grossRevenue.toFixed(2)),
+      totalDiscount: parseFloat(totalDiscount.toFixed(2)),
+    },
+    orders: orders.map((o) => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      customerName: o.customerName,
+      customerEmail: o.customerEmail,
+      total: o.total,
+      discountAmount: o.discountAmount ?? 0,
+      status: o.status,
+      createdAt: o.createdAt,
+    })),
+  });
+});
+
 router.post("/admin/promo", adminAuthMiddleware, async (req, res) => {
   const { code, discountType, discountAmount, minOrderValue, usageLimit, expiresAt, active } = req.body;
   if (!code || !discountType || discountAmount === undefined) {
