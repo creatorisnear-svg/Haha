@@ -225,7 +225,7 @@ export default function Home() {
           <Link
             href="/wishlist"
             aria-label="Wishlist"
-            className="relative p-2 text-muted-foreground hover:text-foreground transition-colors hidden sm:inline-flex"
+            className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <Heart className="w-5 h-5" />
             {wishlistCount > 0 && (
