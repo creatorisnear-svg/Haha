@@ -32,12 +32,16 @@ export default function Home() {
 
   const allProducts = productsData?.data ?? [];
   const trimmedQuery = query.trim().toLowerCase();
+  const isSearching = trimmedQuery.length > 0;
   const recentlyAdded = allProducts.filter((p: any) => !!p.featured);
-  const filteredProducts = recentlyAdded.filter((p: any) => {
-    if (!trimmedQuery) return true;
+  // When the user is searching, look across the ENTIRE catalog. Otherwise
+  // just show the products an admin marked as "Recently Added".
+  const searchResults = allProducts.filter((p: any) => {
+    if (!trimmedQuery) return false;
     const haystack = `${p.name ?? ""} ${p.description ?? ""} ${p.category ?? ""}`.toLowerCase();
     return haystack.includes(trimmedQuery);
   });
+  const displayedProducts = isSearching ? searchResults : recentlyAdded;
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,14 +168,18 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── RECENTLY ADDED ── */}
+      {/* ── RECENTLY ADDED / SEARCH RESULTS ── */}
       <section id="products" className="py-16 sm:py-28 px-4 sm:px-6 max-w-7xl mx-auto w-full">
         <div className="mb-8 sm:mb-12 text-center">
-          <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">New In</p>
-          <h2 className="font-display text-[clamp(2.5rem,6vw,5rem)] tracking-[0.15em]">RECENTLY ADDED</h2>
-          {trimmedQuery && (
+          <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">
+            {isSearching ? "Search" : "New In"}
+          </p>
+          <h2 className="font-display text-[clamp(2.5rem,6vw,5rem)] tracking-[0.15em]">
+            {isSearching ? "SEARCH RESULTS" : "RECENTLY ADDED"}
+          </h2>
+          {isSearching && (
             <p className="mt-4 font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground">
-              Searching: "{trimmedQuery}"
+              {searchResults.length} match{searchResults.length === 1 ? "" : "es"} for "{query.trim()}"
             </p>
           )}
         </div>
@@ -196,13 +204,7 @@ export default function Home() {
           <div className="flex justify-center items-center h-64 font-sans text-xs tracking-widest uppercase text-muted-foreground">
             Loading collection...
           </div>
-        ) : !recentlyAdded.length ? (
-          <div className="flex flex-col items-center justify-center h-64 gap-4">
-            <p className="font-sans text-xs tracking-widest uppercase text-muted-foreground">
-              No products marked "Recently Added" yet.
-            </p>
-          </div>
-        ) : !filteredProducts.length ? (
+        ) : isSearching && !displayedProducts.length ? (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <p className="font-sans text-xs tracking-widest uppercase text-muted-foreground">
               No products match your search.
@@ -214,9 +216,15 @@ export default function Home() {
               Clear search
             </button>
           </div>
+        ) : !isSearching && !displayedProducts.length ? (
+          <div className="flex flex-col items-center justify-center h-64 gap-4">
+            <p className="font-sans text-xs tracking-widest uppercase text-muted-foreground">
+              No products marked "Recently Added" yet.
+            </p>
+          </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:gap-6">
-            {filteredProducts.map((product: any) => (
+            {displayedProducts.map((product: any) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>

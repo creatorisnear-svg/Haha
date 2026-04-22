@@ -27,14 +27,18 @@ export default function CategoryPage() {
 
   const allProducts = productsData?.data ?? [];
   const trimmedQuery = query.trim().toLowerCase();
+  const isSearching = trimmedQuery.length > 0;
   const inCategory = allProducts.filter(
     (p: any) => (p.category ?? "").toLowerCase() === categoryName.toLowerCase(),
   );
-  const filtered = inCategory.filter((p: any) => {
-    if (!trimmedQuery) return true;
+  // Searching looks across the WHOLE catalog (not just this category) so
+  // people can find anything from anywhere.
+  const searchResults = allProducts.filter((p: any) => {
+    if (!trimmedQuery) return false;
     const haystack = `${p.name ?? ""} ${p.description ?? ""} ${p.category ?? ""}`.toLowerCase();
     return haystack.includes(trimmedQuery);
   });
+  const displayed = isSearching ? searchResults : inCategory;
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -51,13 +55,15 @@ export default function CategoryPage() {
         </Link>
 
         <div className="mb-8 sm:mb-12 text-center">
-          <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">Category</p>
+          <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">
+            {isSearching ? "Search" : "Category"}
+          </p>
           <h1 className="font-display text-[clamp(2.25rem,6vw,5rem)] tracking-[0.15em] uppercase">
-            {categoryName}
+            {isSearching ? "SEARCH RESULTS" : categoryName}
           </h1>
-          {trimmedQuery && (
+          {isSearching && (
             <p className="mt-4 font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground">
-              Searching: "{trimmedQuery}"
+              {searchResults.length} match{searchResults.length === 1 ? "" : "es"} for "{query.trim()}"
             </p>
           )}
         </div>
@@ -86,19 +92,7 @@ export default function CategoryPage() {
           <div className="flex justify-center items-center h-64 font-sans text-xs tracking-widest uppercase text-muted-foreground">
             Loading...
           </div>
-        ) : !inCategory.length ? (
-          <div className="flex flex-col items-center justify-center h-64 gap-4">
-            <p className="font-sans text-xs tracking-widest uppercase text-muted-foreground">
-              No products in this category yet.
-            </p>
-            <Link
-              href="/"
-              className="font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground hover:text-foreground transition-colors underline"
-            >
-              Back to home
-            </Link>
-          </div>
-        ) : !filtered.length ? (
+        ) : isSearching && !displayed.length ? (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <p className="font-sans text-xs tracking-widest uppercase text-muted-foreground">
               No products match your search.
@@ -110,9 +104,21 @@ export default function CategoryPage() {
               Clear search
             </button>
           </div>
+        ) : !isSearching && !displayed.length ? (
+          <div className="flex flex-col items-center justify-center h-64 gap-4">
+            <p className="font-sans text-xs tracking-widest uppercase text-muted-foreground">
+              No products in this category yet.
+            </p>
+            <Link
+              href="/"
+              className="font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground hover:text-foreground transition-colors underline"
+            >
+              Back to home
+            </Link>
+          </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:gap-6">
-            {filtered.map((product: any) => (
+            {displayed.map((product: any) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>

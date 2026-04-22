@@ -31,9 +31,38 @@ export function Header({ categories = [] }: HeaderProps) {
   }, []);
 
   const navHeight = scrolled ? "h-[56px] sm:h-[60px]" : "h-[64px] sm:h-[72px]";
-  const searchHeight = scrolled ? "h-8 sm:h-9" : "h-10 sm:h-11";
-  const searchTextSize = scrolled ? "text-[11px]" : "text-xs";
-  const searchIconPad = scrolled ? "pl-8" : "pl-10";
+
+  // Reusable search input, used in two spots: inline in nav (when scrolled)
+  // and below the nav as its own row (when at top).
+  const renderSearchInput = (compact: boolean) => (
+    <div className="relative w-full">
+      <Search
+        className={`absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none transition-all duration-200 ${
+          compact ? "w-3.5 h-3.5" : "w-4 h-4"
+        }`}
+      />
+      <Input
+        type="text"
+        placeholder={compact ? "Search..." : "Search all products..."}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        data-testid="input-product-search"
+        className={`rounded-none border border-border bg-transparent font-sans tracking-[0.2em] focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 transition-all duration-200 ${
+          compact ? "h-8 sm:h-9 text-[11px] pl-8" : "h-11 sm:h-12 text-xs pl-10"
+        } pr-9`}
+      />
+      {query && (
+        <button
+          onClick={() => setQuery("")}
+          aria-label="Clear search"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          data-testid="button-clear-search"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  );
 
   return (
     <>
@@ -176,32 +205,15 @@ export function Header({ categories = [] }: HeaderProps) {
             </span>
           </Link>
 
-          {/* Search bar — grows/shrinks with scroll, always visible */}
+          {/* Spacer pushes the right-side icons to the edge when no inline search */}
           <div className="flex-1 min-w-0 mx-2 sm:mx-4">
-            <div className="relative w-full max-w-xl mx-auto">
-              <Search
-                className={`absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none transition-all duration-200 ${
-                  scrolled ? "w-3.5 h-3.5" : "w-4 h-4"
-                }`}
-              />
-              <Input
-                type="search"
-                placeholder={scrolled ? "Search..." : "Search clothes..."}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                data-testid="input-product-search"
-                className={`rounded-none border border-border bg-transparent font-sans tracking-[0.2em] ${searchHeight} ${searchTextSize} ${searchIconPad} pr-9 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 transition-all duration-200`}
-              />
-              {query && (
-                <button
-                  onClick={() => setQuery("")}
-                  aria-label="Clear search"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  data-testid="button-clear-search"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
+            {/* Inline search — appears only when scrolled */}
+            <div
+              className={`w-full max-w-xl mx-auto transition-all duration-200 ${
+                scrolled ? "opacity-100" : "opacity-0 pointer-events-none"
+              }`}
+            >
+              {scrolled && renderSearchInput(true)}
             </div>
           </div>
 
@@ -237,6 +249,21 @@ export function Header({ categories = [] }: HeaderProps) {
                 </span>
               )}
             </button>
+          </div>
+        </div>
+
+        {/* ── SEARCH ROW (under nav) — collapses up into nav when scrolled ── */}
+        <div
+          className={`overflow-hidden border-t border-border/60 transition-all duration-300 ease-in-out ${
+            scrolled
+              ? "max-h-0 opacity-0 border-t-0"
+              : "max-h-[80px] opacity-100"
+          }`}
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 sm:py-3">
+            <div className="max-w-2xl mx-auto">
+              {renderSearchInput(false)}
+            </div>
           </div>
         </div>
       </nav>
