@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { ShoppingCart, User, Menu, Search, X, Heart } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -7,6 +7,7 @@ import { useWishlist } from "@/hooks/useWishlist";
 import { useSearch } from "@/context/SearchContext";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { SearchOverlay } from "@/components/SearchOverlay";
 import logoPath from "@assets/12214-removebg-preview_1776743232072.png";
 
 interface Category { id: string; name: string; slug: string; }
@@ -22,31 +23,6 @@ export function Header({ categories = [] }: HeaderProps) {
   const { query, setQuery } = useSearch();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [location, navigate] = useLocation();
-  const [returnTo, setReturnTo] = useState<string>("/");
-
-  // Remember which page the user came from so clearing the search bar
-  // returns them there instead of always going to the home page.
-  useEffect(() => {
-    if (location !== "/search") {
-      setReturnTo(location || "/");
-    }
-  }, [location]);
-
-  // When the user types in the search bar, send them to the dedicated
-  // search page so results render there instead of replacing other content.
-  // When they clear the bar while on the search page, send them back to
-  // wherever they were before. (This only fires on real input changes —
-  // landing on /search with an empty query does NOT bounce them out.)
-  const handleSearchChange = (value: string) => {
-    setQuery(value);
-    const trimmed = value.trim();
-    if (trimmed.length > 0 && location !== "/search") {
-      navigate(`/search?q=${encodeURIComponent(value)}`);
-    } else if (trimmed.length === 0 && location === "/search") {
-      navigate(returnTo);
-    }
-  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -70,7 +46,7 @@ export function Header({ categories = [] }: HeaderProps) {
         type="text"
         placeholder={compact ? "Search..." : "Search all products..."}
         value={query}
-        onChange={(e) => handleSearchChange(e.target.value)}
+        onChange={(e) => setQuery(e.target.value)}
         data-testid="input-product-search"
         className={`rounded-none border border-border bg-transparent font-sans tracking-[0.2em] focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 transition-all duration-200 ${
           compact ? "h-8 sm:h-9 text-[11px] pl-8" : "h-11 sm:h-12 text-xs pl-10"
@@ -78,9 +54,15 @@ export function Header({ categories = [] }: HeaderProps) {
       />
       {query && (
         <button
-          onClick={() => setQuery("")}
+          type="button"
+          onMouseDown={(e) => {
+            // Use onMouseDown so the click registers before the input's
+            // blur handler can hide the button mid-click.
+            e.preventDefault();
+            setQuery("");
+          }}
           aria-label="Clear search"
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 -m-1 z-10"
           data-testid="button-clear-search"
         >
           <X className="w-3.5 h-3.5" />
@@ -306,6 +288,10 @@ export function Header({ categories = [] }: HeaderProps) {
           </div>
         </div>
       </nav>
+
+      {/* ── SEARCH RESULTS OVERLAY ── floats over the current page while
+          there is text in the search bar; clearing it dismisses the layer. */}
+      <SearchOverlay topOffset={scrolled ? 28 + 60 : 28 + 72 + 56} />
     </>
   );
 }
