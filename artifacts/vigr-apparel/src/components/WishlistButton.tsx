@@ -50,13 +50,13 @@ export function WishlistButton({ productId, productName, variant = "card" }: Pro
       aria-label={saved ? "Remove from wishlist" : "Save to wishlist"}
       aria-pressed={saved}
       data-testid={`button-wishlist-${productId}`}
-      className={`absolute top-3 right-3 z-10 w-9 h-9 flex items-center justify-center bg-background/80 backdrop-blur-[2px] border transition-all ${
+      className={`absolute top-2.5 right-2.5 z-10 w-10 h-10 flex-shrink-0 flex items-center justify-center bg-background/80 backdrop-blur-[2px] border transition-all ${
         saved
           ? "border-primary text-primary"
           : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/60"
       }`}
     >
-      <Heart className={`w-4 h-4 ${saved ? "fill-primary" : ""}`} />
+      <Heart className={`w-[18px] h-[18px] flex-shrink-0 ${saved ? "fill-primary" : ""}`} />
     </button>
   );
 }

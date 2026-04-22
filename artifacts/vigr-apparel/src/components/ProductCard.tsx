@@ -119,15 +119,15 @@ export function ProductCard({ product }: { product: any }) {
           </span>
         </Link>
         {hasSizes && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {product.sizes.map((size: string) => (
               <button
                 key={size}
                 onClick={() => setSelectedSize(selectedSize === size ? null : size)}
-                className={`h-8 px-2.5 font-sans text-[10px] tracking-[0.2em] uppercase border transition-all duration-150 ${
+                className={`min-w-[2.25rem] h-9 px-3 font-sans text-[10px] tracking-[0.15em] uppercase border transition-all duration-150 ${
                   selectedSize === size
                     ? "border-foreground bg-foreground text-background"
-                    : "border-border text-muted-foreground hover:border-foreground/50"
+                    : "border-border/70 text-muted-foreground hover:border-foreground/60 hover:text-foreground"
                 }`}
               >
                 {size}

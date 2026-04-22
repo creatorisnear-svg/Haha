@@ -37,6 +37,51 @@ export class ObjectNotFoundError extends Error {
   }
 }
 
+function hasS3Config(): boolean {
+  return !!(
+    process.env.S3_ACCESS_KEY_ID &&
+    process.env.S3_SECRET_ACCESS_KEY &&
+    process.env.S3_BUCKET
+  );
+}
+
+async function generateS3PresignedUpload(): Promise<{
+  uploadURL: string;
+  publicURL: string;
+}> {
+  const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
+  const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
+
+  const objectKey = `uploads/${randomUUID()}`;
+
+  const clientConfig: Record<string, unknown> = {
+    region: process.env.S3_REGION ?? "auto",
+    credentials: {
+      accessKeyId: process.env.S3_ACCESS_KEY_ID!,
+      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
+    },
+  };
+
+  if (process.env.S3_ENDPOINT) {
+    clientConfig.endpoint = process.env.S3_ENDPOINT;
+    clientConfig.forcePathStyle = false;
+  }
+
+  const client = new S3Client(clientConfig);
+
+  const command = new PutObjectCommand({
+    Bucket: process.env.S3_BUCKET!,
+    Key: objectKey,
+  });
+
+  const uploadURL = await getSignedUrl(client, command, { expiresIn: 900 });
+
+  const base = (process.env.S3_PUBLIC_URL ?? "").replace(/\/$/, "");
+  const publicURL = base ? `${base}/${objectKey}` : uploadURL.split("?")[0];
+
+  return { uploadURL, publicURL };
+}
+
 export class ObjectStorageService {
   constructor() {}
 
@@ -104,6 +149,26 @@ export class ObjectStorageService {
     }
 
     return new Response(webStream, { headers });
+  }
+
+  /**
+   * Generate a presigned upload URL. Supports two backends:
+   * 1. S3-compatible (Cloudflare R2, AWS S3) — when S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY,
+   *    S3_BUCKET env vars are set.
+   * 2. Replit sidecar — fallback when running on Replit with PRIVATE_OBJECT_DIR set.
+   *
+   * Returns { uploadURL, objectPath } where objectPath is the final public image URL
+   * (absolute for S3) or a /objects/... path for Replit.
+   */
+  async generateUploadUrl(): Promise<{ uploadURL: string; objectPath: string }> {
+    if (hasS3Config()) {
+      const { uploadURL, publicURL } = await generateS3PresignedUpload();
+      return { uploadURL, objectPath: publicURL };
+    }
+
+    const uploadURL = await this.getObjectEntityUploadURL();
+    const objectPath = this.normalizeObjectEntityPath(uploadURL);
+    return { uploadURL, objectPath };
   }
 
   async getObjectEntityUploadURL(): Promise<string> {

@@ -28,7 +28,10 @@ function ImageUploadButton({ index, onUploaded }: { index: number; onUploaded: (
   const { toast } = useToast();
   const { uploadFile, isUploading } = useUpload({
     onSuccess: (response) => {
-      onUploaded(`/api/storage${response.objectPath}`);
+      const url = response.objectPath.startsWith("http")
+        ? response.objectPath
+        : `/api/storage${response.objectPath}`;
+      onUploaded(url);
       toast({ title: "Image uploaded", description: response.metadata.name });
     },
     onError: (err) => {
