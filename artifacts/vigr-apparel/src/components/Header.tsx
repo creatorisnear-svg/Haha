@@ -26,10 +26,16 @@ export function Header({ categories = [] }: HeaderProps) {
 
   // When the user types in the search bar, send them to the dedicated
   // search page so results render there instead of replacing other content.
+  // When they clear the bar while on the search page, send them back home.
+  // (This only fires on real input changes — landing on /search with an
+  // empty query does NOT bounce them out.)
   const handleSearchChange = (value: string) => {
     setQuery(value);
-    if (value.trim().length > 0 && location !== "/search") {
+    const trimmed = value.trim();
+    if (trimmed.length > 0 && location !== "/search") {
       navigate(`/search?q=${encodeURIComponent(value)}`);
+    } else if (trimmed.length === 0 && location === "/search") {
+      navigate("/");
     }
   };
 
