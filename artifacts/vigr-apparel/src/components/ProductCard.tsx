@@ -3,7 +3,6 @@ import { Link } from "wouter";
 import { Eye } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/hooks/use-toast";
-import { WishlistButton } from "@/components/WishlistButton";
 import { Countdown } from "@/components/Countdown";
 import logoPath from "@assets/12214-removebg-preview_1776743232072.png";
 
@@ -112,7 +111,6 @@ export function ProductCard({ product }: { product: any }) {
           Quick View
         </div>
       </Link>
-      <WishlistButton productId={product.id} productName={product.name} variant="card" />
       <div className="p-4 sm:p-5 flex flex-col gap-3 sm:gap-4">
         <Link
           href={`/products/${product.id}`}
