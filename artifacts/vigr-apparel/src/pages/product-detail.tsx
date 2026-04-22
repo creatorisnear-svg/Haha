@@ -1,11 +1,15 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Link, useRoute, useLocation } from "wouter";
 import { ArrowLeft, ShoppingCart, User, Menu, ChevronLeft, ChevronRight } from "lucide-react";
 import { useGetProduct, getGetProductQueryKey } from "@workspace/api-client-react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
+import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { SizeGuide } from "@/components/SizeGuide";
+import { WishlistButton } from "@/components/WishlistButton";
+import { RecentlyViewed } from "@/components/RecentlyViewed";
 import logoPath from "@assets/12214-removebg-preview_1776743232072.png";
 
 export default function ProductDetail() {
@@ -26,6 +30,14 @@ export default function ProductDetail() {
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
+  const [zoom, setZoom] = useState<{ x: number; y: number } | null>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchDeltaX = useRef<number>(0);
+  const { track } = useRecentlyViewed();
+
+  useEffect(() => {
+    if (productId) track(productId);
+  }, [productId, track]);
 
   const images = useMemo<string[]>(() => {
     if (!product) return [];
@@ -42,6 +54,32 @@ export default function ProductDetail() {
 
   const goPrev = () => setActiveImage((i) => (images.length === 0 ? 0 : (i - 1 + images.length) % images.length));
   const goNext = () => setActiveImage((i) => (images.length === 0 ? 0 : (i + 1) % images.length));
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0]?.clientX ?? null;
+    touchDeltaX.current = 0;
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX.current == null) return;
+    touchDeltaX.current = (e.touches[0]?.clientX ?? touchStartX.current) - touchStartX.current;
+  };
+  const handleTouchEnd = () => {
+    if (touchStartX.current == null) return;
+    const dx = touchDeltaX.current;
+    if (images.length > 1 && Math.abs(dx) > 40) {
+      if (dx < 0) goNext();
+      else goPrev();
+    }
+    touchStartX.current = null;
+    touchDeltaX.current = 0;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setZoom({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
+  };
 
   const sizes = (product as any)?.sizes;
   const hasSizes = Array.isArray(sizes) && sizes.length > 0;
@@ -141,7 +179,14 @@ export default function ProductDetail() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-16 grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-16">
             {/* Image gallery */}
             <div className="space-y-3">
-              <div className="aspect-[3/4] bg-[#111] relative overflow-hidden border border-border group">
+              <div
+                className="aspect-[3/4] bg-[#111] relative overflow-hidden border border-border group select-none touch-pan-y md:cursor-zoom-in"
+                onMouseMove={handleMouseMove}
+                onMouseLeave={() => setZoom(null)}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
                 {images.length > 0 ? (
                   <>
                     <div
@@ -153,7 +198,15 @@ export default function ProductDetail() {
                           key={i}
                           src={src}
                           alt={`${product.name} – ${i + 1}`}
-                          className="w-full h-full object-cover flex-shrink-0"
+                          className="w-full h-full object-cover flex-shrink-0 transition-transform duration-200 ease-out"
+                          style={
+                            zoom && i === activeImage
+                              ? {
+                                  transform: `scale(1.8)`,
+                                  transformOrigin: `${zoom.x}% ${zoom.y}%`,
+                                }
+                              : undefined
+                          }
                           data-testid={`img-product-detail-${i}`}
                           draggable={false}
                         />
@@ -294,9 +347,12 @@ export default function ProductDetail() {
 
               {hasSizes && (
                 <div className="mb-8">
-                  <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground mb-3">
-                    Select Size
-                  </p>
+                  <div className="flex items-center justify-between mb-3 gap-3">
+                    <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground">
+                      Select Size
+                    </p>
+                    <SizeGuide />
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {sizes.map((size: string) => (
                       <button
@@ -352,18 +408,25 @@ export default function ProductDetail() {
               </div>
 
               <div className="flex flex-col gap-3">
-                <Button
-                  onClick={handleAdd}
-                  disabled={!canAdd}
-                  data-testid="button-add-to-cart-detail"
-                  className="rounded-none w-full font-display text-lg sm:text-xl tracking-[0.2em] h-14 bg-foreground text-background hover:bg-primary hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
-                >
-                  {!inStock
-                    ? "SOLD OUT"
-                    : hasSizes && !selectedSize
-                    ? "SELECT A SIZE"
-                    : "ADD TO CART"}
-                </Button>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={handleAdd}
+                    disabled={!canAdd}
+                    data-testid="button-add-to-cart-detail"
+                    className="rounded-none flex-1 font-display text-lg sm:text-xl tracking-[0.2em] h-14 bg-foreground text-background hover:bg-primary hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
+                  >
+                    {!inStock
+                      ? "SOLD OUT"
+                      : hasSizes && !selectedSize
+                      ? "SELECT A SIZE"
+                      : "ADD TO CART"}
+                  </Button>
+                  <WishlistButton
+                    productId={(product as any).id}
+                    productName={product.name}
+                    variant="detail"
+                  />
+                </div>
 
                 {inStock && (
                   <Button
@@ -385,6 +448,10 @@ export default function ProductDetail() {
               </Link>
             </div>
           </div>
+        )}
+
+        {!isLoading && !isError && product && (
+          <RecentlyViewed excludeId={productId} title="You Recently Viewed" />
         )}
       </main>
     </div>

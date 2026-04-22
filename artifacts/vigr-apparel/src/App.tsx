@@ -19,6 +19,7 @@ import AccountOrders from "@/pages/account-orders";
 import OrderLookup from "@/pages/order-lookup";
 import Terms from "@/pages/terms";
 import Unsubscribe from "@/pages/unsubscribe";
+import Wishlist from "@/pages/wishlist";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ function Router() {
       <Route path="/orders/lookup" component={OrderLookup} />
       <Route path="/terms" component={Terms} />
       <Route path="/unsubscribe" component={Unsubscribe} />
+      <Route path="/wishlist" component={Wishlist} />
       <Route path="/dev" component={DevLogin} />
       <Route path="/dev/dashboard" component={DevDashboard} />
       <Route component={NotFound} />

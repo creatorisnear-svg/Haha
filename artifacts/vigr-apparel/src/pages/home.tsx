@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { ShoppingCart, User, Menu, Search, X, Truck, Shield, Flame, Music2, Eye } from "lucide-react";
+import { ShoppingCart, User, Menu, Search, X, Truck, Shield, Flame, Music2, Eye, Heart } from "lucide-react";
 import { useListProducts, useSubscribeNewsletter } from "@workspace/api-client-react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
+import { useWishlist } from "@/hooks/useWishlist";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
+import { WishlistButton } from "@/components/WishlistButton";
+import { RecentlyViewed } from "@/components/RecentlyViewed";
 import logoPath from "@assets/12214-removebg-preview_1776743232072.png";
 
 interface Category { id: string; name: string; slug: string; }
@@ -16,6 +19,7 @@ export default function Home() {
   const { data: productsData, isLoading } = useListProducts();
   const { itemCount, setIsOpen } = useCart();
   const { isLoggedIn } = useAuth();
+  const { count: wishlistCount } = useWishlist();
   const { toast } = useToast();
   const subscribeNewsletter = useSubscribeNewsletter();
   const [email, setEmail] = useState("");
@@ -158,6 +162,18 @@ export default function Home() {
                   {isLoggedIn ? "My Account" : "Sign In"}
                 </Link>
                 <Link
+                  href="/wishlist"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center justify-between w-full text-left px-6 py-4 font-sans text-xs tracking-[0.3em] uppercase border-b border-border hover:bg-foreground/5 transition-colors"
+                >
+                  <span>Wishlist</span>
+                  {wishlistCount > 0 && (
+                    <span className="font-sans text-[9px] tracking-[0.2em] text-primary">
+                      {wishlistCount}
+                    </span>
+                  )}
+                </Link>
+                <Link
                   href="/dev"
                   onClick={() => setMenuOpen(false)}
                   className="block w-full text-left px-6 py-4 font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground/50 hover:text-primary transition-colors"
@@ -205,6 +221,18 @@ export default function Home() {
 
           {/* Account + Cart */}
           <div className="flex items-center gap-1">
+          <Link
+            href="/wishlist"
+            aria-label="Wishlist"
+            className="relative p-2 text-muted-foreground hover:text-foreground transition-colors hidden sm:inline-flex"
+          >
+            <Heart className="w-5 h-5" />
+            {wishlistCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary text-white text-[9px] flex items-center justify-center rounded-full">
+                {wishlistCount}
+              </span>
+            )}
+          </Link>
           <Link href={isLoggedIn ? "/account/orders" : "/account/login"} className="p-2 text-muted-foreground hover:text-foreground transition-colors">
             <User className="w-5 h-5" />
           </Link>
@@ -399,6 +427,9 @@ export default function Home() {
         )}
       </section>
 
+      {/* ── RECENTLY VIEWED ── */}
+      <RecentlyViewed />
+
       {/* ── ABOUT ── */}
       <section id="about" className="relative py-16 sm:py-28 px-4 sm:px-6 overflow-hidden" style={{ background: "rgba(255,255,255,0.02)" }}>
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 sm:gap-16 items-center">
@@ -577,7 +608,7 @@ function ProductCard({ product }: { product: any }) {
 
   return (
     <div
-      className="group flex flex-col border border-border hover:border-foreground/60 hover:shadow-[0_18px_40px_-20px_rgba(154,33,46,0.45)] transition-all duration-300 hover:-translate-y-1"
+      className="group relative flex flex-col border border-border hover:border-foreground/60 hover:shadow-[0_18px_40px_-20px_rgba(154,33,46,0.45)] transition-all duration-300 hover:-translate-y-1"
       data-testid={`card-product-${product.id}`}
     >
       <Link
@@ -625,7 +656,7 @@ function ProductCard({ product }: { product: any }) {
         )}
         {isLowStock && product.inStock && (
           <span
-            className="absolute top-3 right-3 font-sans text-[9px] tracking-[0.3em] uppercase text-primary bg-background/80 backdrop-blur-[2px] border border-primary/50 px-2 py-1"
+            className="absolute bottom-3 left-3 font-sans text-[9px] tracking-[0.3em] uppercase text-primary bg-background/80 backdrop-blur-[2px] border border-primary/50 px-2 py-1"
             data-testid={`text-low-stock-${product.id}`}
           >
             Only {product.stockCount} left
@@ -647,6 +678,7 @@ function ProductCard({ product }: { product: any }) {
           Quick View
         </div>
       </Link>
+      <WishlistButton productId={product.id} productName={product.name} variant="card" />
       <div className="p-5 flex flex-col gap-4">
         <Link
           href={`/products/${product.id}`}
