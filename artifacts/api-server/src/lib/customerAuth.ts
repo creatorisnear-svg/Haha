@@ -76,6 +76,6 @@ export function customerAuthMiddleware(req: any, res: any, next: any) {
 
 // ── Generate a temporary password for admin-issued resets ───────────────────
 export function generateTemporaryPassword(): string {
-  // 12 chars, URL-safe, with mixed case and digits — easy to read aloud.
+  // 12 chars, URL-safe, with mixed case and digits; easy to read aloud.
   return crypto.randomBytes(9).toString("base64url");
 }

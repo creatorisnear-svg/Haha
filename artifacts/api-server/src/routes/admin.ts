@@ -250,7 +250,7 @@ router.post("/admin/customers/:id/reset-password", adminAuthMiddleware, async (r
     success: true,
     temporaryPassword: tempPassword,
     message:
-      "A temporary password has been set. Share it with the customer through a secure channel — it won't be shown again.",
+      "A temporary password has been set. Share it with the customer through a secure channel · it won't be shown again.",
   });
 });
 

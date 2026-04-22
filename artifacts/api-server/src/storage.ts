@@ -370,7 +370,7 @@ export class Storage {
     );
   }
 
-  // Newsletter — returns true if a new (or re-activated) subscriber was created.
+  // Newsletter · returns true if a new (or re-activated) subscriber was created.
   async subscribeNewsletter(email: string): Promise<boolean> {
     const db = await getDb();
     const existing = await db.collection("newsletter").findOne({ email });
@@ -400,7 +400,7 @@ export class Storage {
     return docs.map((d) => d.email);
   }
 
-  // Newsletter — returns true if a subscriber was found and removed.
+  // Newsletter · returns true if a subscriber was found and removed.
   async unsubscribeNewsletter(email: string): Promise<boolean> {
     const db = await getDb();
     const result = await db

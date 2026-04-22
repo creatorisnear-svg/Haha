@@ -25,7 +25,7 @@ export default function Terms() {
         <div className="border border-primary bg-primary/10 p-6 mb-12">
           <p className="font-display text-lg sm:text-xl tracking-widest uppercase text-primary mb-2">Returns & Refunds</p>
           <p className="font-sans text-sm leading-relaxed text-foreground">
-            We refund any order that is never delivered. We accept returns of <span className="font-semibold">unopened</span> items within 14 days of delivery — the customer covers the return shipping. See sections 2 and 3 below for the full policy.
+            We refund any order that is never delivered. We accept returns of <span className="font-semibold">unopened</span> items within 14 days of delivery; the customer covers the return shipping. See sections 2 and 3 below for the full policy.
           </p>
         </div>
 
@@ -45,9 +45,9 @@ export default function Terms() {
                 <a href="mailto:vaaclothing.xyz@gmail.com" className="text-primary hover:underline">vaaclothing.xyz@gmail.com</a> with your order number.
               </li>
               <li>Items that have been opened, worn, washed, altered, or that are missing tags or original packaging are <span className="font-semibold">not eligible</span> for return.</li>
-              <li>The <span className="font-semibold">customer is responsible for return shipping costs</span>. We recommend using a tracked service — we cannot process returns we never receive.</li>
+              <li>The <span className="font-semibold">customer is responsible for return shipping costs</span>. We recommend using a tracked service; we cannot process returns we never receive.</li>
               <li>Once we receive and inspect the returned item, we will refund the original purchase price (excluding the original shipping fee) to your original payment method within 5–10 business days.</li>
-              <li>Sizing charts are available on each product page — please review them before ordering.</li>
+              <li>Sizing charts are available on each product page; please review them before ordering.</li>
             </ul>
           </Section>
 
@@ -74,7 +74,7 @@ export default function Terms() {
 
           <Section title="5. Order Processing & Shipping">
             <p>
-              Orders are typically processed within 2–5 business days. Shipping times vary by carrier and destination. Once a tracking number is issued, the package is in the carrier's hands and we are not responsible for carrier delays, lost packages, or theft after delivery confirmation. Customers are responsible for providing an accurate shipping address — orders sent to incorrect addresses provided by the customer are not eligible for replacement.
+              Orders are typically processed within 2–5 business days. Shipping times vary by carrier and destination. Once a tracking number is issued, the package is in the carrier's hands and we are not responsible for carrier delays, lost packages, or theft after delivery confirmation. Customers are responsible for providing an accurate shipping address; orders sent to incorrect addresses provided by the customer are not eligible for replacement.
             </p>
           </Section>
 

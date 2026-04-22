@@ -33,7 +33,7 @@ router.post("/newsletter", newsletterLimiter, async (req, res) => {
   res.json({
     success: true,
     message: isNew
-      ? "Subscribed — check your inbox for a welcome email."
+      ? "Subscribed · check your inbox for a welcome email."
       : "You're already on the list.",
   });
 });

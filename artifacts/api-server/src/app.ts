@@ -55,7 +55,7 @@ if (canonicalHost) {
 
 app.use("/api", router);
 
-// SEO: sitemap.xml — generated dynamically from live products so Google
+// SEO: sitemap.xml · generated dynamically from live products so Google
 // re-discovers new drops without manual updates.
 app.get("/sitemap.xml", async (_req, res) => {
   const baseUrl = (canonicalHost ? `https://${canonicalHost}` : "https://vaaclothing.xyz").replace(/\/$/, "");

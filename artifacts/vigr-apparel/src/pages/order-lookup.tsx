@@ -278,7 +278,7 @@ export default function OrderLookup() {
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="font-sans text-sm font-medium uppercase tracking-wide truncate">
-                          {item.productName}{item.size ? ` — ${item.size}` : ""}
+                          {item.productName}{item.size ? ` · ${item.size}` : ""}
                         </p>
                         <p className="font-sans text-xs text-muted-foreground">
                           Qty: {item.quantity} · ${(item.price / 100).toFixed(2)} each

@@ -71,7 +71,7 @@ export default function Unsubscribe() {
             Unsubscribe
           </h1>
           <p className="font-sans text-sm text-muted-foreground text-center mb-8 leading-relaxed">
-            Enter the email you signed up with to be removed from our mailing list. No more transmissions — we'll respect your wishes.
+            Enter the email you signed up with to be removed from our mailing list. No more transmissions. We'll respect your wishes.
           </p>
 
           {done ? (

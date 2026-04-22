@@ -35,7 +35,7 @@ router.post("/checkout", async (req, res) => {
     }
   }
 
-  // Resolve customer — check auth token, or look up by email, or create new account
+  // Resolve customer · check auth token, or look up by email, or create new account
   const authHeader = req.headers["authorization"] ?? "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
   const tokenCustomerId = verifyCustomerToken(token);
@@ -105,7 +105,7 @@ router.post("/checkout", async (req, res) => {
   if (paymentIntent && paymentIntent.amount !== pricing.total) {
     logger.error(
       { paymentIntentAmount: paymentIntent.amount, computedTotal: pricing.total, paymentIntentId },
-      "Payment amount mismatch — refusing to place order",
+      "Payment amount mismatch · refusing to place order",
     );
     return res.status(400).json({
       error: "Payment amount does not match order total. Please refresh and try again.",
@@ -128,7 +128,7 @@ router.post("/checkout", async (req, res) => {
   const appliedPromoCode = pricing.appliedPromoCode;
   const total = pricing.total;
 
-  // Decrement stock for each item (best-effort — order is already placed)
+  // Decrement stock for each item (best-effort · order is already placed)
   for (const item of orderItems) {
     try {
       await storage.decrementStock(item.productId, item.quantity);

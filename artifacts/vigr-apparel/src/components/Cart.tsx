@@ -144,7 +144,7 @@ function PaymentForm({
           <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground mb-3">Order Summary</p>
           {items.map((item: any) => (
             <div key={`${item.product.id}-${item.size ?? ""}`} className="flex justify-between font-sans text-xs text-muted-foreground py-1">
-              <span>{item.product.name}{item.size ? ` — ${item.size}` : ""} × {item.quantity}</span>
+              <span>{item.product.name}{item.size ? ` · ${item.size}` : ""} × {item.quantity}</span>
               <span>${(item.product.price * item.quantity / 100).toFixed(2)}</span>
             </div>
           ))}
@@ -291,7 +291,7 @@ export function Cart() {
       const config = await configRes.json();
 
       if (!config.publishableKey) {
-        // Stripe not configured — place order directly (dev/testing mode)
+        // Stripe not configured; place order directly (dev/testing mode)
         const orderRes = await fetch(`${BASE}/api/checkout`, {
           method: "POST",
           headers: {
@@ -383,7 +383,7 @@ export function Cart() {
                     </div>
                     <div className="flex flex-col flex-1 py-1 justify-between">
                       <div>
-                        <h3 className="font-medium text-sm font-sans uppercase">{item.product.name}{item.size ? <span className="text-muted-foreground font-normal"> — {item.size}</span> : null}</h3>
+                        <h3 className="font-medium text-sm font-sans uppercase">{item.product.name}{item.size ? <span className="text-muted-foreground font-normal"> · {item.size}</span> : null}</h3>
                         <p className="text-muted-foreground text-sm">${(item.product.price / 100).toFixed(2)}</p>
                       </div>
                       <div className="flex items-center justify-between">
@@ -437,7 +437,7 @@ export function Cart() {
                   <div className="flex items-center justify-between border border-green-800 bg-green-950/30 px-3 py-2">
                     <div className="flex items-center gap-2">
                       <Tag className="w-3.5 h-3.5 text-green-400" />
-                      <span className="font-sans text-xs text-green-400 tracking-widest">{promo.code} — {promo.message}</span>
+                      <span className="font-sans text-xs text-green-400 tracking-widest">{promo.code} · {promo.message}</span>
                     </div>
                     <button onClick={handleRemovePromo} className="text-xs text-muted-foreground hover:text-foreground transition-colors ml-2">×</button>
                   </div>

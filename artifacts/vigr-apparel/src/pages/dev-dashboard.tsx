@@ -409,7 +409,7 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
                     onChange={(e) => setFormData({...formData, category: e.target.value})}
                     className="w-full h-10 rounded-none border border-border bg-background text-foreground font-sans text-sm px-3 focus-visible:ring-1 focus-visible:ring-primary focus:outline-none"
                   >
-                    <option value="">— None —</option>
+                    <option value="">None</option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.name}>{c.name}</option>
                     ))}
@@ -419,7 +419,7 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
                   </select>
                   {categories.length === 0 && (
                     <p className="text-[10px] text-muted-foreground tracking-wide">
-                      No categories yet — create one in the Categories tab.
+                      No categories yet. Create one in the Categories tab.
                     </p>
                   )}
                 </div>
@@ -722,7 +722,7 @@ function OrdersTab({ token }: { token: string }) {
   };
 
   const deleteOrder = async (id: string, orderNumber: string) => {
-    if (!window.confirm(`Permanently delete order ${orderNumber}?\n\nThis removes it from the database and all reports (Overview, Tax Summary, etc.). Use this for test orders only — it cannot be undone.`)) {
+    if (!window.confirm(`Permanently delete order ${orderNumber}?\n\nThis removes it from the database and all reports (Overview, Tax Summary, etc.). Use this for test orders only. It cannot be undone.`)) {
       return;
     }
     setUpdatingId(id);
@@ -1102,7 +1102,7 @@ function CustomersTab({ token }: { token: string }) {
       <div className="border border-border bg-card/50 p-4">
         <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground mb-1">Note on Passwords</p>
         <p className="font-sans text-xs text-muted-foreground leading-relaxed">
-          Customer passwords are stored as one-way encrypted hashes and cannot be viewed —
+          Customer passwords are stored as one-way encrypted hashes and cannot be viewed.
           not by you, not by anyone. If a customer is locked out, use{" "}
           <span className="text-foreground">Reset Password</span> to issue a one-time temporary
           password you can share with them.
@@ -1295,7 +1295,7 @@ function NewsletterTab({ token }: { token: string }) {
               <Label className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground">Subject</Label>
               <Input
                 required
-                placeholder="e.g. New Drop — VAA Summer Collection"
+                placeholder="e.g. New Drop · VAA Summer Collection"
                 value={form.subject}
                 onChange={(e) => setForm((p) => ({ ...p, subject: e.target.value }))}
                 className="rounded-none border-border focus-visible:ring-1 focus-visible:ring-primary"
@@ -1596,7 +1596,7 @@ function CategoriesTab({ token }: { token: string }) {
       if (!res.ok) throw new Error(data.error || `Failed to create category (HTTP ${res.status})`);
       toast({ title: "Category created", description: data.name ?? name });
       setNewName("");
-      // Optimistic update — show the new category immediately
+      // Optimistic update: show the new category immediately
       if (data && data.id) {
         setCategories((prev) => {
           const next = [...prev.filter((c) => c.id !== data.id), data];
@@ -1931,7 +1931,7 @@ function SizesTab({ token }: { token: string }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// OverviewTab — sales summary & tax-prep helpers
+// OverviewTab: sales summary & tax-prep helpers
 // ─────────────────────────────────────────────────────────────────────────────
 function OverviewTab({ token }: { token: string }) {
   const [orders, setOrders] = useState<any[]>([]);
@@ -2180,7 +2180,7 @@ function OverviewTab({ token }: { token: string }) {
 
         <div className="mt-4 border border-border bg-card p-4 text-xs text-muted-foreground font-sans space-y-1.5 leading-relaxed">
           <p><span className="text-foreground font-semibold uppercase tracking-widest text-[10px]">Tax filing tip:</span> Use the <span className="text-foreground">Net Revenue</span> figure as your gross income. Excluded: pending (unpaid) orders.</p>
-          <p>Stripe fees are not deducted here — pull those from your Stripe dashboard (Stripe → Reports → Balance) and subtract them as a business expense.</p>
+          <p>Stripe fees are not deducted here. Pull those from your Stripe dashboard (Stripe → Reports → Balance) and subtract them as a business expense.</p>
           <p>Click <span className="text-foreground">Export CSV</span> to download every order for {taxYear} in a spreadsheet your accountant or tax software can import.</p>
         </div>
       </div>

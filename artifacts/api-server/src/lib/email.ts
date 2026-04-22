@@ -86,7 +86,7 @@ function customerHtml(data: OrderEmailData): string {
       <p style="margin:0 0 8px;font-size:10px;letter-spacing:0.3em;color:#9a9a9a;text-transform:uppercase;">Ship To</p>
       <p style="margin:0;color:#e5e5e5;font-size:13px;line-height:1.6;">${renderAddress(data.shippingAddress)}</p>
     </div>
-    <p style="color:#9a9a9a;font-size:12px;line-height:1.6;margin-top:32px;">Need help? Email us at <a href="mailto:vaaclothing.xyz@gmail.com" style="color:#c5c5c5;">vaaclothing.xyz@gmail.com</a> — we're happy to assist.</p>
+    <p style="color:#9a9a9a;font-size:12px;line-height:1.6;margin-top:32px;">Need help? Email us at <a href="mailto:vaaclothing.xyz@gmail.com" style="color:#c5c5c5;">vaaclothing.xyz@gmail.com</a> · we're happy to assist.</p>
     <p style="color:#5a5a5a;font-size:11px;text-align:center;margin-top:32px;letter-spacing:0.2em;text-transform:uppercase;">VIGR Angel Apparel · Born in the grit</p>
   </div>
 </body></html>`;
@@ -117,7 +117,7 @@ async function sendViaResend(payload: {
   if (!RESEND_API_KEY) {
     logger.warn(
       { to: payload.to, subject: payload.subject },
-      "RESEND_API_KEY not configured — email not sent (logging only)"
+      "RESEND_API_KEY not configured · email not sent (logging only)"
     );
     throw new Error(
       "Email is not configured. Set the RESEND_API_KEY environment variable to enable sending."
@@ -191,13 +191,13 @@ function shippingHtml(data: ShippingEmailData): string {
       <h2 style="font-size:28px;letter-spacing:0.2em;margin:0;color:#ffffff;">${data.orderNumber}</h2>
     </div>
     <p style="color:#c5c5c5;font-size:14px;line-height:1.6;">Hey ${data.customerName.split(" ")[0] || "there"},</p>
-    <p style="color:#c5c5c5;font-size:14px;line-height:1.6;">Good news — your order is on the way. Tap the button below to track your package.</p>
+    <p style="color:#c5c5c5;font-size:14px;line-height:1.6;">Good news · your order is on the way. Tap the button below to track your package.</p>
     ${trackingButtonHtml(data.trackingNumber)}
     <div style="margin:24px 0;padding:16px;border:1px solid #2a2a2a;">
       <p style="margin:0 0 8px;font-size:10px;letter-spacing:0.3em;color:#9a9a9a;text-transform:uppercase;">Ship To</p>
       <p style="margin:0;color:#e5e5e5;font-size:13px;line-height:1.6;">${renderAddress(data.shippingAddress)}</p>
     </div>
-    <p style="color:#9a9a9a;font-size:12px;line-height:1.6;margin-top:32px;">Need help? Email us at <a href="mailto:vaaclothing.xyz@gmail.com" style="color:#c5c5c5;">vaaclothing.xyz@gmail.com</a> — we're happy to assist.</p>
+    <p style="color:#9a9a9a;font-size:12px;line-height:1.6;margin-top:32px;">Need help? Email us at <a href="mailto:vaaclothing.xyz@gmail.com" style="color:#c5c5c5;">vaaclothing.xyz@gmail.com</a> · we're happy to assist.</p>
     <p style="color:#5a5a5a;font-size:11px;text-align:center;margin-top:32px;letter-spacing:0.2em;text-transform:uppercase;">VIGR Angel Apparel · Born in the grit</p>
   </div>
 </body></html>`;
@@ -206,7 +206,7 @@ function shippingHtml(data: ShippingEmailData): string {
 export async function sendShippingNotification(data: ShippingEmailData): Promise<void> {
   await sendViaResend({
     to: data.customerEmail,
-    subject: `Your order ${data.orderNumber} has shipped — VIGR Angel Apparel`,
+    subject: `Your order ${data.orderNumber} has shipped · VIGR Angel Apparel`,
     html: shippingHtml(data),
   });
 }
@@ -223,7 +223,7 @@ export async function sendNewsletterWelcome(email: string): Promise<void> {
       <h2 style="font-size:24px;letter-spacing:0.2em;margin:0;color:#ffffff;">YOU'RE IN.</h2>
     </div>
     <p style="color:#c5c5c5;font-size:14px;line-height:1.7;">Thanks for joining the VAA list. You'll be the first to hear about new drops, restocks, and members-only releases.</p>
-    <p style="color:#c5c5c5;font-size:14px;line-height:1.7;">Stay close — the next drop is never far.</p>
+    <p style="color:#c5c5c5;font-size:14px;line-height:1.7;">Stay close · the next drop is never far.</p>
     <p style="color:#9a9a9a;font-size:12px;line-height:1.6;margin-top:32px;">Need help? Email us at <a href="mailto:vaaclothing.xyz@gmail.com" style="color:#c5c5c5;">vaaclothing.xyz@gmail.com</a></p>
     <p style="color:#5a5a5a;font-size:11px;text-align:center;margin-top:32px;letter-spacing:0.2em;text-transform:uppercase;">VIGR Angel Apparel · Born in the grit</p>
   </div>
@@ -294,7 +294,7 @@ function deliveredHtml(data: DeliveryEmailData): string {
       <h2 style="font-size:28px;letter-spacing:0.2em;margin:0;color:#ffffff;">${data.orderNumber}</h2>
     </div>
     <p style="color:#c5c5c5;font-size:14px;line-height:1.6;">Hey ${data.customerName.split(" ")[0] || "there"},</p>
-    <p style="color:#c5c5c5;font-size:14px;line-height:1.6;">Your order <strong style="color:#ffffff;">${data.orderNumber}</strong> has been delivered. Welcome to the covenant — we hope you wear it well.</p>
+    <p style="color:#c5c5c5;font-size:14px;line-height:1.6;">Your order <strong style="color:#ffffff;">${data.orderNumber}</strong> has been delivered. Welcome to the covenant · we hope you wear it well.</p>
     ${tracking}
     <div style="margin:24px 0;padding:16px;border:1px solid #2a2a2a;">
       <p style="margin:0 0 8px;font-size:10px;letter-spacing:0.3em;color:#9a9a9a;text-transform:uppercase;">Delivered To</p>
@@ -310,7 +310,7 @@ function deliveredHtml(data: DeliveryEmailData): string {
 export async function sendDeliveryNotification(data: DeliveryEmailData): Promise<void> {
   await sendViaResend({
     to: data.customerEmail,
-    subject: `Your order ${data.orderNumber} was delivered — VIGR Angel Apparel`,
+    subject: `Your order ${data.orderNumber} was delivered · VIGR Angel Apparel`,
     html: deliveredHtml(data),
   });
 }
@@ -319,13 +319,13 @@ export async function sendOrderConfirmation(data: OrderEmailData): Promise<void>
   // Customer confirmation
   await sendViaResend({
     to: data.customerEmail,
-    subject: `Order ${data.orderNumber} confirmed — VIGR Angel Apparel`,
+    subject: `Order ${data.orderNumber} confirmed · VIGR Angel Apparel`,
     html: customerHtml(data),
   });
   // Admin notification
   await sendViaResend({
     to: ADMIN_EMAIL,
-    subject: `[VAA] New order ${data.orderNumber} — ${formatMoney(data.total)}`,
+    subject: `[VAA] New order ${data.orderNumber} · ${formatMoney(data.total)}`,
     html: adminHtml(data),
     replyTo: data.customerEmail,
   });

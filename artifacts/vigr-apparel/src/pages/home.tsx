@@ -233,7 +233,7 @@ export default function Home() {
         >
           <div className="hero-radial glow-pulse w-[80vw] h-[80vw] max-w-[900px] max-h-[900px]" />
         </div>
-        {/* corner runes — desktop only to avoid mobile collisions */}
+        {/* corner runes: desktop only to avoid mobile collisions */}
         <div aria-hidden="true" className="hidden md:block absolute top-28 left-10 font-sans text-[9px] tracking-[0.5em] uppercase text-muted-foreground/40 fade-up">
           VIGR Angel Apparel
         </div>
@@ -274,7 +274,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* scroll hint — desktop only to avoid bleeding into the marquee on mobile */}
+        {/* scroll hint: desktop only to avoid bleeding into the marquee on mobile */}
         <div className="hidden md:flex absolute bottom-8 flex-col items-center gap-2 fade-up-d4">
           <span className="block w-px h-8 bg-foreground/30" />
           <p className="font-sans text-[9px] tracking-[0.4em] uppercase text-muted-foreground/60">
@@ -375,7 +375,7 @@ export default function Home() {
         ) : !allProducts.length ? (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <p className="font-sans text-xs tracking-widest uppercase text-muted-foreground">
-              No products yet — check back soon.
+              No products yet. Check back soon.
             </p>
           </div>
         ) : !filteredProducts.length ? (
@@ -410,7 +410,7 @@ export default function Home() {
             </h2>
             <div className="space-y-5 font-sans text-sm text-muted-foreground leading-relaxed">
               <p>
-                VIGR Angel Apparel is more than fabric and thread — it is a quiet testament to faith carried into everyday life.
+                VIGR Angel Apparel is more than fabric and thread. It is a quiet testament to faith carried into everyday life.
               </p>
               <p>
                 We make clothing for believers and seekers alike: pieces designed with intention, worn with conviction.
@@ -572,9 +572,12 @@ function ProductCard({ product }: { product: any }) {
     toast({ title: "Added", description: `${product.name}${selectedSize ? ` (${selectedSize})` : ""} added to cart.` });
   };
 
+  const isLowStock =
+    typeof product.stockCount === "number" && product.stockCount > 0 && product.stockCount < 5;
+
   return (
     <div
-      className="group flex flex-col border border-border hover:border-foreground/60 transition-all duration-300 hover:-translate-y-1"
+      className="group flex flex-col border border-border hover:border-foreground/60 hover:shadow-[0_18px_40px_-20px_rgba(154,33,46,0.45)] transition-all duration-300 hover:-translate-y-1"
       data-testid={`card-product-${product.id}`}
     >
       <Link
@@ -596,6 +599,39 @@ function ProductCard({ product }: { product: any }) {
           </div>
         )}
 
+        {/* bottom gradient for readability on hover overlay */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        />
+
+        {/* corner badges */}
+        {(product as any).tag && (
+          <span
+            className={`absolute top-3 left-3 font-sans text-[9px] uppercase tracking-[0.3em] font-semibold px-2 py-1 bg-background/80 backdrop-blur-[2px] border ${
+              ({
+                blue: "text-blue-400 border-blue-400/40",
+                red: "text-red-400 border-red-400/40",
+                green: "text-green-400 border-green-400/40",
+                yellow: "text-yellow-300 border-yellow-300/40",
+                purple: "text-purple-300 border-purple-300/40",
+                white: "text-white border-white/40",
+              } as Record<string, string>)[(product as any).tagColor ?? "blue"] ?? "text-blue-400 border-blue-400/40"
+            }`}
+            data-testid={`text-product-tag-${product.id}`}
+          >
+            {(product as any).tag}
+          </span>
+        )}
+        {isLowStock && product.inStock && (
+          <span
+            className="absolute top-3 right-3 font-sans text-[9px] tracking-[0.3em] uppercase text-primary bg-background/80 backdrop-blur-[2px] border border-primary/50 px-2 py-1"
+            data-testid={`text-low-stock-${product.id}`}
+          >
+            Only {product.stockCount} left
+          </span>
+        )}
+
         {/* sold out overlay */}
         {!product.inStock && (
           <div className="absolute inset-0 bg-background/70 backdrop-blur-[1px] flex items-center justify-center">
@@ -612,41 +648,16 @@ function ProductCard({ product }: { product: any }) {
         </div>
       </Link>
       <div className="p-5 flex flex-col gap-4">
-        {(product as any).tag && (
-          <span
-            className={`font-sans text-[10px] uppercase tracking-[0.2em] font-semibold ${
-              ({
-                blue: "text-blue-500",
-                red: "text-red-500",
-                green: "text-green-500",
-                yellow: "text-yellow-400",
-                purple: "text-purple-400",
-                white: "text-white",
-              } as Record<string, string>)[(product as any).tagColor ?? "blue"] ?? "text-blue-500"
-            }`}
-            data-testid={`text-product-tag-${product.id}`}
-          >
-            {(product as any).tag}
-          </span>
-        )}
         <Link
           href={`/products/${product.id}`}
-          className="flex items-baseline justify-between hover:text-primary transition-colors"
+          className="flex items-baseline justify-between gap-3 hover:text-primary transition-colors"
           data-testid={`link-product-name-${product.id}`}
         >
-          <h3 className="font-sans text-xs font-semibold uppercase tracking-[0.2em] truncate pr-4">{product.name}</h3>
-          <span className="font-sans text-xs text-muted-foreground whitespace-nowrap">
+          <h3 className="font-sans text-xs font-semibold uppercase tracking-[0.2em] truncate">{product.name}</h3>
+          <span className="font-display text-base tracking-[0.05em] text-foreground whitespace-nowrap">
             ${(product.price / 100).toFixed(2)}
           </span>
         </Link>
-        {typeof product.stockCount === "number" && product.stockCount > 0 && product.stockCount < 5 && (
-          <p
-            className="font-sans text-[10px] tracking-[0.3em] uppercase text-primary"
-            data-testid={`text-low-stock-${product.id}`}
-          >
-            Only {product.stockCount} left
-          </p>
-        )}
         {hasSizes && (
           <div className="flex flex-wrap gap-1.5">
             {product.sizes.map((size: string) => (
