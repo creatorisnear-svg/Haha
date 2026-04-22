@@ -120,7 +120,7 @@ export default function ProductDetail() {
       {/* ── NAV ── */}
       <nav
         className="fixed top-0 left-0 right-0 z-40 border-b border-border"
-        style={{ background: "rgba(10,10,10,0.95)" }}
+        style={{ background: "rgba(10,10,10,0.95)", paddingTop: "env(safe-area-inset-top)" }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[64px] sm:h-[72px] flex items-center justify-between gap-2">
           <button
@@ -170,7 +170,7 @@ export default function ProductDetail() {
         </div>
       </nav>
 
-      <main className="flex-1 pt-[64px] sm:pt-[72px]">
+      <main className="flex-1 pt-[calc(64px+env(safe-area-inset-top))] sm:pt-[calc(72px+env(safe-area-inset-top))]">
         {isLoading ? (
           <div className="flex items-center justify-center h-[60vh] font-sans text-xs tracking-widest uppercase text-muted-foreground">
             Loading...

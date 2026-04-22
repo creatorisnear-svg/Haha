@@ -5,9 +5,10 @@ import { ProductCard } from "@/components/ProductCard";
 
 interface SearchOverlayProps {
   topOffset: number;
+  safeAreaTop?: boolean;
 }
 
-export function SearchOverlay({ topOffset }: SearchOverlayProps) {
+export function SearchOverlay({ topOffset, safeAreaTop = false }: SearchOverlayProps) {
   const { query, setQuery } = useSearch();
   const { data: productsData, isLoading } = useListProducts();
 
@@ -35,7 +36,7 @@ export function SearchOverlay({ topOffset }: SearchOverlayProps) {
   return (
     <div
       className="fixed left-0 right-0 bottom-0 z-30 bg-background/95 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200"
-      style={{ top: topOffset }}
+      style={{ top: safeAreaTop ? `calc(${topOffset}px + env(safe-area-inset-top))` : topOffset }}
       onClick={() => setQuery("")}
       data-testid="search-overlay"
     >
@@ -71,7 +72,7 @@ export function SearchOverlay({ topOffset }: SearchOverlayProps) {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-6 pb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6 pb-8">
             {results.map((product: any) => (
               <ProductCard key={product.id} product={product} />
             ))}

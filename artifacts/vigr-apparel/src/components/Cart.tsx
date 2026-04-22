@@ -348,7 +348,7 @@ export function Cart() {
 
   return (
     <Sheet open={isOpen} onOpenChange={handleClose}>
-      <SheetContent hideClose className="w-full sm:max-w-md border-l border-border bg-background flex flex-col p-0" data-testid="cart-drawer">
+      <SheetContent hideClose className="w-full sm:max-w-md lg:max-w-lg border-l border-border bg-background flex flex-col p-0" data-testid="cart-drawer">
 
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border flex-shrink-0">
@@ -383,7 +383,7 @@ export function Cart() {
                     </div>
                     <div className="flex flex-col flex-1 py-1 justify-between">
                       <div>
-                        <h3 className="font-medium text-sm font-sans uppercase">{item.product.name}{item.size ? <span className="text-muted-foreground font-normal"> · {item.size}</span> : null}</h3>
+                        <h3 className="font-medium text-sm font-sans uppercase break-words leading-snug">{item.product.name}{item.size ? <span className="text-muted-foreground font-normal"> · {item.size}</span> : null}</h3>
                         <p className="text-muted-foreground text-sm">${(item.product.price / 100).toFixed(2)}</p>
                       </div>
                       <div className="flex items-center justify-between">

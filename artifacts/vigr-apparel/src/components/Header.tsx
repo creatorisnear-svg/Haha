@@ -74,7 +74,10 @@ export function Header({ categories = [] }: HeaderProps) {
   return (
     <>
       {/* ── ANNOUNCEMENT BAR ── */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-primary/90 backdrop-blur-sm text-white">
+      <div
+        className="fixed top-0 left-0 right-0 z-50 bg-primary/90 backdrop-blur-sm text-white"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
         <div className="max-w-7xl mx-auto px-3 sm:px-6 h-7 flex items-center justify-center gap-2 sm:gap-6 font-sans text-[8.5px] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.3em] uppercase overflow-hidden whitespace-nowrap">
           <span className="truncate">Created like Heaven · Worn With Faith</span>
         </div>
@@ -82,8 +85,8 @@ export function Header({ categories = [] }: HeaderProps) {
 
       {/* ── NAV ── */}
       <nav
-        className="fixed top-7 left-0 right-0 z-40 border-b border-border backdrop-blur-md transition-[height] duration-200"
-        style={{ background: "rgba(10,10,10,0.85)" }}
+        className="fixed left-0 right-0 z-40 border-b border-border backdrop-blur-md transition-[height] duration-200"
+        style={{ background: "rgba(10,10,10,0.85)", top: "calc(28px + env(safe-area-inset-top))" }}
       >
         <div className={`relative max-w-7xl mx-auto px-4 sm:px-6 ${navHeight} flex items-center justify-between gap-2 transition-[height] duration-200`}>
           {/* Hamburger menu */}
@@ -291,7 +294,7 @@ export function Header({ categories = [] }: HeaderProps) {
 
       {/* ── SEARCH RESULTS OVERLAY ── floats over the current page while
           there is text in the search bar; clearing it dismisses the layer. */}
-      <SearchOverlay topOffset={scrolled ? 28 + 60 : 28 + 72 + 56} />
+      <SearchOverlay topOffset={scrolled ? 28 + 60 : 28 + 72 + 56} safeAreaTop />
     </>
   );
 }

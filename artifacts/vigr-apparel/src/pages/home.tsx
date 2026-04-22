@@ -62,7 +62,7 @@ export default function Home() {
       <Header categories={categories} />
 
       {/* ── HERO ── */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 pt-[92px] sm:pt-[100px] overflow-hidden">
+      <section className="relative min-h-[100svh] flex flex-col items-center justify-center px-4 sm:px-6 pt-[calc(92px+env(safe-area-inset-top))] sm:pt-[calc(100px+env(safe-area-inset-top))] pb-10 overflow-hidden">
         <div
           aria-hidden="true"
           className="absolute inset-0 flex items-center justify-center pointer-events-none"
@@ -179,7 +179,7 @@ export default function Home() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
             {displayedProducts.map((product: any) => (
               <ProductCard key={product.id} product={product} />
             ))}
@@ -194,7 +194,7 @@ export default function Home() {
             <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">Browse</p>
             <h2 className="font-display text-[clamp(2rem,5vw,4rem)] tracking-[0.15em]">SHOP BY CATEGORY</h2>
           </div>
-          <div className="grid grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {categories.map((cat) => (
               <Link
                 key={cat.id}
