@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { ShoppingCart, User, Menu, Search, X, Heart } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -22,6 +22,16 @@ export function Header({ categories = [] }: HeaderProps) {
   const { query, setQuery } = useSearch();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [location, navigate] = useLocation();
+
+  // When the user types in the search bar, send them to the dedicated
+  // search page so results render there instead of replacing other content.
+  const handleSearchChange = (value: string) => {
+    setQuery(value);
+    if (value.trim().length > 0 && location !== "/search") {
+      navigate(`/search?q=${encodeURIComponent(value)}`);
+    }
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -45,7 +55,7 @@ export function Header({ categories = [] }: HeaderProps) {
         type="text"
         placeholder={compact ? "Search..." : "Search all products..."}
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onChange={(e) => handleSearchChange(e.target.value)}
         data-testid="input-product-search"
         className={`rounded-none border border-border bg-transparent font-sans tracking-[0.2em] focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 transition-all duration-200 ${
           compact ? "h-8 sm:h-9 text-[11px] pl-8" : "h-11 sm:h-12 text-xs pl-10"

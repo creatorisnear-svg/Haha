@@ -3,7 +3,6 @@ import { Link } from "wouter";
 import { Truck, Shield, Flame, Music2 } from "lucide-react";
 import { useListProducts, useSubscribeNewsletter } from "@workspace/api-client-react";
 import { useAuth } from "@/context/AuthContext";
-import { useSearch } from "@/context/SearchContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -18,7 +17,6 @@ export default function Home() {
   const { data: productsData, isLoading } = useListProducts();
   const { isLoggedIn } = useAuth();
   const { toast } = useToast();
-  const { query, setQuery } = useSearch();
   const subscribeNewsletter = useSubscribeNewsletter();
   const [email, setEmail] = useState("");
   const [categories, setCategories] = useState<Category[]>([]);
@@ -31,17 +29,8 @@ export default function Home() {
   }, []);
 
   const allProducts = productsData?.data ?? [];
-  const trimmedQuery = query.trim().toLowerCase();
-  const isSearching = trimmedQuery.length > 0;
   const recentlyAdded = allProducts.filter((p: any) => !!p.featured);
-  // When the user is searching, look across the ENTIRE catalog. Otherwise
-  // just show the products an admin marked as "Recently Added".
-  const searchResults = allProducts.filter((p: any) => {
-    if (!trimmedQuery) return false;
-    const haystack = `${p.name ?? ""} ${p.description ?? ""} ${p.category ?? ""}`.toLowerCase();
-    return haystack.includes(trimmedQuery);
-  });
-  const displayedProducts = isSearching ? searchResults : recentlyAdded;
+  const displayedProducts = recentlyAdded;
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,20 +157,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── RECENTLY ADDED / SEARCH RESULTS ── */}
+      {/* ── RECENTLY ADDED ── */}
       <section id="products" className="py-16 sm:py-28 px-4 sm:px-6 max-w-7xl mx-auto w-full">
         <div className="mb-8 sm:mb-12 text-center">
-          <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">
-            {isSearching ? "Search" : "New In"}
-          </p>
-          <h2 className="font-display text-[clamp(2.5rem,6vw,5rem)] tracking-[0.15em]">
-            {isSearching ? "SEARCH RESULTS" : "RECENTLY ADDED"}
-          </h2>
-          {isSearching && (
-            <p className="mt-4 font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground">
-              {searchResults.length} match{searchResults.length === 1 ? "" : "es"} for "{query.trim()}"
-            </p>
-          )}
+          <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">New In</p>
+          <h2 className="font-display text-[clamp(2.5rem,6vw,5rem)] tracking-[0.15em]">RECENTLY ADDED</h2>
         </div>
 
         {/* Categories quick links */}
@@ -204,19 +184,7 @@ export default function Home() {
           <div className="flex justify-center items-center h-64 font-sans text-xs tracking-widest uppercase text-muted-foreground">
             Loading collection...
           </div>
-        ) : isSearching && !displayedProducts.length ? (
-          <div className="flex flex-col items-center justify-center h-64 gap-4">
-            <p className="font-sans text-xs tracking-widest uppercase text-muted-foreground">
-              No products match your search.
-            </p>
-            <button
-              onClick={() => setQuery("")}
-              className="font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground hover:text-foreground transition-colors underline"
-            >
-              Clear search
-            </button>
-          </div>
-        ) : !isSearching && !displayedProducts.length ? (
+        ) : !displayedProducts.length ? (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <p className="font-sans text-xs tracking-widest uppercase text-muted-foreground">
               No products marked "Recently Added" yet.

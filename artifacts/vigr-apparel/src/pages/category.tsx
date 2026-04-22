@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "wouter";
 import { ChevronLeft } from "lucide-react";
 import { useListProducts } from "@workspace/api-client-react";
-import { useSearch } from "@/context/SearchContext";
 import { Header } from "@/components/Header";
 import { ProductCard } from "@/components/ProductCard";
 
@@ -12,7 +11,6 @@ export default function CategoryPage() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
   const { data: productsData, isLoading } = useListProducts();
-  const { query, setQuery } = useSearch();
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
@@ -26,19 +24,10 @@ export default function CategoryPage() {
   const categoryName = category?.name ?? slug.replace(/-/g, " ");
 
   const allProducts = productsData?.data ?? [];
-  const trimmedQuery = query.trim().toLowerCase();
-  const isSearching = trimmedQuery.length > 0;
   const inCategory = allProducts.filter(
     (p: any) => (p.category ?? "").toLowerCase() === categoryName.toLowerCase(),
   );
-  // Searching looks across the WHOLE catalog (not just this category) so
-  // people can find anything from anywhere.
-  const searchResults = allProducts.filter((p: any) => {
-    if (!trimmedQuery) return false;
-    const haystack = `${p.name ?? ""} ${p.description ?? ""} ${p.category ?? ""}`.toLowerCase();
-    return haystack.includes(trimmedQuery);
-  });
-  const displayed = isSearching ? searchResults : inCategory;
+  const displayed = inCategory;
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -55,17 +44,10 @@ export default function CategoryPage() {
         </Link>
 
         <div className="mb-8 sm:mb-12 text-center">
-          <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">
-            {isSearching ? "Search" : "Category"}
-          </p>
+          <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">Category</p>
           <h1 className="font-display text-[clamp(2.25rem,6vw,5rem)] tracking-[0.15em] uppercase">
-            {isSearching ? "SEARCH RESULTS" : categoryName}
+            {categoryName}
           </h1>
-          {isSearching && (
-            <p className="mt-4 font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground">
-              {searchResults.length} match{searchResults.length === 1 ? "" : "es"} for "{query.trim()}"
-            </p>
-          )}
         </div>
 
         {/* Other categories quick links */}
@@ -92,19 +74,7 @@ export default function CategoryPage() {
           <div className="flex justify-center items-center h-64 font-sans text-xs tracking-widest uppercase text-muted-foreground">
             Loading...
           </div>
-        ) : isSearching && !displayed.length ? (
-          <div className="flex flex-col items-center justify-center h-64 gap-4">
-            <p className="font-sans text-xs tracking-widest uppercase text-muted-foreground">
-              No products match your search.
-            </p>
-            <button
-              onClick={() => setQuery("")}
-              className="font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground hover:text-foreground transition-colors underline"
-            >
-              Clear search
-            </button>
-          </div>
-        ) : !isSearching && !displayed.length ? (
+        ) : !displayed.length ? (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <p className="font-sans text-xs tracking-widest uppercase text-muted-foreground">
               No products in this category yet.
