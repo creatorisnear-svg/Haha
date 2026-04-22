@@ -185,20 +185,6 @@ export default function Home() {
             </SheetContent>
           </Sheet>
 
-          {/* Wishlist (mobile only, sits next to hamburger) */}
-          <Link
-            href="/wishlist"
-            aria-label="Wishlist"
-            className="relative p-2 text-muted-foreground hover:text-foreground transition-colors sm:hidden"
-          >
-            <Heart className="w-5 h-5" />
-            {wishlistCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary text-white text-[9px] flex items-center justify-center rounded-full">
-                {wishlistCount}
-              </span>
-            )}
-          </Link>
-
           {/* Logo + brand (absolutely centered so side icons don't push it off) */}
           <Link
             href="/"
