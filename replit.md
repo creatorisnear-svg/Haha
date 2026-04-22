@@ -66,21 +66,11 @@ Collections:
 4. When Stripe is NOT configured, checkout still works (orders saved without payment — dev/testing mode)
 5. When Stripe IS configured, checkout requires a confirmed PaymentIntent before saving the order
 
-## Image Upload (S3-Compatible Storage)
+## Image Upload
 
-The upload backend supports two modes:
+Images are uploaded directly to the backend via `POST /api/admin/images/upload` (multipart form, admin auth required) and stored in MongoDB's `images` collection. Images are served via `GET /api/images/:id`. No external storage service is needed.
 
-### Mode 1: Cloudflare R2 / AWS S3 (for Koyeb production)
-Set these environment variables on Koyeb:
-- `S3_ACCESS_KEY_ID` — R2 or AWS access key ID
-- `S3_SECRET_ACCESS_KEY` — R2 or AWS secret key
-- `S3_BUCKET` — bucket name
-- `S3_ENDPOINT` — R2: `https://<account_id>.r2.cloudflarestorage.com` (omit for AWS)
-- `S3_REGION` — `auto` for R2, or AWS region (e.g. `us-east-1`)
-- `S3_PUBLIC_URL` — public base URL for serving images (e.g. `https://pub-xxx.r2.dev` or custom domain)
-
-### Mode 2: Replit Object Storage (dev only, auto-detected)
-Requires `PRIVATE_OBJECT_DIR` env var set in Replit.
+Max file size: 10MB per image.
 
 ## Key Commands
 

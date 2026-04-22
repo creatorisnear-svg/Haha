@@ -7,7 +7,6 @@ import {
   getListProductsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useUpload } from "@workspace/object-storage-web";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,25 +25,38 @@ import {
 function ImageUploadButton({ index, onUploaded }: { index: number; onUploaded: (url: string) => void }) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { uploadFile, isUploading } = useUpload({
-    onSuccess: (response) => {
-      const url = response.objectPath.startsWith("http")
-        ? response.objectPath
-        : `/api/storage${response.objectPath}`;
-      onUploaded(url);
-      toast({ title: "Image uploaded", description: response.metadata.name });
-    },
-    onError: (err) => {
-      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
-    },
-  });
+  const [isUploading, setIsUploading] = React.useState(false);
+  const token = localStorage.getItem("vaa_admin_token");
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      await uploadFile(file);
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/admin/images/upload", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Upload failed");
+      }
+
+      const { url } = await res.json();
+      onUploaded(url);
+      toast({ title: "Image uploaded", description: file.name });
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
     }
-    if (inputRef.current) inputRef.current.value = "";
   };
 
   return (
