@@ -169,8 +169,11 @@ export default function Home() {
           </Sheet>
 
           {/* Logo + brand */}
-          <Link href="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0">
+          <Link
+            href="/"
+            className="absolute left-1/2 -translate-x-1/2 sm:static sm:translate-x-0 flex items-center gap-2 sm:gap-3 min-w-0"
+          >
+            <div className="hidden sm:block w-10 h-10 flex-shrink-0">
               <img
                 src={logoPath}
                 alt="VAA"
@@ -178,7 +181,7 @@ export default function Home() {
                 style={{ filter: "invert(1)" }}
               />
             </div>
-            <span className="font-display text-sm sm:text-2xl tracking-[0.15em] sm:tracking-[0.25em] truncate">
+            <span className="font-display text-base sm:text-2xl tracking-[0.2em] sm:tracking-[0.25em] whitespace-nowrap">
               <span className="sm:hidden">VIGR ANGEL</span>
               <span className="hidden sm:inline">VIGR ANGEL APPAREL</span>
             </span>
@@ -271,8 +274,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* scroll hint */}
-        <div className="absolute bottom-6 sm:bottom-8 flex flex-col items-center gap-2 fade-up-d4">
+        {/* scroll hint — desktop only to avoid bleeding into the marquee on mobile */}
+        <div className="hidden md:flex absolute bottom-8 flex-col items-center gap-2 fade-up-d4">
           <span className="block w-px h-8 bg-foreground/30" />
           <p className="font-sans text-[9px] tracking-[0.4em] uppercase text-muted-foreground/60">
             Scroll
@@ -300,7 +303,7 @@ export default function Home() {
 
       {/* ── TENETS / PILLARS ── */}
       <section className="py-10 sm:py-16 px-4 sm:px-6 border-b border-border">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-6 divide-y sm:divide-y-0 sm:divide-x divide-border">
+        <div className="max-w-6xl mx-auto grid grid-cols-3 gap-2 sm:gap-6 sm:divide-x divide-border">
           {[
             { Icon: Truck, title: "Fast Shipping", sub: "Tracked worldwide" },
             { Icon: Shield, title: "Secure Checkout", sub: "Stripe encrypted" },
@@ -308,14 +311,14 @@ export default function Home() {
           ].map(({ Icon, title, sub }, idx) => (
             <div
               key={title}
-              className={`flex items-center gap-4 sm:gap-5 justify-center sm:justify-center ${idx > 0 ? "pt-6 sm:pt-0 sm:pl-6" : ""}`}
+              className={`flex flex-col sm:flex-row items-center sm:justify-center gap-3 sm:gap-4 text-center sm:text-left ${idx > 0 ? "sm:pl-6" : ""}`}
             >
               <div className="w-10 h-10 sm:w-11 sm:h-11 flex-shrink-0 flex items-center justify-center border border-border text-foreground">
                 <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <div className="flex flex-col">
-                <span className="font-display text-sm sm:text-base tracking-[0.2em]">{title}</span>
-                <span className="font-sans text-[9px] sm:text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
+              <div className="flex flex-col items-center sm:items-start">
+                <span className="font-display text-[11px] sm:text-base tracking-[0.18em] sm:tracking-[0.2em] leading-tight">{title}</span>
+                <span className="hidden sm:block font-sans text-[10px] tracking-[0.25em] uppercase text-muted-foreground mt-1">
                   {sub}
                 </span>
               </div>
