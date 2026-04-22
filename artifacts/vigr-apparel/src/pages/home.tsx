@@ -1,33 +1,27 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { ShoppingCart, User, Menu, Search, X, Truck, Shield, Flame, Music2, Eye, Heart } from "lucide-react";
+import { Truck, Shield, Flame, Music2 } from "lucide-react";
 import { useListProducts, useSubscribeNewsletter } from "@workspace/api-client-react";
-import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
-import { useWishlist } from "@/hooks/useWishlist";
+import { useSearch } from "@/context/SearchContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
-import { WishlistButton } from "@/components/WishlistButton";
 import { RecentlyViewed } from "@/components/RecentlyViewed";
-import { Countdown } from "@/components/Countdown";
+import { Header } from "@/components/Header";
+import { ProductCard } from "@/components/ProductCard";
 import logoPath from "@assets/12214-removebg-preview_1776743232072.png";
 
 interface Category { id: string; name: string; slug: string; }
 
 export default function Home() {
   const { data: productsData, isLoading } = useListProducts();
-  const { itemCount, setIsOpen } = useCart();
   const { isLoggedIn } = useAuth();
-  const { count: wishlistCount } = useWishlist();
   const { toast } = useToast();
+  const { query, setQuery } = useSearch();
   const subscribeNewsletter = useSubscribeNewsletter();
   const [email, setEmail] = useState("");
   const [categories, setCategories] = useState<Category[]>([]);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetch("/api/categories")
@@ -37,16 +31,12 @@ export default function Home() {
   }, []);
 
   const allProducts = productsData?.data ?? [];
-  const trimmedQuery = searchQuery.trim().toLowerCase();
-  const filteredProducts = allProducts.filter((p: any) => {
-    if (activeCategory && (p.category ?? "").toLowerCase() !== activeCategory.toLowerCase()) {
-      return false;
-    }
-    if (trimmedQuery) {
-      const haystack = `${p.name ?? ""} ${p.description ?? ""} ${p.category ?? ""}`.toLowerCase();
-      if (!haystack.includes(trimmedQuery)) return false;
-    }
-    return true;
+  const trimmedQuery = query.trim().toLowerCase();
+  const recentlyAdded = allProducts.filter((p: any) => !!p.featured);
+  const filteredProducts = recentlyAdded.filter((p: any) => {
+    if (!trimmedQuery) return true;
+    const haystack = `${p.name ?? ""} ${p.description ?? ""} ${p.category ?? ""}`.toLowerCase();
+    return haystack.includes(trimmedQuery);
   });
 
   const handleSubscribe = (e: React.FormEvent) => {
@@ -72,197 +62,16 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-
-      {/* ── ANNOUNCEMENT BAR ── */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-primary/90 backdrop-blur-sm text-white">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-7 flex items-center justify-center gap-2 sm:gap-6 font-sans text-[8.5px] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.3em] uppercase overflow-hidden whitespace-nowrap">
-          <span className="truncate">Created like Heaven · Worn With Faith</span>
-        </div>
-      </div>
-
-      {/* ── NAV ── */}
-      <nav
-        className="fixed top-7 left-0 right-0 z-40 border-b border-border backdrop-blur-md"
-        style={{ background: "rgba(10,10,10,0.85)" }}
-      >
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 h-[64px] sm:h-[72px] flex items-center justify-between gap-2">
-          {/* Hamburger menu */}
-          <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-            <SheetTrigger asChild>
-              <button
-                className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Open menu"
-                data-testid="button-open-menu"
-              >
-                <Menu className="w-6 h-6" />
-              </button>
-            </SheetTrigger>
-            <SheetContent
-              side="left"
-              className="w-[300px] sm:w-[360px] bg-background border-r border-border p-0 flex flex-col"
-            >
-              <SheetHeader className="p-6 border-b border-border">
-                <SheetTitle className="font-display text-xl tracking-[0.2em] uppercase text-left flex items-center gap-3">
-                  <div className="w-8 h-8">
-                    <img src={logoPath} alt="VAA" className="w-full h-full object-contain" style={{ filter: "invert(1)" }} />
-                  </div>
-                  Menu
-                </SheetTitle>
-              </SheetHeader>
-              <nav className="flex-1 overflow-y-auto py-2">
-                <button
-                  onClick={() => { setActiveCategory(null); setMenuOpen(false); scrollToProducts(); }}
-                  className="w-full text-left px-6 py-4 font-sans text-xs tracking-[0.3em] uppercase border-b border-border hover:bg-foreground/5 transition-colors"
-                  data-testid="menu-shop-all"
-                >
-                  Shop All
-                </button>
-
-                {categories.length > 0 && (
-                  <div className="border-b border-border py-3">
-                    <p className="px-6 pb-2 font-sans text-[9px] tracking-[0.4em] uppercase text-muted-foreground/70">
-                      Categories
-                    </p>
-                    <div className="flex flex-col">
-                      {categories.map((cat) => (
-                        <button
-                          key={cat.id}
-                          onClick={() => { setActiveCategory(cat.name); setMenuOpen(false); scrollToProducts(); }}
-                          className="w-full text-left pl-10 pr-6 py-2 font-sans text-[10px] tracking-[0.25em] uppercase text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
-                          data-testid={`menu-category-${cat.slug}`}
-                        >
-                          {cat.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="px-6 py-3 border-b border-border">
-                  <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground">Explore</p>
-                </div>
-                <a
-                  href="#about"
-                  onClick={() => setMenuOpen(false)}
-                  className="block w-full text-left px-6 py-4 font-sans text-xs tracking-[0.3em] uppercase border-b border-border hover:bg-foreground/5 transition-colors"
-                >
-                  About
-                </a>
-                <Link
-                  href="/orders/lookup"
-                  onClick={() => setMenuOpen(false)}
-                  className="block w-full text-left px-6 py-4 font-sans text-xs tracking-[0.3em] uppercase border-b border-border hover:bg-foreground/5 transition-colors"
-                >
-                  Track Order
-                </Link>
-                <Link
-                  href={isLoggedIn ? "/account/orders" : "/account/login"}
-                  onClick={() => setMenuOpen(false)}
-                  className="block w-full text-left px-6 py-4 font-sans text-xs tracking-[0.3em] uppercase border-b border-border hover:bg-foreground/5 transition-colors"
-                >
-                  {isLoggedIn ? "My Account" : "Sign In"}
-                </Link>
-                <Link
-                  href="/wishlist"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center justify-between w-full text-left px-6 py-4 font-sans text-xs tracking-[0.3em] uppercase border-b border-border hover:bg-foreground/5 transition-colors"
-                >
-                  <span>Wishlist</span>
-                  {wishlistCount > 0 && (
-                    <span className="font-sans text-[9px] tracking-[0.2em] text-primary">
-                      {wishlistCount}
-                    </span>
-                  )}
-                </Link>
-                <Link
-                  href="/dev"
-                  onClick={() => setMenuOpen(false)}
-                  className="block w-full text-left px-6 py-4 font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground/50 hover:text-primary transition-colors"
-                >
-                  Admin
-                </Link>
-              </nav>
-            </SheetContent>
-          </Sheet>
-
-          {/* Logo + brand (absolutely centered so side icons don't push it off) */}
-          <Link
-            href="/"
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 sm:gap-3 min-w-0 pointer-events-auto"
-          >
-            <div className="hidden sm:block w-10 h-10 flex-shrink-0">
-              <img
-                src={logoPath}
-                alt="VAA"
-                className="w-full h-full object-contain"
-                style={{ filter: "invert(1)" }}
-              />
-            </div>
-            <span className="font-display text-base sm:text-2xl tracking-[0.2em] sm:tracking-[0.25em] whitespace-nowrap">
-              <span className="sm:hidden">VIGR ANGEL</span>
-              <span className="hidden sm:inline">VIGR ANGEL APPAREL</span>
-            </span>
-          </Link>
-
-          {/* Nav links */}
-          <div className="hidden md:flex items-center gap-8">
-            <button
-              onClick={scrollToProducts}
-              className="font-sans text-[11px] tracking-[0.3em] uppercase text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Shop
-            </button>
-            <a
-              href="#about"
-              className="font-sans text-[11px] tracking-[0.3em] uppercase text-muted-foreground hover:text-foreground transition-colors"
-            >
-              About
-            </a>
-          </div>
-
-          {/* Account + Cart */}
-          <div className="flex items-center gap-1">
-          <Link
-            href="/wishlist"
-            aria-label="Wishlist"
-            className="relative p-2 text-muted-foreground hover:text-foreground transition-colors hidden sm:inline-flex"
-          >
-            <Heart className="w-5 h-5" />
-            {wishlistCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary text-white text-[9px] flex items-center justify-center rounded-full">
-                {wishlistCount}
-              </span>
-            )}
-          </Link>
-          <Link href={isLoggedIn ? "/account/orders" : "/account/login"} className="p-2 text-muted-foreground hover:text-foreground transition-colors">
-            <User className="w-5 h-5" />
-          </Link>
-          <button
-            className="relative p-2 text-muted-foreground hover:text-foreground transition-colors"
-            onClick={() => setIsOpen(true)}
-            data-testid="button-open-cart"
-          >
-            <ShoppingCart className="w-5 h-5" />
-            {itemCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary text-white text-[9px] flex items-center justify-center rounded-full">
-                {itemCount}
-              </span>
-            )}
-          </button>
-          </div>
-        </div>
-      </nav>
+      <Header categories={categories} />
 
       {/* ── HERO ── */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 pt-[92px] sm:pt-[100px] overflow-hidden">
-        {/* radial glow */}
         <div
           aria-hidden="true"
           className="absolute inset-0 flex items-center justify-center pointer-events-none"
         >
           <div className="hero-radial glow-pulse w-[80vw] h-[80vw] max-w-[900px] max-h-[900px]" />
         </div>
-        {/* corner runes: desktop only to avoid mobile collisions */}
         <div aria-hidden="true" className="hidden md:block absolute top-28 left-10 font-sans text-[9px] tracking-[0.5em] uppercase text-muted-foreground/40 fade-up">
           VIGR Angel Apparel
         </div>
@@ -303,7 +112,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* scroll hint: desktop only to avoid bleeding into the marquee on mobile */}
         <div className="hidden md:flex absolute bottom-8 flex-col items-center gap-2 fade-up-d4">
           <span className="block w-px h-8 bg-foreground/30" />
           <p className="font-sans text-[9px] tracking-[0.4em] uppercase text-muted-foreground/60">
@@ -356,55 +164,42 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── PRODUCTS ── */}
+      {/* ── RECENTLY ADDED ── */}
       <section id="products" className="py-16 sm:py-28 px-4 sm:px-6 max-w-7xl mx-auto w-full">
         <div className="mb-8 sm:mb-12 text-center">
-          <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">Collection</p>
-          <h2 className="font-display text-[clamp(2.5rem,6vw,5rem)] tracking-[0.15em]">THE COLLECTION</h2>
-          {activeCategory && (
-            <button
-              onClick={() => setActiveCategory(null)}
-              className="mt-4 font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground hover:text-foreground transition-colors"
-              data-testid="button-clear-category"
-            >
-              Filtered: {activeCategory} · Clear ✕
-            </button>
+          <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">New In</p>
+          <h2 className="font-display text-[clamp(2.5rem,6vw,5rem)] tracking-[0.15em]">RECENTLY ADDED</h2>
+          {trimmedQuery && (
+            <p className="mt-4 font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground">
+              Searching: "{trimmedQuery}"
+            </p>
           )}
         </div>
 
-        {/* Search bar */}
-        <div className="max-w-md mx-auto mb-10 sm:mb-14">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-            <Input
-              type="search"
-              placeholder="Search clothes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              data-testid="input-product-search"
-              className="rounded-none border border-border bg-transparent font-sans text-xs tracking-[0.2em] h-11 pl-10 pr-10 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                aria-label="Clear search"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                data-testid="button-clear-search"
+        {/* Categories quick links */}
+        {categories.length > 0 && (
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-10 sm:mb-14">
+            {categories.map((cat) => (
+              <Link
+                key={cat.id}
+                href={`/category/${cat.slug}`}
+                className="font-sans text-[10px] sm:text-[11px] tracking-[0.25em] uppercase border border-border px-4 py-2 hover:border-foreground hover:bg-foreground hover:text-background transition-all"
+                data-testid={`pill-category-${cat.slug}`}
               >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+                {cat.name}
+              </Link>
+            ))}
           </div>
-        </div>
+        )}
 
         {isLoading ? (
           <div className="flex justify-center items-center h-64 font-sans text-xs tracking-widest uppercase text-muted-foreground">
             Loading collection...
           </div>
-        ) : !allProducts.length ? (
+        ) : !recentlyAdded.length ? (
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <p className="font-sans text-xs tracking-widest uppercase text-muted-foreground">
-              No products yet. Check back soon.
+              No products marked "Recently Added" yet.
             </p>
           </div>
         ) : !filteredProducts.length ? (
@@ -413,14 +208,14 @@ export default function Home() {
               No products match your search.
             </p>
             <button
-              onClick={() => { setSearchQuery(""); setActiveCategory(null); }}
+              onClick={() => setQuery("")}
               className="font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground hover:text-foreground transition-colors underline"
             >
-              Reset filters
+              Clear search
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 gap-3 sm:gap-6">
             {filteredProducts.map((product: any) => (
               <ProductCard key={product.id} product={product} />
             ))}
@@ -434,7 +229,6 @@ export default function Home() {
       {/* ── ABOUT ── */}
       <section id="about" className="relative py-16 sm:py-28 px-4 sm:px-6 overflow-hidden" style={{ background: "rgba(255,255,255,0.02)" }}>
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 sm:gap-16 items-center">
-          {/* Text */}
           <div className="space-y-8">
             <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground">About</p>
             <h2 className="font-display text-[clamp(2.5rem,5vw,4.5rem)] tracking-[0.1em] leading-none">
@@ -450,7 +244,6 @@ export default function Home() {
               <p className="text-foreground/80 italic">Created like Heaven, worn with faith.</p>
             </div>
 
-            {/* tenets */}
             <div className="grid grid-cols-3 gap-2 sm:gap-6 pt-6 border-t border-border">
               {[
                 { word: "FAITH", line: "Anchor" },
@@ -465,7 +258,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Logo block */}
           <div className="relative flex justify-center items-center">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="hero-radial w-[420px] h-[420px] opacity-60" />
@@ -485,18 +277,16 @@ export default function Home() {
       {/* ── NEWSLETTER ── */}
       <section className="py-16 sm:py-28 px-4 sm:px-6 flex justify-center">
         <div className="relative w-full max-w-2xl border border-border p-8 sm:p-14 flex flex-col items-center text-center">
-          {/* corner accents */}
           <span aria-hidden="true" className="absolute -top-px -left-px w-5 h-5 border-t border-l border-primary" />
           <span aria-hidden="true" className="absolute -top-px -right-px w-5 h-5 border-t border-r border-primary" />
           <span aria-hidden="true" className="absolute -bottom-px -left-px w-5 h-5 border-b border-l border-primary" />
           <span aria-hidden="true" className="absolute -bottom-px -right-px w-5 h-5 border-b border-r border-primary" />
-
-          <p className="font-sans text-[10px] tracking-[0.4em] sm:tracking-[0.5em] uppercase text-muted-foreground mb-3">Stay Connected</p>
-          <h2 className="font-display text-[clamp(1.75rem,5vw,4rem)] tracking-[0.1em] sm:tracking-[0.15em] mb-3">JOIN THE COVENANT</h2>
-          <p className="font-sans text-[11px] sm:text-xs tracking-[0.15em] sm:tracking-[0.2em] text-muted-foreground mb-8 sm:mb-10 px-2 max-w-md">
-            Be the first to know when new pieces release. No spam.
+          <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-4">Newsletter</p>
+          <h2 className="font-display text-3xl sm:text-5xl tracking-[0.15em] mb-3">JOIN THE COVENANT</h2>
+          <p className="font-sans text-xs sm:text-sm text-muted-foreground mb-8 max-w-md">
+            New drops, stories, and exclusive offers — straight to your inbox.
           </p>
-          <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row w-full max-w-sm gap-2 sm:gap-0">
+          <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
             <Input
               type="email"
               placeholder="your@email.com"
@@ -532,7 +322,6 @@ export default function Home() {
       {/* ── FOOTER ── */}
       <footer className="pt-12 pb-8 px-4 sm:px-6 border-t border-border">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-6 items-start">
-          {/* Brand */}
           <div className="flex flex-col items-center md:items-start gap-4 text-center md:text-left">
             <Link href="/" className="flex items-center gap-3">
               <div className="w-9 h-9">
@@ -556,15 +345,18 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Shop links */}
           <div className="flex flex-col items-center md:items-start gap-3">
             <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground/70 mb-1">Shop</p>
-            <button onClick={scrollToProducts} className="font-sans text-xs tracking-[0.25em] uppercase text-muted-foreground hover:text-foreground transition-colors">All Products</button>
+            <button onClick={scrollToProducts} className="font-sans text-xs tracking-[0.25em] uppercase text-muted-foreground hover:text-foreground transition-colors">Recently Added</button>
+            {categories.slice(0, 4).map((cat) => (
+              <Link key={cat.id} href={`/category/${cat.slug}`} className="font-sans text-xs tracking-[0.25em] uppercase text-muted-foreground hover:text-foreground transition-colors">
+                {cat.name}
+              </Link>
+            ))}
             <a href="#about" className="font-sans text-xs tracking-[0.25em] uppercase text-muted-foreground hover:text-foreground transition-colors">About</a>
             <Link href="/orders/lookup" className="font-sans text-xs tracking-[0.25em] uppercase text-muted-foreground hover:text-foreground transition-colors">Track Order</Link>
           </div>
 
-          {/* Help */}
           <div className="flex flex-col items-center md:items-start gap-3">
             <p className="font-sans text-[10px] tracking-[0.4em] uppercase text-muted-foreground/70 mb-1">Help</p>
             <Link href="/terms" className="font-sans text-xs tracking-[0.25em] uppercase text-muted-foreground hover:text-foreground transition-colors">Terms</Link>
@@ -584,154 +376,6 @@ export default function Home() {
           </p>
         </div>
       </footer>
-    </div>
-  );
-}
-
-const AVAILABLE_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
-
-function ProductCard({ product }: { product: any }) {
-  const { addToCart } = useCart();
-  const { toast } = useToast();
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
-
-  const hasSizes = Array.isArray(product.sizes) && product.sizes.length > 0;
-  const releaseDate: Date | null = product.releaseDate ? new Date(product.releaseDate) : null;
-  const isPreRelease = !!releaseDate && releaseDate.getTime() > Date.now();
-  const canAdd = product.inStock && !isPreRelease && (!hasSizes || selectedSize !== null);
-
-  const handleAdd = () => {
-    if (!canAdd) return;
-    addToCart(product, hasSizes ? selectedSize : null);
-    toast({ title: "Added", description: `${product.name}${selectedSize ? ` (${selectedSize})` : ""} added to cart.` });
-  };
-
-  const isLowStock =
-    typeof product.stockCount === "number" && product.stockCount > 0 && product.stockCount < 5;
-
-  return (
-    <div
-      className="group relative flex flex-col border border-border hover:border-foreground/60 hover:shadow-[0_18px_40px_-20px_rgba(154,33,46,0.45)] transition-all duration-300 hover:-translate-y-1"
-      data-testid={`card-product-${product.id}`}
-    >
-      <Link
-        href={`/products/${product.id}`}
-        className="aspect-[3/4] bg-[#111] relative overflow-hidden block cursor-pointer"
-        data-testid={`link-product-image-${product.id}`}
-      >
-        {product.imageUrl ? (
-          <img
-            src={product.imageUrl}
-            alt={product.name}
-            className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.05] transition-all duration-700"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="w-24 h-24 opacity-20">
-              <img src={logoPath} alt="" className="w-full h-full object-cover" style={{ filter: "invert(1)" }} />
-            </div>
-          </div>
-        )}
-
-        {/* bottom gradient for readability on hover overlay */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        />
-
-        {/* corner badges */}
-        {(product as any).tag && (
-          <span
-            className={`absolute top-3 left-3 font-sans text-[9px] uppercase tracking-[0.3em] font-semibold px-2 py-1 bg-background/80 backdrop-blur-[2px] border ${
-              ({
-                blue: "text-blue-400 border-blue-400/40",
-                red: "text-red-400 border-red-400/40",
-                green: "text-green-400 border-green-400/40",
-                yellow: "text-yellow-300 border-yellow-300/40",
-                purple: "text-purple-300 border-purple-300/40",
-                white: "text-white border-white/40",
-              } as Record<string, string>)[(product as any).tagColor ?? "blue"] ?? "text-blue-400 border-blue-400/40"
-            }`}
-            data-testid={`text-product-tag-${product.id}`}
-          >
-            {(product as any).tag}
-          </span>
-        )}
-        {isLowStock && product.inStock && !isPreRelease && (
-          <span
-            className="absolute bottom-3 left-3 font-sans text-[9px] tracking-[0.3em] uppercase text-primary bg-background/80 backdrop-blur-[2px] border border-primary/50 px-2 py-1"
-            data-testid={`text-low-stock-${product.id}`}
-          >
-            Only {product.stockCount} left
-          </span>
-        )}
-
-        {isPreRelease && releaseDate && (
-          <div className="absolute bottom-3 left-3">
-            <Countdown releaseDate={releaseDate} variant="card" />
-          </div>
-        )}
-
-        {/* sold out overlay (hide during pre-release) */}
-        {!product.inStock && !isPreRelease && (
-          <div className="absolute inset-0 bg-background/70 backdrop-blur-[1px] flex items-center justify-center">
-            <span className="font-display text-xl tracking-[0.3em] text-foreground border border-foreground/60 px-5 py-2">
-              SOLD OUT
-            </span>
-          </div>
-        )}
-
-        {/* coming soon overlay */}
-        {isPreRelease && (
-          <div className="absolute inset-x-0 top-0 bg-foreground/90 text-background py-1.5 text-center font-sans text-[9px] tracking-[0.4em] uppercase">
-            Coming Soon
-          </div>
-        )}
-
-        {/* hover quick view */}
-        <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-foreground/95 text-background py-2.5 flex items-center justify-center gap-2 font-sans text-[10px] tracking-[0.3em] uppercase">
-          <Eye className="w-3.5 h-3.5" />
-          Quick View
-        </div>
-      </Link>
-      <WishlistButton productId={product.id} productName={product.name} variant="card" />
-      <div className="p-5 flex flex-col gap-4">
-        <Link
-          href={`/products/${product.id}`}
-          className="flex items-baseline justify-between gap-3 hover:text-primary transition-colors"
-          data-testid={`link-product-name-${product.id}`}
-        >
-          <h3 className="font-sans text-xs font-semibold uppercase tracking-[0.2em] truncate">{product.name}</h3>
-          <span className="font-display text-base tracking-[0.05em] text-foreground whitespace-nowrap">
-            ${(product.price / 100).toFixed(2)}
-          </span>
-        </Link>
-        {hasSizes && (
-          <div className="flex flex-wrap gap-1.5">
-            {product.sizes.map((size: string) => (
-              <button
-                key={size}
-                onClick={() => setSelectedSize(selectedSize === size ? null : size)}
-                className={`h-8 px-2.5 font-sans text-[10px] tracking-[0.2em] uppercase border transition-all duration-150 ${
-                  selectedSize === size
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-border text-muted-foreground hover:border-foreground/50"
-                }`}
-              >
-                {size}
-              </button>
-            ))}
-          </div>
-        )}
-        <button
-          onClick={handleAdd}
-          disabled={!canAdd}
-          data-testid={`button-add-to-cart-${product.id}`}
-          className="w-full border border-border font-sans text-[10px] tracking-[0.3em] uppercase h-10 hover:bg-primary hover:border-primary hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
-        >
-          {!product.inStock ? "Sold Out" : hasSizes && !selectedSize ? "Select a Size" : "Add to Cart"}
-        </button>
-      </div>
     </div>
   );
 }

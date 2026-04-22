@@ -191,6 +191,7 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
     tag: "",
     tagColor: "blue",
     releaseDate: "",
+    featured: false,
   });
 
   const { toast } = useToast();
@@ -209,6 +210,7 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
       tag: "",
       tagColor: "blue",
       releaseDate: "",
+      featured: false,
     });
     setEditingProduct(null);
   };
@@ -236,6 +238,7 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
         releaseDate: (product as any).releaseDate
           ? new Date((product as any).releaseDate).toISOString().slice(0, 16)
           : "",
+        featured: !!(product as any).featured,
       });
     } else {
       resetForm();
@@ -301,6 +304,7 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
         tag: formData.tag.trim() || null,
         tagColor: formData.tag.trim() ? formData.tagColor : null,
         releaseDate: formData.releaseDate ? new Date(formData.releaseDate).toISOString() : null,
+        featured: formData.featured,
       };
 
       const url = editingProduct 
@@ -639,6 +643,20 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
                   Until this date, the product shows a countdown and a "Notify Me When Live" button instead of Add to Cart.
                 </p>
               </div>
+              <div className="flex items-center space-x-2 pt-2">
+                <Checkbox
+                  id="featured"
+                  checked={formData.featured}
+                  onCheckedChange={(checked) => setFormData({ ...formData, featured: !!checked })}
+                  className="rounded-none border-border data-[state=checked]:bg-primary data-[state=checked]:text-white"
+                />
+                <Label htmlFor="featured" className="text-xs uppercase tracking-widest">
+                  Show in "Recently Added"
+                </Label>
+              </div>
+              <p className="text-[10px] text-muted-foreground tracking-wide -mt-1">
+                When checked, this product appears in the "Recently Added" section on the home page.
+              </p>
               <div className="pt-6">
                 <Button type="submit" className="w-full rounded-none font-display text-xl tracking-widest h-12 bg-foreground text-background hover:bg-primary hover:text-white transition-colors">
                   {editingProduct ? "UPDATE PRODUCT" : "CREATE PRODUCT"}

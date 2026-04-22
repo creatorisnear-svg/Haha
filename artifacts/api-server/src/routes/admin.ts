@@ -70,6 +70,7 @@ function serializeProduct(product: any) {
     releaseDate: product.releaseDate
       ? (product.releaseDate?.toISOString?.() ?? product.releaseDate)
       : null,
+    featured: !!product.featured,
     createdAt: product.createdAt?.toISOString?.() ?? product.createdAt,
   };
 }
@@ -109,7 +110,7 @@ function normalizeImageUrls(imageUrls: any, imageUrl: any): string[] | null {
 }
 
 router.post("/admin/products", adminAuthMiddleware, async (req, res) => {
-  const { name, description, price, imageUrl, imageUrls, inStock, stockCount, category, sizes, tag, tagColor, releaseDate } = req.body;
+  const { name, description, price, imageUrl, imageUrls, inStock, stockCount, category, sizes, tag, tagColor, releaseDate, featured } = req.body;
   if (!name || price === undefined) return res.status(400).json({ error: "name and price required" });
   const normalizedStockCount =
     typeof stockCount === "number" && stockCount >= 0 ? Math.floor(stockCount) : null;
@@ -131,17 +132,21 @@ router.post("/admin/products", adminAuthMiddleware, async (req, res) => {
     tag: normalizedTag,
     tagColor: normalizedTag ? (normalizeTagColor(tagColor) ?? "blue") : null,
     releaseDate: normalizeReleaseDate(releaseDate),
+    featured: !!featured,
   });
   res.status(201).json(serializeProduct(product));
 });
 
 router.put("/admin/products/:id", adminAuthMiddleware, async (req, res) => {
-  const { name, description, price, imageUrl, imageUrls, inStock, stockCount, category, sizes, tag, tagColor, releaseDate } = req.body;
+  const { name, description, price, imageUrl, imageUrls, inStock, stockCount, category, sizes, tag, tagColor, releaseDate, featured } = req.body;
   const existing = await storage.getProduct(req.params.id);
   if (!existing) return res.status(404).json({ error: "Product not found" });
   const updates: any = { name, description, price, category };
   if (releaseDate !== undefined) {
     updates.releaseDate = normalizeReleaseDate(releaseDate);
+  }
+  if (featured !== undefined) {
+    updates.featured = !!featured;
   }
   if (imageUrls !== undefined || imageUrl !== undefined) {
     const normalizedImages = normalizeImageUrls(imageUrls, imageUrl);

@@ -5,9 +5,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { SearchProvider } from "@/context/SearchContext";
 import { Cart } from "@/components/Cart";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
+import CategoryPage from "@/pages/category";
 import ProductDetail from "@/pages/product-detail";
 import CheckoutSuccess from "@/pages/checkout-success";
 import CheckoutCancel from "@/pages/checkout-cancel";
@@ -35,6 +37,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/category/:slug" component={CategoryPage} />
       <Route path="/products/:id" component={ProductDetail} />
       <Route path="/checkout/success" component={CheckoutSuccess} />
       <Route path="/checkout/cancel" component={CheckoutCancel} />
@@ -57,15 +60,17 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <CartProvider>
-          <TooltipProvider>
-            <div className="bg-noise"></div>
-            <SyncBridge />
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <Router />
-            </WouterRouter>
-            <Cart />
-            <Toaster />
-          </TooltipProvider>
+          <SearchProvider>
+            <TooltipProvider>
+              <div className="bg-noise"></div>
+              <SyncBridge />
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <Router />
+              </WouterRouter>
+              <Cart />
+              <Toaster />
+            </TooltipProvider>
+          </SearchProvider>
         </CartProvider>
       </AuthProvider>
     </QueryClientProvider>

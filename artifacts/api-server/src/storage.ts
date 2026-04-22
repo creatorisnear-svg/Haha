@@ -16,6 +16,7 @@ export interface Product {
   tag?: string | null;
   tagColor?: string | null;
   releaseDate?: Date | null;
+  featured?: boolean | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -44,6 +45,7 @@ function docToProduct(doc: any): Product {
     tag: typeof doc.tag === "string" && doc.tag.trim() ? doc.tag.trim() : null,
     tagColor: typeof doc.tagColor === "string" && doc.tagColor.trim() ? doc.tagColor.trim() : null,
     releaseDate: doc.releaseDate instanceof Date ? doc.releaseDate : null,
+    featured: typeof doc.featured === "boolean" ? doc.featured : false,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };

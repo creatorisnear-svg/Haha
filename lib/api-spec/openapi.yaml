@@ -372,6 +372,9 @@ components:
           type: string
           nullable: true
           description: One of "blue" | "red" | "green" | "yellow" | "purple" | "white". Defaults to blue.
+        featured:
+          type: boolean
+          description: When true, the product appears in the "Recently Added" section on the home page.
         createdAt:
           type: string
       required: [id, name, price, inStock]
