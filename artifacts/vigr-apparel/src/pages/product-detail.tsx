@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Link, useRoute, useLocation } from "wouter";
 import { ArrowLeft, ShoppingCart, User, Menu, ChevronLeft, ChevronRight } from "lucide-react";
-import { useGetProduct, getGetProductQueryKey } from "@workspace/api-client-react";
+import { useGetProduct, getGetProductQueryKey, useListProducts } from "@workspace/api-client-react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
@@ -13,6 +13,7 @@ import { RecentlyViewed } from "@/components/RecentlyViewed";
 import { Countdown } from "@/components/Countdown";
 import { NotifyMeButton } from "@/components/NotifyMeButton";
 import { Reviews } from "@/components/Reviews";
+import { ProductCard } from "@/components/ProductCard";
 import logoPath from "@assets/12214-removebg-preview_1776743232072.png";
 
 export default function ProductDetail() {
@@ -25,6 +26,21 @@ export default function ProductDetail() {
       queryKey: getGetProductQueryKey(productId),
     },
   });
+  const { data: allProductsData } = useListProducts();
+
+  const relatedProducts = useMemo(() => {
+    const list = allProductsData?.data ?? [];
+    if (!product) return [];
+    const currentCategory = (product as any).category;
+    if (!currentCategory) return [];
+    return list
+      .filter(
+        (p: any) =>
+          p.id !== productId &&
+          (p.category ?? "").toLowerCase() === String(currentCategory).toLowerCase()
+      )
+      .slice(0, 4);
+  }, [allProductsData, product, productId]);
 
   const { addToCart, buyNow, itemCount, setIsOpen } = useCart();
   const { isLoggedIn } = useAuth();
@@ -499,6 +515,23 @@ export default function ProductDetail() {
 
         {!isLoading && !isError && product && (
           <>
+            {relatedProducts.length > 0 && (
+              <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20 border-t border-border">
+                <div className="mb-8 sm:mb-12 text-center">
+                  <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">
+                    Pair It With
+                  </p>
+                  <h2 className="font-display text-[clamp(1.75rem,4vw,3rem)] tracking-[0.15em]">
+                    COMPLETE THE LOOK
+                  </h2>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+                  {relatedProducts.map((p: any) => (
+                    <ProductCard key={p.id} product={p} />
+                  ))}
+                </div>
+              </section>
+            )}
             <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-4">
               <Reviews productId={productId} />
             </div>
