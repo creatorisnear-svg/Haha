@@ -370,21 +370,46 @@ export class Storage {
     );
   }
 
-  // Newsletter — returns true if a new subscriber was created.
+  // Newsletter — returns true if a new (or re-activated) subscriber was created.
   async subscribeNewsletter(email: string): Promise<boolean> {
     const db = await getDb();
-    const result = await db.collection("newsletter").updateOne(
+    const existing = await db.collection("newsletter").findOne({ email });
+    const wasUnsubscribed = !!existing?.unsubscribedAt;
+
+    await db.collection("newsletter").updateOne(
       { email },
-      { $setOnInsert: { email, subscribedAt: new Date() } },
+      {
+        $setOnInsert: { email, subscribedAt: new Date() },
+        $unset: { unsubscribedAt: "" },
+      },
       { upsert: true }
     );
-    return !!result.upsertedId;
+
+    // Treat first-time subscribers and previously-unsubscribed re-joiners as "new"
+    // so they receive the welcome email again.
+    return !existing || wasUnsubscribed;
   }
 
   async getAllNewsletterSubscribers(): Promise<string[]> {
     const db = await getDb();
-    const docs = await db.collection("newsletter").find().sort({ subscribedAt: 1 }).toArray();
+    const docs = await db
+      .collection("newsletter")
+      .find({ unsubscribedAt: { $exists: false } })
+      .sort({ subscribedAt: 1 })
+      .toArray();
     return docs.map((d) => d.email);
+  }
+
+  // Newsletter — returns true if a subscriber was found and removed.
+  async unsubscribeNewsletter(email: string): Promise<boolean> {
+    const db = await getDb();
+    const result = await db
+      .collection("newsletter")
+      .updateOne(
+        { email },
+        { $set: { unsubscribedAt: new Date() } },
+      );
+    return result.matchedCount > 0;
   }
 
   // Customers

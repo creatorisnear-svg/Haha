@@ -35,6 +35,18 @@ export const ListProductsResponse = zod.object({
         ),
       category: zod.string().nullish(),
       sizes: zod.array(zod.string()).nullish(),
+      tag: zod
+        .string()
+        .nullish()
+        .describe(
+          'Optional small badge text shown on product card and detail page (e.g. \"Free shipping\").',
+        ),
+      tagColor: zod
+        .string()
+        .nullish()
+        .describe(
+          'One of \"blue\" | \"red\" | \"green\" | \"yellow\" | \"purple\" | \"white\". Defaults to blue.',
+        ),
       createdAt: zod.string().optional(),
     }),
   ),
@@ -63,6 +75,18 @@ export const GetProductResponse = zod.object({
     ),
   category: zod.string().nullish(),
   sizes: zod.array(zod.string()).nullish(),
+  tag: zod
+    .string()
+    .nullish()
+    .describe(
+      'Optional small badge text shown on product card and detail page (e.g. \"Free shipping\").',
+    ),
+  tagColor: zod
+    .string()
+    .nullish()
+    .describe(
+      'One of \"blue\" | \"red\" | \"green\" | \"yellow\" | \"purple\" | \"white\". Defaults to blue.',
+    ),
   createdAt: zod.string().optional(),
 });
 
@@ -92,6 +116,18 @@ export const SubscribeNewsletterBody = zod.object({
 });
 
 export const SubscribeNewsletterResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string().optional(),
+});
+
+/**
+ * @summary Unsubscribe from the newsletter
+ */
+export const UnsubscribeNewsletterBody = zod.object({
+  email: zod.string(),
+});
+
+export const UnsubscribeNewsletterResponse = zod.object({
   success: zod.boolean(),
   message: zod.string().optional(),
 });
@@ -176,6 +212,18 @@ export const UpdateAdminProductResponse = zod.object({
     ),
   category: zod.string().nullish(),
   sizes: zod.array(zod.string()).nullish(),
+  tag: zod
+    .string()
+    .nullish()
+    .describe(
+      'Optional small badge text shown on product card and detail page (e.g. \"Free shipping\").',
+    ),
+  tagColor: zod
+    .string()
+    .nullish()
+    .describe(
+      'One of \"blue\" | \"red\" | \"green\" | \"yellow\" | \"purple\" | \"white\". Defaults to blue.',
+    ),
   createdAt: zod.string().optional(),
 });
 

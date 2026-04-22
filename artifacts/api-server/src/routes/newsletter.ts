@@ -38,4 +38,27 @@ router.post("/newsletter", newsletterLimiter, async (req, res) => {
   });
 });
 
+const unsubscribeLimiter = rateLimit({
+  bucket: "newsletter-unsubscribe",
+  max: 10,
+  windowMs: 60 * 60 * 1000,
+  message: "Too many unsubscribe attempts. Please try again later.",
+});
+
+router.post("/newsletter/unsubscribe", unsubscribeLimiter, async (req, res) => {
+  const raw = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  if (!raw) return res.status(400).json({ error: "Email required" });
+  if (!EMAIL_RE.test(raw) || raw.length > 254) {
+    return res.status(400).json({ error: "Please enter a valid email address" });
+  }
+
+  await storage.unsubscribeNewsletter(raw);
+
+  // Always respond identically so we don't leak whether an email is on file.
+  res.json({
+    success: true,
+    message: "If that email was subscribed, it has been removed from our list.",
+  });
+});
+
 export default router;

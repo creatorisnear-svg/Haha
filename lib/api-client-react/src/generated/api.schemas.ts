@@ -22,6 +22,10 @@ export interface Product {
   stockCount?: number | null;
   category?: string | null;
   sizes?: string[] | null;
+  /** Optional small badge text shown on product card and detail page (e.g. "Free shipping"). */
+  tag?: string | null;
+  /** One of "blue" | "red" | "green" | "yellow" | "purple" | "white". Defaults to blue. */
+  tagColor?: string | null;
   createdAt?: string;
 }
 

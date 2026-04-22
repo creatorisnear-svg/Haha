@@ -23,7 +23,9 @@ Domain: vaaclothing.xyz
 - React + Vite, Tailwind CSS, Wouter routing
 - Cart state via CartContext (`src/context/CartContext.tsx`)
 - Auth state via AuthContext (`src/context/AuthContext.tsx`) — localStorage tokens
-- Pages: `/` home, `/account/login`, `/account/register`, `/account/orders`, `/dev`, `/dev/dashboard`
+- Pages: `/` home, `/products/:id`, `/checkout/success`, `/checkout/cancel`, `/account/login`, `/account/register`, `/account/orders`, `/orders/lookup`, `/terms`, `/unsubscribe`, `/dev`, `/dev/dashboard`
+- Newsletter unsubscribe: `/unsubscribe` page (also linked from the home newsletter section and the terms privacy section). Submits to `POST /api/newsletter/unsubscribe` which sets `unsubscribedAt` on the MongoDB `newsletter` doc. `getAllNewsletterSubscribers` filters out unsubscribed addresses; re-subscribing clears `unsubscribedAt`.
+- Returns/refunds policy (see `/terms`): refunds for never-delivered orders; returns of unopened items within 14 days, customer pays return shipping.
 - Checkout is a multi-step cart drawer: cart → info+address → Stripe payment → confirmation
 - Guest checkout supported (no account required); optional account creation at checkout
 

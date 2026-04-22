@@ -484,7 +484,13 @@ export default function Home() {
             </Button>
           </form>
           <p className="mt-6 font-sans text-[9px] tracking-[0.3em] uppercase text-muted-foreground/60">
-            No spam · Unsubscribe anytime
+            No spam ·{" "}
+            <Link
+              href="/unsubscribe"
+              className="underline-offset-4 hover:underline hover:text-foreground transition-colors"
+            >
+              Unsubscribe anytime
+            </Link>
           </p>
         </div>
       </section>
@@ -537,7 +543,7 @@ export default function Home() {
 
         <div className="max-w-7xl mx-auto mt-10 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-center">
           <p className="font-sans text-[10px] tracking-[0.25em] uppercase text-muted-foreground/60">
-            © {new Date().getFullYear()} VIGR Angel Apparel · All sales final
+            © {new Date().getFullYear()} VIGR Angel Apparel
           </p>
           <p className="font-sans text-[10px] tracking-[0.3em] uppercase text-muted-foreground/40">
             Created like Heaven · Worn With Faith

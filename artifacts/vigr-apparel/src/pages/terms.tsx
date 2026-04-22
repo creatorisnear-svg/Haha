@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 
 export default function Terms() {
-  const lastUpdated = "April 21, 2026";
+  const lastUpdated = "April 22, 2026";
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="bg-noise" />
@@ -21,11 +21,11 @@ export default function Terms() {
         <h1 className="font-display text-4xl sm:text-5xl tracking-widest uppercase mb-3">Terms of Service</h1>
         <p className="font-sans text-xs tracking-widest uppercase text-muted-foreground mb-12">Last updated: {lastUpdated}</p>
 
-        {/* Sales final callout */}
+        {/* Returns & refunds callout */}
         <div className="border border-primary bg-primary/10 p-6 mb-12">
-          <p className="font-display text-lg sm:text-xl tracking-widest uppercase text-primary mb-2">All Sales Final</p>
+          <p className="font-display text-lg sm:text-xl tracking-widest uppercase text-primary mb-2">Returns & Refunds</p>
           <p className="font-sans text-sm leading-relaxed text-foreground">
-            VIGR Angel Apparel does <span className="font-semibold">NOT</span> accept returns, exchanges, or issue refunds. By placing an order you agree that all purchases are final at checkout. Please double-check your size and shipping address before completing payment.
+            We refund any order that is never delivered. We accept returns of <span className="font-semibold">unopened</span> items within 14 days of delivery — the customer covers the return shipping. See sections 2 and 3 below for the full policy.
           </p>
         </div>
 
@@ -36,67 +36,87 @@ export default function Terms() {
             </p>
           </Section>
 
-          <Section title="2. No Refunds, No Returns, No Exchanges">
-            <p className="mb-3 font-semibold text-foreground">All sales are final.</p>
+          <Section title="2. Returns">
+            <p className="mb-3">
+              We accept returns of <span className="font-semibold">unopened</span> items in their original, unworn, unwashed condition with all tags and packaging intact.
+            </p>
             <ul className="list-disc pl-5 space-y-2">
-              <li>We do <span className="font-semibold">not</span> accept returns for any reason, including incorrect size, fit preference, or change of mind.</li>
-              <li>We do <span className="font-semibold">not</span> issue refunds once payment has been processed.</li>
-              <li>We do <span className="font-semibold">not</span> offer exchanges between sizes, colors, or styles.</li>
-              <li>Sizing charts are available on each product page — please review them carefully before ordering.</li>
+              <li>Return requests must be submitted within <span className="font-semibold">14 days</span> of delivery by emailing{" "}
+                <a href="mailto:vaaclothing.xyz@gmail.com" className="text-primary hover:underline">vaaclothing.xyz@gmail.com</a> with your order number.
+              </li>
+              <li>Items that have been opened, worn, washed, altered, or that are missing tags or original packaging are <span className="font-semibold">not eligible</span> for return.</li>
+              <li>The <span className="font-semibold">customer is responsible for return shipping costs</span>. We recommend using a tracked service — we cannot process returns we never receive.</li>
+              <li>Once we receive and inspect the returned item, we will refund the original purchase price (excluding the original shipping fee) to your original payment method within 5–10 business days.</li>
+              <li>Sizing charts are available on each product page — please review them before ordering.</li>
             </ul>
           </Section>
 
-          <Section title="3. Damaged or Incorrect Items">
+          <Section title="3. Refunds for Undelivered Orders">
+            <p className="mb-3">
+              If your order is <span className="font-semibold">never delivered</span>, you are entitled to a full refund.
+            </p>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>If tracking shows your package as lost or stuck in transit for more than <span className="font-semibold">21 days</span> from the ship date, contact us at{" "}
+                <a href="mailto:vaaclothing.xyz@gmail.com" className="text-primary hover:underline">vaaclothing.xyz@gmail.com</a> with your order number and we will issue a full refund or send a replacement at your choice.
+              </li>
+              <li>If a package is marked "delivered" by the carrier but you did not receive it, please first check with neighbors and your local carrier. We will work with you and the carrier to investigate, and will refund or replace orders confirmed lost.</li>
+              <li>Orders sent to an incorrect address provided by the customer are not eligible for a refund.</li>
+            </ul>
+          </Section>
+
+          <Section title="4. Damaged or Incorrect Items">
             <p>
               If your order arrives visibly damaged or you received the wrong item, contact us at{" "}
               <a href="mailto:vaaclothing.xyz@gmail.com" className="text-primary hover:underline">vaaclothing.xyz@gmail.com</a>{" "}
-              within <span className="font-semibold">7 days</span> of delivery, including your order number and clear photos. Resolution (replacement or store credit at our discretion) is offered case-by-case and is not a refund. Claims made after 7 days will not be honored.
+              within <span className="font-semibold">7 days</span> of delivery, including your order number and clear photos. We will send a replacement or issue a full refund at no cost to you. Claims made after 7 days may not be honored.
             </p>
           </Section>
 
-          <Section title="4. Order Processing & Shipping">
+          <Section title="5. Order Processing & Shipping">
             <p>
               Orders are typically processed within 2–5 business days. Shipping times vary by carrier and destination. Once a tracking number is issued, the package is in the carrier's hands and we are not responsible for carrier delays, lost packages, or theft after delivery confirmation. Customers are responsible for providing an accurate shipping address — orders sent to incorrect addresses provided by the customer are not eligible for replacement.
             </p>
           </Section>
 
-          <Section title="5. Payment">
+          <Section title="6. Payment">
             <p>
               All payments are processed securely through Stripe. By submitting payment information you authorize VAA to charge the listed total, including any applicable taxes and shipping fees. Prices are listed in USD and may change without notice.
             </p>
           </Section>
 
-          <Section title="6. Promo Codes">
+          <Section title="7. Promo Codes">
             <p>
-              Promo codes are non-transferable, have no cash value, cannot be combined unless explicitly stated, and may be modified or canceled at any time. Discounted orders remain subject to the no-refund policy in Section 2.
+              Promo codes are non-transferable, have no cash value, cannot be combined unless explicitly stated, and may be modified or canceled at any time. Discounted orders remain subject to the return and refund policies in Sections 2 and 3.
             </p>
           </Section>
 
-          <Section title="7. Intellectual Property">
+          <Section title="8. Intellectual Property">
             <p>
               All designs, graphics, logos, photography, and content on the Site are the property of VIGR Angel Apparel and are protected by copyright. You may not reproduce, redistribute, or use any content for commercial purposes without written permission.
             </p>
           </Section>
 
-          <Section title="8. Limitation of Liability">
+          <Section title="9. Limitation of Liability">
             <p>
               VAA, its owners, and operators are not liable for any direct, indirect, incidental, or consequential damages arising from the use of our products or the Site. Use of our products is at your own risk. Total liability for any claim shall not exceed the amount paid for the product in question.
             </p>
           </Section>
 
-          <Section title="9. Privacy">
+          <Section title="10. Privacy">
             <p>
-              We collect only the information necessary to fulfill your order (name, email, shipping address, phone). We never sell your data. Payment details are handled directly by Stripe and never stored by us. You may unsubscribe from marketing emails at any time.
+              We collect only the information necessary to fulfill your order (name, email, shipping address, phone). We never sell your data. Payment details are handled directly by Stripe and never stored by us. You may{" "}
+              <Link href="/unsubscribe" className="text-primary hover:underline">unsubscribe from marketing emails</Link>{" "}
+              at any time.
             </p>
           </Section>
 
-          <Section title="10. Changes to These Terms">
+          <Section title="11. Changes to These Terms">
             <p>
               We may update these Terms at any time. The "Last updated" date at the top reflects the most recent revision. Continued use of the Site after changes constitutes acceptance.
             </p>
           </Section>
 
-          <Section title="11. Contact">
+          <Section title="12. Contact">
             <p>
               Questions? Email us at{" "}
               <a href="mailto:vaaclothing.xyz@gmail.com" className="text-primary hover:underline">vaaclothing.xyz@gmail.com</a>.
