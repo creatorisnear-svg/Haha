@@ -71,10 +71,10 @@ export default function Home() {
 
       {/* ── ANNOUNCEMENT BAR ── */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-primary/90 backdrop-blur-sm text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-7 flex items-center justify-center gap-3 sm:gap-6 font-sans text-[9px] sm:text-[10px] tracking-[0.3em] uppercase overflow-hidden whitespace-nowrap">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-7 flex items-center justify-center gap-2 sm:gap-6 font-sans text-[8.5px] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.3em] uppercase overflow-hidden whitespace-nowrap">
           <span className="hidden sm:inline">Free shipping over $75</span>
           <span className="hidden sm:inline opacity-50">·</span>
-          <span>New drop · Crown of Thorns collection</span>
+          <span className="truncate">New drop · Crown of Thorns</span>
           <span className="hidden sm:inline opacity-50">·</span>
           <span className="hidden sm:inline">Worn by the chosen</span>
         </div>
@@ -235,11 +235,11 @@ export default function Home() {
         >
           <div className="hero-radial glow-pulse w-[80vw] h-[80vw] max-w-[900px] max-h-[900px]" />
         </div>
-        {/* corner runes */}
-        <div aria-hidden="true" className="absolute top-24 left-4 sm:left-10 font-sans text-[9px] tracking-[0.5em] uppercase text-muted-foreground/40 fade-up">
+        {/* corner runes — desktop only to avoid mobile collisions */}
+        <div aria-hidden="true" className="hidden md:block absolute top-28 left-10 font-sans text-[9px] tracking-[0.5em] uppercase text-muted-foreground/40 fade-up">
           Est. 2024 — Underground
         </div>
-        <div aria-hidden="true" className="absolute top-24 right-4 sm:right-10 font-sans text-[9px] tracking-[0.5em] uppercase text-muted-foreground/40 fade-up">
+        <div aria-hidden="true" className="hidden md:block absolute top-28 right-10 font-sans text-[9px] tracking-[0.5em] uppercase text-muted-foreground/40 fade-up">
           Faith / Grit / Grace
         </div>
 
@@ -259,17 +259,17 @@ export default function Home() {
           <p className="fade-up-d2 font-sans text-[10px] sm:text-[11px] tracking-[0.25em] sm:tracking-[0.35em] uppercase text-muted-foreground mb-10 sm:mb-12 px-2">
             Born in the grit. <span className="text-primary">·</span> Worn by the chosen.
           </p>
-          <div className="fade-up-d3 flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
+          <div className="fade-up-d3 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full max-w-xs sm:max-w-none px-2 sm:px-0">
             <button
               onClick={scrollToProducts}
               data-testid="button-shop-now"
-              className="font-display text-lg sm:text-2xl tracking-[0.15em] sm:tracking-[0.2em] px-10 sm:px-14 h-[48px] sm:h-[56px] border border-foreground bg-foreground text-background hover:bg-primary hover:border-primary hover:text-white transition-all duration-200"
+              className="font-display text-lg sm:text-2xl tracking-[0.15em] sm:tracking-[0.2em] px-8 sm:px-14 h-[52px] sm:h-[56px] border border-foreground bg-foreground text-background hover:bg-primary hover:border-primary hover:text-white transition-all duration-200"
             >
               SHOP NOW
             </button>
             <a
               href="#about"
-              className="font-display text-lg sm:text-2xl tracking-[0.15em] sm:tracking-[0.2em] px-10 sm:px-14 h-[48px] sm:h-[56px] flex items-center justify-center border border-foreground/40 text-foreground/80 hover:border-foreground hover:text-foreground transition-all duration-200"
+              className="font-display text-lg sm:text-2xl tracking-[0.15em] sm:tracking-[0.2em] px-8 sm:px-14 h-[52px] sm:h-[56px] flex items-center justify-center border border-foreground/40 text-foreground/80 hover:border-foreground hover:text-foreground transition-all duration-200"
             >
               OUR STORY
             </a>
@@ -311,23 +311,23 @@ export default function Home() {
       </div>
 
       {/* ── TENETS / PILLARS ── */}
-      <section className="py-12 sm:py-16 px-4 sm:px-6 border-b border-border">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6">
+      <section className="py-10 sm:py-16 px-4 sm:px-6 border-b border-border">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-6 divide-y sm:divide-y-0 sm:divide-x divide-border">
           {[
             { Icon: Truck, title: "Free Shipping", sub: "On orders over $75" },
             { Icon: Shield, title: "Secure Checkout", sub: "Stripe encrypted" },
             { Icon: Flame, title: "Limited Drops", sub: "Forged, never restocked" },
-          ].map(({ Icon, title, sub }) => (
+          ].map(({ Icon, title, sub }, idx) => (
             <div
               key={title}
-              className="flex items-center gap-4 sm:gap-5 justify-center sm:justify-start"
+              className={`flex items-center gap-4 sm:gap-5 justify-center sm:justify-center ${idx > 0 ? "pt-6 sm:pt-0 sm:pl-6" : ""}`}
             >
-              <div className="w-11 h-11 flex items-center justify-center border border-border text-foreground">
-                <Icon className="w-5 h-5" />
+              <div className="w-10 h-10 sm:w-11 sm:h-11 flex-shrink-0 flex items-center justify-center border border-border text-foreground">
+                <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div className="flex flex-col">
-                <span className="font-display text-base tracking-[0.2em]">{title}</span>
-                <span className="font-sans text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
+                <span className="font-display text-sm sm:text-base tracking-[0.2em]">{title}</span>
+                <span className="font-sans text-[9px] sm:text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
                   {sub}
                 </span>
               </div>
@@ -428,15 +428,15 @@ export default function Home() {
             </div>
 
             {/* tenets */}
-            <div className="grid grid-cols-3 gap-4 sm:gap-6 pt-6 border-t border-border">
+            <div className="grid grid-cols-3 gap-2 sm:gap-6 pt-6 border-t border-border">
               {[
                 { word: "FAITH", line: "Anchor" },
                 { word: "GRIT", line: "Forge" },
                 { word: "GRACE", line: "Crown" },
               ].map((t) => (
                 <div key={t.word} className="flex flex-col items-center text-center">
-                  <span className="font-display text-2xl sm:text-3xl tracking-[0.2em] text-foreground">{t.word}</span>
-                  <span className="font-sans text-[9px] tracking-[0.4em] uppercase text-muted-foreground mt-1">{t.line}</span>
+                  <span className="font-display text-lg sm:text-3xl tracking-[0.15em] sm:tracking-[0.2em] text-foreground">{t.word}</span>
+                  <span className="font-sans text-[8px] sm:text-[9px] tracking-[0.3em] sm:tracking-[0.4em] uppercase text-muted-foreground mt-1">{t.line}</span>
                 </div>
               ))}
             </div>
