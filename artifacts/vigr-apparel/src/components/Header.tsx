@@ -186,7 +186,11 @@ export function Header({ categories = [] }: HeaderProps) {
             className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink-0"
             data-testid="link-home"
           >
-            <div className={`flex-shrink-0 transition-all duration-200 ${scrolled ? "w-7 h-7 sm:w-8 sm:h-8" : "w-8 h-8 sm:w-10 sm:h-10"}`}>
+            <div
+              className={`flex-shrink-0 transition-all duration-500 ease-out ${
+                scrolled ? "w-7 h-7 sm:w-8 sm:h-8" : "w-8 h-8 sm:w-10 sm:h-10"
+              }`}
+            >
               <img
                 src={logoPath}
                 alt="VAA"
@@ -195,25 +199,26 @@ export function Header({ categories = [] }: HeaderProps) {
               />
             </div>
             <span
-              className={`font-display tracking-[0.2em] sm:tracking-[0.25em] whitespace-nowrap transition-all duration-200 ${
-                scrolled
-                  ? "hidden lg:inline text-sm"
-                  : "hidden sm:inline text-base sm:text-xl"
+              className={`font-display tracking-[0.2em] sm:tracking-[0.25em] whitespace-nowrap transition-all duration-500 ease-out ${
+                scrolled ? "hidden" : "inline"
               }`}
             >
-              VIGR ANGEL APPAREL
+              <span className="sm:hidden text-base">VIGR ANGEL</span>
+              <span className="hidden sm:inline text-base sm:text-xl">VIGR ANGEL APPAREL</span>
             </span>
           </Link>
 
           {/* Spacer pushes the right-side icons to the edge when no inline search */}
           <div className="flex-1 min-w-0 mx-2 sm:mx-4">
-            {/* Inline search — appears only when scrolled */}
+            {/* Inline search — fades in once scrolled */}
             <div
-              className={`w-full max-w-xl mx-auto transition-all duration-200 ${
-                scrolled ? "opacity-100" : "opacity-0 pointer-events-none"
+              className={`w-full max-w-xl mx-auto transform transition-all duration-500 ease-out ${
+                scrolled
+                  ? "opacity-100 translate-y-0 scale-100"
+                  : "opacity-0 -translate-y-1 scale-95 pointer-events-none"
               }`}
             >
-              {scrolled && renderSearchInput(true)}
+              {renderSearchInput(true)}
             </div>
           </div>
 
@@ -254,13 +259,22 @@ export function Header({ categories = [] }: HeaderProps) {
 
         {/* ── SEARCH ROW (under nav) — collapses up into nav when scrolled ── */}
         <div
-          className={`overflow-hidden border-t border-border/60 transition-all duration-300 ease-in-out ${
+          className={`overflow-hidden transition-all ease-out ${
             scrolled
-              ? "max-h-0 opacity-0 border-t-0"
-              : "max-h-[80px] opacity-100"
+              ? "max-h-0 opacity-0 duration-[450ms]"
+              : "max-h-[88px] opacity-100 duration-[550ms]"
           }`}
+          style={{
+            borderTopWidth: scrolled ? 0 : 1,
+            borderTopColor: "hsl(var(--border) / 0.6)",
+            transitionProperty: "max-height, opacity, border-top-width",
+          }}
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 sm:py-3">
+          <div
+            className={`max-w-7xl mx-auto px-4 sm:px-6 py-2.5 sm:py-3 transform transition-all duration-500 ease-out ${
+              scrolled ? "-translate-y-2 opacity-0" : "translate-y-0 opacity-100"
+            }`}
+          >
             <div className="max-w-2xl mx-auto">
               {renderSearchInput(false)}
             </div>
