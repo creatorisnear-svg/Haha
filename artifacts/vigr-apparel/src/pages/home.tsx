@@ -164,22 +164,6 @@ export default function Home() {
           <h2 className="font-display text-[clamp(2.5rem,6vw,5rem)] tracking-[0.15em]">RECENTLY ADDED</h2>
         </div>
 
-        {/* Categories quick links */}
-        {categories.length > 0 && (
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-10 sm:mb-14">
-            {categories.map((cat) => (
-              <Link
-                key={cat.id}
-                href={`/category/${cat.slug}`}
-                className="font-sans text-[10px] sm:text-[11px] tracking-[0.25em] uppercase border border-border px-4 py-2 hover:border-foreground hover:bg-foreground hover:text-background transition-all"
-                data-testid={`pill-category-${cat.slug}`}
-              >
-                {cat.name}
-              </Link>
-            ))}
-          </div>
-        )}
-
         {isLoading ? (
           <div className="flex justify-center items-center h-64 font-sans text-xs tracking-widest uppercase text-muted-foreground">
             Loading collection...
