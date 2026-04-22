@@ -15,6 +15,7 @@ export interface Product {
   sizes?: string[] | null;
   tag?: string | null;
   tagColor?: string | null;
+  releaseDate?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,9 +43,68 @@ function docToProduct(doc: any): Product {
     sizes: Array.isArray(doc.sizes) && doc.sizes.length > 0 ? doc.sizes : null,
     tag: typeof doc.tag === "string" && doc.tag.trim() ? doc.tag.trim() : null,
     tagColor: typeof doc.tagColor === "string" && doc.tagColor.trim() ? doc.tagColor.trim() : null,
+    releaseDate: doc.releaseDate instanceof Date ? doc.releaseDate : null,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
+}
+
+// ── Review ────────────────────────────────────────────────────────────────────
+export interface Review {
+  id: string;
+  productId: string;
+  customerId: string | null;
+  authorName: string;
+  rating: number; // 1..5
+  body: string;
+  createdAt: Date;
+}
+function docToReview(doc: any): Review {
+  return {
+    id: doc._id.toString(),
+    productId: doc.productId,
+    customerId: doc.customerId ?? null,
+    authorName: doc.authorName,
+    rating: doc.rating,
+    body: doc.body,
+    createdAt: doc.createdAt,
+  };
+}
+
+// ── Restock subscriber ────────────────────────────────────────────────────────
+export interface RestockSubscriber {
+  id: string;
+  productId: string;
+  email: string;
+  type: "restock" | "release";
+  createdAt: Date;
+}
+function docToRestock(doc: any): RestockSubscriber {
+  return {
+    id: doc._id.toString(),
+    productId: doc.productId,
+    email: doc.email,
+    type: doc.type ?? "restock",
+    createdAt: doc.createdAt,
+  };
+}
+
+// ── Persistent (per-customer) cart ────────────────────────────────────────────
+export interface SavedCartItem {
+  productId: string;
+  productName: string;
+  price: number;
+  quantity: number;
+  size?: string | null;
+  imageUrl?: string | null;
+}
+export interface SavedCart {
+  customerId: string;
+  customerEmail: string;
+  customerName: string;
+  items: SavedCartItem[];
+  updatedAt: Date;
+  reminderSentAt?: Date | null;
 }
 
 // ── Customer ──────────────────────────────────────────────────────────────────
@@ -565,6 +625,195 @@ export class Storage {
   async deletePromoCode(id: string): Promise<void> {
     const db = await getDb();
     try { await db.collection("promoCodes").deleteOne({ _id: new ObjectId(id) }); } catch {}
+  }
+
+  // ── Reviews ─────────────────────────────────────────────────────────────────
+  async listReviewsByProduct(productId: string): Promise<Review[]> {
+    const db = await getDb();
+    const docs = await db
+      .collection("reviews")
+      .find({ productId })
+      .sort({ createdAt: -1 })
+      .toArray();
+    return docs.map(docToReview);
+  }
+
+  async listAllReviews(): Promise<Review[]> {
+    const db = await getDb();
+    const docs = await db.collection("reviews").find().sort({ createdAt: -1 }).toArray();
+    return docs.map(docToReview);
+  }
+
+  async createReview(data: {
+    productId: string;
+    customerId: string | null;
+    authorName: string;
+    rating: number;
+    body: string;
+  }): Promise<Review> {
+    const db = await getDb();
+    const now = new Date();
+    const doc = {
+      productId: data.productId,
+      customerId: data.customerId,
+      authorName: data.authorName.trim().slice(0, 80),
+      rating: Math.max(1, Math.min(5, Math.round(data.rating))),
+      body: data.body.trim().slice(0, 2000),
+      createdAt: now,
+    };
+    const result = await db.collection("reviews").insertOne(doc);
+    return docToReview({ _id: result.insertedId, ...doc });
+  }
+
+  async deleteReview(id: string): Promise<boolean> {
+    const db = await getDb();
+    try {
+      const result = await db.collection("reviews").deleteOne({ _id: new ObjectId(id) });
+      return result.deletedCount > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  async hasCustomerReviewedProduct(customerId: string, productId: string): Promise<boolean> {
+    const db = await getDb();
+    const doc = await db.collection("reviews").findOne({ customerId, productId });
+    return !!doc;
+  }
+
+  // ── Restock notifications ──────────────────────────────────────────────────
+  async subscribeRestock(
+    productId: string,
+    email: string,
+    type: "restock" | "release",
+  ): Promise<void> {
+    const db = await getDb();
+    const normalizedEmail = email.toLowerCase().trim();
+    await db.collection("restockSubscribers").updateOne(
+      { productId, email: normalizedEmail, type },
+      { $setOnInsert: { productId, email: normalizedEmail, type, createdAt: new Date() } },
+      { upsert: true },
+    );
+  }
+
+  async getRestockSubscribers(
+    productId: string,
+    type?: "restock" | "release",
+  ): Promise<RestockSubscriber[]> {
+    const db = await getDb();
+    const query: any = { productId };
+    if (type) query.type = type;
+    const docs = await db.collection("restockSubscribers").find(query).toArray();
+    return docs.map(docToRestock);
+  }
+
+  async clearRestockSubscribers(
+    productId: string,
+    type?: "restock" | "release",
+  ): Promise<void> {
+    const db = await getDb();
+    const query: any = { productId };
+    if (type) query.type = type;
+    await db.collection("restockSubscribers").deleteMany(query);
+  }
+
+  async listAllRestockSubscribers(): Promise<RestockSubscriber[]> {
+    const db = await getDb();
+    const docs = await db.collection("restockSubscribers").find().sort({ createdAt: -1 }).toArray();
+    return docs.map(docToRestock);
+  }
+
+  // ── Wishlist (per customer) ────────────────────────────────────────────────
+  async getWishlist(customerId: string): Promise<string[]> {
+    const db = await getDb();
+    const doc = await db.collection("wishlists").findOne({ customerId });
+    return Array.isArray(doc?.productIds) ? doc!.productIds : [];
+  }
+
+  async setWishlist(customerId: string, productIds: string[]): Promise<void> {
+    const db = await getDb();
+    const cleaned = Array.from(
+      new Set(productIds.filter((id) => typeof id === "string" && id.length > 0)),
+    ).slice(0, 200);
+    await db.collection("wishlists").updateOne(
+      { customerId },
+      { $set: { customerId, productIds: cleaned, updatedAt: new Date() } },
+      { upsert: true },
+    );
+  }
+
+  // ── Persistent carts (for abandonment emails) ──────────────────────────────
+  async saveCustomerCart(
+    customerId: string,
+    customerEmail: string,
+    customerName: string,
+    items: SavedCartItem[],
+  ): Promise<void> {
+    const db = await getDb();
+    if (!items || items.length === 0) {
+      await db.collection("savedCarts").deleteOne({ customerId });
+      return;
+    }
+    await db.collection("savedCarts").updateOne(
+      { customerId },
+      {
+        $set: {
+          customerId,
+          customerEmail,
+          customerName,
+          items,
+          updatedAt: new Date(),
+        },
+        $unset: { reminderSentAt: "" },
+      },
+      { upsert: true },
+    );
+  }
+
+  async clearCustomerCart(customerId: string): Promise<void> {
+    const db = await getDb();
+    await db.collection("savedCarts").deleteOne({ customerId });
+  }
+
+  async findAbandonedCarts(thresholdMs: number): Promise<SavedCart[]> {
+    const db = await getDb();
+    const cutoff = new Date(Date.now() - thresholdMs);
+    const docs = await db
+      .collection("savedCarts")
+      .find({
+        updatedAt: { $lt: cutoff },
+        reminderSentAt: { $exists: false },
+      })
+      .toArray();
+    return docs.map((d: any) => ({
+      customerId: d.customerId,
+      customerEmail: d.customerEmail,
+      customerName: d.customerName,
+      items: d.items ?? [],
+      updatedAt: d.updatedAt,
+      reminderSentAt: d.reminderSentAt ?? null,
+    }));
+  }
+
+  async markCartReminderSent(customerId: string): Promise<void> {
+    const db = await getDb();
+    await db
+      .collection("savedCarts")
+      .updateOne({ customerId }, { $set: { reminderSentAt: new Date() } });
+  }
+
+  // ── Drop releases (scheduled notifications) ────────────────────────────────
+  async findProductsJustReleased(sinceMs: number): Promise<Product[]> {
+    const db = await getDb();
+    const now = new Date();
+    const since = new Date(Date.now() - sinceMs);
+    const docs = await db
+      .collection("products")
+      .find({
+        releaseDate: { $gt: since, $lte: now },
+      })
+      .toArray();
+    return docs.map(docToProduct);
   }
 
   async incrementPromoUsage(code: string): Promise<void> {

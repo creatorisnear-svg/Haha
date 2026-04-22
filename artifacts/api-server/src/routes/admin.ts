@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { storage } from "../storage";
 import { verifyPassword, setPassword, createToken, adminAuthMiddleware } from "../auth";
-import { sendShippingNotification, sendDeliveryNotification, sendNewsletterBlast } from "../lib/email";
+import { sendShippingNotification, sendDeliveryNotification, sendNewsletterBlast, sendRestockNotification } from "../lib/email";
 import { logger } from "../lib/logger";
 import { rateLimit } from "../lib/rateLimit";
 import { hashPasswordAsync, generateTemporaryPassword } from "../lib/customerAuth";
@@ -67,8 +67,24 @@ function serializeProduct(product: any) {
     sizes: product.sizes ?? null,
     tag: product.tag ?? null,
     tagColor: product.tagColor ?? null,
+    releaseDate: product.releaseDate
+      ? (product.releaseDate?.toISOString?.() ?? product.releaseDate)
+      : null,
     createdAt: product.createdAt?.toISOString?.() ?? product.createdAt,
   };
+}
+
+function normalizeReleaseDate(value: any): Date | null {
+  if (value === null || value === undefined || value === "") return null;
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return null;
+  return d;
+}
+
+function getCanonicalBaseUrl(): string {
+  const canonical = process.env.CANONICAL_HOST;
+  if (canonical) return `https://${canonical}`;
+  return "https://vaaclothing.xyz";
 }
 
 const VALID_TAG_COLORS = new Set(["blue", "red", "green", "yellow", "purple", "white"]);
@@ -93,7 +109,7 @@ function normalizeImageUrls(imageUrls: any, imageUrl: any): string[] | null {
 }
 
 router.post("/admin/products", adminAuthMiddleware, async (req, res) => {
-  const { name, description, price, imageUrl, imageUrls, inStock, stockCount, category, sizes, tag, tagColor } = req.body;
+  const { name, description, price, imageUrl, imageUrls, inStock, stockCount, category, sizes, tag, tagColor, releaseDate } = req.body;
   if (!name || price === undefined) return res.status(400).json({ error: "name and price required" });
   const normalizedStockCount =
     typeof stockCount === "number" && stockCount >= 0 ? Math.floor(stockCount) : null;
@@ -114,13 +130,19 @@ router.post("/admin/products", adminAuthMiddleware, async (req, res) => {
     sizes: normalizedSizes,
     tag: normalizedTag,
     tagColor: normalizedTag ? (normalizeTagColor(tagColor) ?? "blue") : null,
+    releaseDate: normalizeReleaseDate(releaseDate),
   });
   res.status(201).json(serializeProduct(product));
 });
 
 router.put("/admin/products/:id", adminAuthMiddleware, async (req, res) => {
-  const { name, description, price, imageUrl, imageUrls, inStock, stockCount, category, sizes, tag, tagColor } = req.body;
+  const { name, description, price, imageUrl, imageUrls, inStock, stockCount, category, sizes, tag, tagColor, releaseDate } = req.body;
+  const existing = await storage.getProduct(req.params.id);
+  if (!existing) return res.status(404).json({ error: "Product not found" });
   const updates: any = { name, description, price, category };
+  if (releaseDate !== undefined) {
+    updates.releaseDate = normalizeReleaseDate(releaseDate);
+  }
   if (imageUrls !== undefined || imageUrl !== undefined) {
     const normalizedImages = normalizeImageUrls(imageUrls, imageUrl);
     updates.imageUrls = normalizedImages;
@@ -147,6 +169,37 @@ router.put("/admin/products/:id", adminAuthMiddleware, async (req, res) => {
   }
   const product = await storage.updateProduct(req.params.id, updates);
   if (!product) return res.status(404).json({ error: "Product not found" });
+
+  // Fire restock notifications when a sold-out product becomes available again.
+  const becameInStock = !existing.inStock && product.inStock;
+  if (becameInStock) {
+    storage
+      .getRestockSubscribers(product.id, "restock")
+      .then(async (subs) => {
+        if (subs.length === 0) return;
+        logger.info(
+          { productId: product.id, count: subs.length },
+          "Sending restock notifications",
+        );
+        for (const sub of subs) {
+          try {
+            await sendRestockNotification(sub.email, {
+              productId: product.id,
+              productName: product.name,
+              productPrice: product.price,
+              imageUrl: product.imageUrl ?? null,
+              baseUrl: getCanonicalBaseUrl(),
+              type: "restock",
+            });
+          } catch (err) {
+            logger.error({ err, email: sub.email }, "Restock email failed");
+          }
+        }
+        await storage.clearRestockSubscribers(product.id, "restock");
+      })
+      .catch((err) => logger.error({ err }, "Restock fan-out failed"));
+  }
+
   res.json(serializeProduct(product));
 });
 
@@ -325,6 +378,41 @@ router.delete("/admin/sizes/:id", adminAuthMiddleware, async (req, res) => {
 router.get("/admin/newsletter/subscribers", adminAuthMiddleware, async (_req, res) => {
   const emails = await storage.getAllNewsletterSubscribers();
   res.json({ data: emails, count: emails.length });
+});
+
+// ── Reviews moderation ────────────────────────────────────────────────────────
+router.get("/admin/reviews", adminAuthMiddleware, async (_req, res) => {
+  const reviews = await storage.listAllReviews();
+  res.json({
+    data: reviews.map((r) => ({
+      id: r.id,
+      productId: r.productId,
+      authorName: r.authorName,
+      rating: r.rating,
+      body: r.body,
+      createdAt: r.createdAt,
+    })),
+  });
+});
+
+router.delete("/admin/reviews/:id", adminAuthMiddleware, async (req, res) => {
+  const ok = await storage.deleteReview(req.params.id);
+  if (!ok) return res.status(404).json({ error: "Review not found" });
+  res.json({ success: true });
+});
+
+// ── Restock subscribers listing ───────────────────────────────────────────────
+router.get("/admin/restock-subscribers", adminAuthMiddleware, async (_req, res) => {
+  const subs = await storage.listAllRestockSubscribers();
+  res.json({
+    data: subs.map((s) => ({
+      id: s.id,
+      productId: s.productId,
+      email: s.email,
+      type: s.type,
+      createdAt: s.createdAt,
+    })),
+  });
 });
 
 router.post("/admin/newsletter/send", adminAuthMiddleware, async (req, res) => {

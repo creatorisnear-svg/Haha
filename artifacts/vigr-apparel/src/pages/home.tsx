@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useToast } from "@/hooks/use-toast";
 import { WishlistButton } from "@/components/WishlistButton";
 import { RecentlyViewed } from "@/components/RecentlyViewed";
+import { Countdown } from "@/components/Countdown";
 import logoPath from "@assets/12214-removebg-preview_1776743232072.png";
 
 interface Category { id: string; name: string; slug: string; }
@@ -595,7 +596,9 @@ function ProductCard({ product }: { product: any }) {
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
   const hasSizes = Array.isArray(product.sizes) && product.sizes.length > 0;
-  const canAdd = product.inStock && (!hasSizes || selectedSize !== null);
+  const releaseDate: Date | null = product.releaseDate ? new Date(product.releaseDate) : null;
+  const isPreRelease = !!releaseDate && releaseDate.getTime() > Date.now();
+  const canAdd = product.inStock && !isPreRelease && (!hasSizes || selectedSize !== null);
 
   const handleAdd = () => {
     if (!canAdd) return;
@@ -654,7 +657,7 @@ function ProductCard({ product }: { product: any }) {
             {(product as any).tag}
           </span>
         )}
-        {isLowStock && product.inStock && (
+        {isLowStock && product.inStock && !isPreRelease && (
           <span
             className="absolute bottom-3 left-3 font-sans text-[9px] tracking-[0.3em] uppercase text-primary bg-background/80 backdrop-blur-[2px] border border-primary/50 px-2 py-1"
             data-testid={`text-low-stock-${product.id}`}
@@ -663,12 +666,25 @@ function ProductCard({ product }: { product: any }) {
           </span>
         )}
 
-        {/* sold out overlay */}
-        {!product.inStock && (
+        {isPreRelease && releaseDate && (
+          <div className="absolute bottom-3 left-3">
+            <Countdown releaseDate={releaseDate} variant="card" />
+          </div>
+        )}
+
+        {/* sold out overlay (hide during pre-release) */}
+        {!product.inStock && !isPreRelease && (
           <div className="absolute inset-0 bg-background/70 backdrop-blur-[1px] flex items-center justify-center">
             <span className="font-display text-xl tracking-[0.3em] text-foreground border border-foreground/60 px-5 py-2">
               SOLD OUT
             </span>
+          </div>
+        )}
+
+        {/* coming soon overlay */}
+        {isPreRelease && (
+          <div className="absolute inset-x-0 top-0 bg-foreground/90 text-background py-1.5 text-center font-sans text-[9px] tracking-[0.4em] uppercase">
+            Coming Soon
           </div>
         )}
 

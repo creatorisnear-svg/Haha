@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { 
   useGetAdminSettings, 
@@ -94,6 +94,12 @@ export default function DevDashboard() {
             <TabsTrigger value="customers" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-sm sm:text-lg px-0 h-full uppercase flex-shrink-0">
               Customers
             </TabsTrigger>
+            <TabsTrigger value="reviews" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-sm sm:text-lg px-0 h-full uppercase flex-shrink-0">
+              Reviews
+            </TabsTrigger>
+            <TabsTrigger value="restock" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-sm sm:text-lg px-0 h-full uppercase flex-shrink-0">
+              Restock
+            </TabsTrigger>
             <TabsTrigger value="newsletter" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-sm sm:text-lg px-0 h-full uppercase flex-shrink-0">
               Newsletter
             </TabsTrigger>
@@ -128,6 +134,14 @@ export default function DevDashboard() {
 
           <TabsContent value="customers" className="pt-8">
             <CustomersTab token={token} />
+          </TabsContent>
+
+          <TabsContent value="reviews" className="pt-8">
+            <ReviewsTab token={token} products={productsData?.data || []} />
+          </TabsContent>
+
+          <TabsContent value="restock" className="pt-8">
+            <RestockTab token={token} products={productsData?.data || []} />
           </TabsContent>
 
           <TabsContent value="newsletter" className="pt-8">
@@ -176,6 +190,7 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
     sizes: [] as string[],
     tag: "",
     tagColor: "blue",
+    releaseDate: "",
   });
 
   const { toast } = useToast();
@@ -193,6 +208,7 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
       sizes: [],
       tag: "",
       tagColor: "blue",
+      releaseDate: "",
     });
     setEditingProduct(null);
   };
@@ -217,6 +233,9 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
         sizes: Array.isArray(product.sizes) ? product.sizes : [],
         tag: (product as any).tag ?? "",
         tagColor: (product as any).tagColor ?? "blue",
+        releaseDate: (product as any).releaseDate
+          ? new Date((product as any).releaseDate).toISOString().slice(0, 16)
+          : "",
       });
     } else {
       resetForm();
@@ -281,6 +300,7 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
         sizes: formData.sizes.length > 0 ? formData.sizes : null,
         tag: formData.tag.trim() || null,
         tagColor: formData.tag.trim() ? formData.tagColor : null,
+        releaseDate: formData.releaseDate ? new Date(formData.releaseDate).toISOString() : null,
       };
 
       const url = editingProduct 
@@ -593,6 +613,32 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
                   <Label htmlFor="inStock" className="text-xs uppercase tracking-widest">In Stock</Label>
                 </div>
               )}
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="releaseDate" className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Release Date <span className="lowercase tracking-normal">(leave blank for available now)</span>
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="releaseDate"
+                    type="datetime-local"
+                    value={formData.releaseDate}
+                    onChange={(e) => setFormData({ ...formData, releaseDate: e.target.value })}
+                    className="rounded-none border-border focus-visible:ring-1 focus-visible:ring-primary flex-1"
+                  />
+                  {formData.releaseDate && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, releaseDate: "" })}
+                      className="text-[10px] tracking-widest uppercase text-muted-foreground hover:text-foreground px-3 h-10 border border-border"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                <p className="text-[10px] text-muted-foreground tracking-wide">
+                  Until this date, the product shows a countdown and a "Notify Me When Live" button instead of Add to Cart.
+                </p>
+              </div>
               <div className="pt-6">
                 <Button type="submit" className="w-full rounded-none font-display text-xl tracking-widest h-12 bg-foreground text-background hover:bg-primary hover:text-white transition-colors">
                   {editingProduct ? "UPDATE PRODUCT" : "CREATE PRODUCT"}
@@ -2184,6 +2230,187 @@ function OverviewTab({ token }: { token: string }) {
           <p>Click <span className="text-foreground">Export CSV</span> to download every order for {taxYear} in a spreadsheet your accountant or tax software can import.</p>
         </div>
       </div>
+    </div>
+  );
+}
+
+interface AdminReview {
+  id: string;
+  productId: string;
+  authorName: string;
+  rating: number;
+  body: string;
+  createdAt: string;
+}
+
+function ReviewsTab({ token, products }: { token: string; products: any[] }) {
+  const { toast } = useToast();
+  const [reviews, setReviews] = useState<AdminReview[] | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const productMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const p of products) m.set(p.id, p.name);
+    return m;
+  }, [products]);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/reviews", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setReviews(data.data ?? []);
+    } catch {
+      setReviews([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  const remove = async (id: string) => {
+    if (!confirm("Delete this review? This cannot be undone.")) return;
+    try {
+      const res = await fetch(`/api/admin/reviews/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Delete failed");
+      toast({ title: "Review deleted" });
+      load();
+    } catch (err: any) {
+      toast({ title: "Delete failed", description: err?.message ?? "", variant: "destructive" });
+    }
+  };
+
+  if (loading) {
+    return <div className="text-sm font-sans tracking-widest text-muted-foreground uppercase">Loading reviews...</div>;
+  }
+
+  if (!reviews || reviews.length === 0) {
+    return (
+      <div className="border border-dashed border-border p-8 text-center">
+        <p className="font-sans text-xs tracking-widest uppercase text-muted-foreground">No reviews yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {reviews.map((r) => (
+        <div key={r.id} className="border border-border bg-card p-4 sm:p-5 space-y-2">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="font-sans text-sm font-medium">
+                {r.authorName}
+                <span className="ml-2 text-yellow-400">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span>
+              </p>
+              <p className="text-[10px] text-muted-foreground tracking-widest uppercase mt-1">
+                {productMap.get(r.productId) ?? r.productId} · {new Date(r.createdAt).toLocaleString()}
+              </p>
+            </div>
+            <button
+              onClick={() => remove(r.id)}
+              className="text-[10px] tracking-widest uppercase border border-border px-3 h-8 hover:border-destructive hover:text-destructive transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+          <p className="font-sans text-sm text-foreground/85 whitespace-pre-wrap">{r.body}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+interface AdminRestockSub {
+  id: string;
+  productId: string;
+  email: string;
+  type: "restock" | "release";
+  createdAt: string;
+}
+
+function RestockTab({ token, products }: { token: string; products: any[] }) {
+  const [subs, setSubs] = useState<AdminRestockSub[] | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const productMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const p of products) m.set(p.id, p.name);
+    return m;
+  }, [products]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetch("/api/admin/restock-subscribers", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        setSubs(d.data ?? []);
+      })
+      .catch(() => !cancelled && setSubs([]))
+      .finally(() => !cancelled && setLoading(false));
+    return () => { cancelled = true; };
+  }, [token]);
+
+  if (loading) {
+    return <div className="text-sm font-sans tracking-widest text-muted-foreground uppercase">Loading subscribers...</div>;
+  }
+
+  if (!subs || subs.length === 0) {
+    return (
+      <div className="border border-dashed border-border p-8 text-center">
+        <p className="font-sans text-xs tracking-widest uppercase text-muted-foreground">No active notification requests.</p>
+      </div>
+    );
+  }
+
+  // Group by product
+  const grouped = new Map<string, AdminRestockSub[]>();
+  for (const s of subs) {
+    const list = grouped.get(s.productId) ?? [];
+    list.push(s);
+    grouped.set(s.productId, list);
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-[10px] tracking-widest uppercase text-muted-foreground">
+        Restock notifications send automatically when a sold-out product transitions back to in-stock.
+        Drop releases send automatically when the release date passes.
+      </p>
+      {Array.from(grouped.entries()).map(([productId, list]) => (
+        <div key={productId} className="border border-border bg-card p-4 sm:p-5">
+          <div className="flex items-baseline justify-between mb-3">
+            <p className="font-display tracking-widest uppercase text-sm">
+              {productMap.get(productId) ?? productId}
+            </p>
+            <p className="text-[10px] tracking-widest uppercase text-muted-foreground">
+              {list.length} {list.length === 1 ? "subscriber" : "subscribers"}
+            </p>
+          </div>
+          <ul className="divide-y divide-border">
+            {list.map((s) => (
+              <li key={s.id} className="py-2 flex items-center justify-between gap-3 text-sm font-sans">
+                <span className="truncate">{s.email}</span>
+                <span className="text-[10px] tracking-widest uppercase text-muted-foreground">
+                  {s.type} · {new Date(s.createdAt).toLocaleDateString()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </div>
   );
 }

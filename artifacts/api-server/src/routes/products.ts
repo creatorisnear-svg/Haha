@@ -17,6 +17,7 @@ function serialize(p: any) {
     sizes: p.sizes ?? null,
     tag: p.tag ?? null,
     tagColor: p.tagColor ?? null,
+    releaseDate: p.releaseDate ? (p.releaseDate?.toISOString?.() ?? p.releaseDate) : null,
     createdAt: p.createdAt?.toISOString?.() ?? p.createdAt,
   };
 }

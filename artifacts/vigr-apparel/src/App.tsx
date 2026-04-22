@@ -20,8 +20,16 @@ import OrderLookup from "@/pages/order-lookup";
 import Terms from "@/pages/terms";
 import Unsubscribe from "@/pages/unsubscribe";
 import Wishlist from "@/pages/wishlist";
+import { useWishlistSync } from "@/hooks/useWishlistSync";
+import { useCartSync } from "@/hooks/useCartSync";
 
 const queryClient = new QueryClient();
+
+function SyncBridge() {
+  useWishlistSync();
+  useCartSync();
+  return null;
+}
 
 function Router() {
   return (
@@ -51,6 +59,7 @@ function App() {
         <CartProvider>
           <TooltipProvider>
             <div className="bg-noise"></div>
+            <SyncBridge />
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
               <Router />
             </WouterRouter>

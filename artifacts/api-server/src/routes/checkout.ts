@@ -144,6 +144,13 @@ router.post("/checkout", async (req, res) => {
     );
   }
 
+  // Clear any saved abandoned-cart record for this customer.
+  if (customerId) {
+    storage.clearCustomerCart(customerId).catch((err) =>
+      logger.error({ err }, "Failed to clear saved cart after checkout"),
+    );
+  }
+
   // Send confirmation emails (don't block response on email delivery)
   sendOrderConfirmation({
     orderNumber: order.orderNumber,

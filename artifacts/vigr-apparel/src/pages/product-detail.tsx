@@ -10,6 +10,9 @@ import { useToast } from "@/hooks/use-toast";
 import { SizeGuide } from "@/components/SizeGuide";
 import { WishlistButton } from "@/components/WishlistButton";
 import { RecentlyViewed } from "@/components/RecentlyViewed";
+import { Countdown } from "@/components/Countdown";
+import { NotifyMeButton } from "@/components/NotifyMeButton";
+import { Reviews } from "@/components/Reviews";
 import logoPath from "@assets/12214-removebg-preview_1776743232072.png";
 
 export default function ProductDetail() {
@@ -85,7 +88,11 @@ export default function ProductDetail() {
   const hasSizes = Array.isArray(sizes) && sizes.length > 0;
   const inStock = !!product?.inStock;
   const stockCount = (product as any)?.stockCount;
-  const canAdd = !!product && inStock && (!hasSizes || selectedSize !== null);
+  const releaseDateRaw = (product as any)?.releaseDate;
+  const releaseDate = releaseDateRaw ? new Date(releaseDateRaw) : null;
+  const isPreRelease = !!releaseDate && releaseDate.getTime() > Date.now();
+  const canAdd =
+    !!product && inStock && !isPreRelease && (!hasSizes || selectedSize !== null);
 
   const handleAdd = () => {
     if (!canAdd || !product) return;
@@ -324,7 +331,13 @@ export default function ProductDetail() {
                 ${(product.price / 100).toFixed(2)}
               </p>
 
-              {!inStock && (
+              {isPreRelease && releaseDate && (
+                <div className="mb-6">
+                  <Countdown releaseDate={releaseDate} variant="detail" />
+                </div>
+              )}
+
+              {!isPreRelease && !inStock && (
                 <p className="font-sans text-[11px] tracking-[0.3em] uppercase text-destructive mb-6">
                   Sold Out
                 </p>
@@ -408,35 +421,64 @@ export default function ProductDetail() {
               </div>
 
               <div className="flex flex-col gap-3">
-                <div className="flex gap-3">
-                  <Button
-                    onClick={handleAdd}
-                    disabled={!canAdd}
-                    data-testid="button-add-to-cart-detail"
-                    className="rounded-none flex-1 font-display text-lg sm:text-xl tracking-[0.2em] h-14 bg-foreground text-background hover:bg-primary hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
-                  >
-                    {!inStock
-                      ? "SOLD OUT"
-                      : hasSizes && !selectedSize
-                      ? "SELECT A SIZE"
-                      : "ADD TO CART"}
-                  </Button>
-                  <WishlistButton
-                    productId={(product as any).id}
-                    productName={product.name}
-                    variant="detail"
-                  />
-                </div>
+                {isPreRelease ? (
+                  <div className="flex gap-3">
+                    <NotifyMeButton
+                      productId={(product as any).id}
+                      productName={product.name}
+                      type="release"
+                      className="flex-1 inline-flex items-center justify-center gap-2 h-14 bg-foreground text-background font-display text-lg sm:text-xl tracking-[0.2em] uppercase hover:bg-primary hover:text-white transition-colors"
+                      label="Notify Me When Live"
+                    />
+                    <WishlistButton
+                      productId={(product as any).id}
+                      productName={product.name}
+                      variant="detail"
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex gap-3">
+                      <Button
+                        onClick={handleAdd}
+                        disabled={!canAdd}
+                        data-testid="button-add-to-cart-detail"
+                        className="rounded-none flex-1 font-display text-lg sm:text-xl tracking-[0.2em] h-14 bg-foreground text-background hover:bg-primary hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
+                      >
+                        {!inStock
+                          ? "SOLD OUT"
+                          : hasSizes && !selectedSize
+                            ? "SELECT A SIZE"
+                            : "ADD TO CART"}
+                      </Button>
+                      <WishlistButton
+                        productId={(product as any).id}
+                        productName={product.name}
+                        variant="detail"
+                      />
+                    </div>
 
-                {inStock && (
-                  <Button
-                    onClick={handleBuyNow}
-                    disabled={!canAdd}
-                    data-testid="button-buy-now-detail"
-                    className="rounded-none w-full font-display text-lg sm:text-xl tracking-[0.2em] h-14 bg-primary text-white hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
-                  >
-                    {hasSizes && !selectedSize ? "SELECT A SIZE" : "BUY NOW"}
-                  </Button>
+                    {inStock && (
+                      <Button
+                        onClick={handleBuyNow}
+                        disabled={!canAdd}
+                        data-testid="button-buy-now-detail"
+                        className="rounded-none w-full font-display text-lg sm:text-xl tracking-[0.2em] h-14 bg-primary text-white hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
+                      >
+                        {hasSizes && !selectedSize ? "SELECT A SIZE" : "BUY NOW"}
+                      </Button>
+                    )}
+
+                    {!inStock && (
+                      <NotifyMeButton
+                        productId={(product as any).id}
+                        productName={product.name}
+                        type="restock"
+                        className="w-full inline-flex items-center justify-center gap-2 h-14 border border-foreground bg-transparent text-foreground hover:bg-foreground hover:text-background font-display text-lg sm:text-xl tracking-[0.2em] uppercase transition-colors"
+                        label="Email Me When Back"
+                      />
+                    )}
+                  </>
                 )}
               </div>
 
@@ -451,7 +493,12 @@ export default function ProductDetail() {
         )}
 
         {!isLoading && !isError && product && (
-          <RecentlyViewed excludeId={productId} title="You Recently Viewed" />
+          <>
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-4">
+              <Reviews productId={productId} />
+            </div>
+            <RecentlyViewed excludeId={productId} title="You Recently Viewed" />
+          </>
         )}
       </main>
     </div>

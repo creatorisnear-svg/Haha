@@ -10,6 +10,7 @@ import settingsRouter from "./settings";
 import customersRouter from "./customers";
 import paymentsRouter from "./payments";
 import promoRouter from "./promo";
+import engagementRouter from "./engagement";
 import { storage } from "../storage";
 
 const router: IRouter = Router();
@@ -25,6 +26,7 @@ router.use(settingsRouter);
 router.use(customersRouter);
 router.use(paymentsRouter);
 router.use(promoRouter);
+router.use(engagementRouter);
 
 // Public order lookup by order number + email
 router.get("/orders/lookup", async (req, res) => {

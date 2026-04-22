@@ -315,6 +315,125 @@ export async function sendDeliveryNotification(data: DeliveryEmailData): Promise
   });
 }
 
+// ── Restock / drop release notifications ─────────────────────────────────────
+interface ProductNotifyData {
+  productId: string;
+  productName: string;
+  productPrice: number;
+  imageUrl?: string | null;
+  baseUrl: string;
+  type: "restock" | "release";
+}
+
+function restockHtml(data: ProductNotifyData): string {
+  const heading = data.type === "release" ? "It's Live" : "Back In Stock";
+  const intro =
+    data.type === "release"
+      ? "The drop you've been waiting for just went live. Get yours before they're gone."
+      : "Good news. You asked us to let you know when this came back · it's available again.";
+  const productUrl = `${data.baseUrl.replace(/\/$/, "")}/products/${data.productId}`;
+  const img = data.imageUrl
+    ? `<div style="margin:0 auto 16px;max-width:280px;"><img src="${data.imageUrl}" alt="${data.productName}" style="display:block;width:100%;height:auto;border:1px solid #2a2a2a;"/></div>`
+    : "";
+  return `<!doctype html>
+<html><body style="margin:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e5e5e5;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
+    <div style="text-align:center;padding-bottom:24px;border-bottom:1px solid #2a2a2a;">
+      <h1 style="font-size:18px;letter-spacing:0.3em;margin:0;color:#ffffff;text-transform:uppercase;">VIGR Angel Apparel</h1>
+    </div>
+    <div style="padding:32px 0;text-align:center;">
+      <p style="font-size:11px;letter-spacing:0.4em;text-transform:uppercase;color:#9a9a9a;margin:0 0 8px;">${heading}</p>
+      <h2 style="font-size:24px;letter-spacing:0.15em;margin:0;color:#ffffff;">${data.productName}</h2>
+      <p style="font-size:18px;color:#e5e5e5;margin:8px 0 0;">${formatMoney(data.productPrice)}</p>
+    </div>
+    ${img}
+    <p style="color:#c5c5c5;font-size:14px;line-height:1.7;text-align:center;">${intro}</p>
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${productUrl}" style="display:inline-block;background:#9a212e;color:#ffffff;padding:16px 36px;font-size:13px;letter-spacing:0.3em;text-transform:uppercase;text-decoration:none;font-weight:600;">Shop Now →</a>
+    </div>
+    <p style="color:#5a5a5a;font-size:11px;text-align:center;margin-top:32px;letter-spacing:0.2em;text-transform:uppercase;">VIGR Angel Apparel · Born in the grit</p>
+  </div>
+</body></html>`;
+}
+
+export async function sendRestockNotification(
+  email: string,
+  data: ProductNotifyData,
+): Promise<void> {
+  const subject =
+    data.type === "release"
+      ? `It's live · ${data.productName} just dropped`
+      : `Back in stock · ${data.productName}`;
+  await sendViaResend({
+    to: email,
+    subject: `${subject} · VIGR Angel Apparel`,
+    html: restockHtml(data),
+  });
+}
+
+// ── Abandoned cart reminder ──────────────────────────────────────────────────
+interface AbandonedCartItem {
+  productName: string;
+  price: number;
+  quantity: number;
+  imageUrl?: string | null;
+}
+interface AbandonedCartData {
+  customerName: string;
+  customerEmail: string;
+  items: AbandonedCartItem[];
+  baseUrl: string;
+}
+
+function abandonedCartHtml(data: AbandonedCartData): string {
+  const cartUrl = data.baseUrl.replace(/\/$/, "");
+  const total = data.items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const rows = data.items
+    .map(
+      (i) => `
+        <tr>
+          <td style="padding:12px 8px;border-bottom:1px solid #2a2a2a;color:#e5e5e5;font-size:13px;">${i.productName} × ${i.quantity}</td>
+          <td style="padding:12px 8px;border-bottom:1px solid #2a2a2a;color:#9a9a9a;font-size:13px;text-align:right;">${formatMoney(i.price * i.quantity)}</td>
+        </tr>`,
+    )
+    .join("");
+  return `<!doctype html>
+<html><body style="margin:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e5e5e5;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
+    <div style="text-align:center;padding-bottom:24px;border-bottom:1px solid #2a2a2a;">
+      <h1 style="font-size:18px;letter-spacing:0.3em;margin:0;color:#ffffff;text-transform:uppercase;">VIGR Angel Apparel</h1>
+    </div>
+    <div style="padding:32px 0;text-align:center;">
+      <p style="font-size:11px;letter-spacing:0.4em;text-transform:uppercase;color:#9a9a9a;margin:0 0 8px;">You Left Something Behind</p>
+      <h2 style="font-size:22px;letter-spacing:0.15em;margin:0;color:#ffffff;">Your Cart Is Waiting</h2>
+    </div>
+    <p style="color:#c5c5c5;font-size:14px;line-height:1.6;">Hey ${data.customerName.split(" ")[0] || "there"},</p>
+    <p style="color:#c5c5c5;font-size:14px;line-height:1.6;">We saved your cart. Pieces sell out fast · come back and finish what you started.</p>
+    <table style="width:100%;border-collapse:collapse;margin:24px 0;">
+      <tbody>${rows}</tbody>
+      <tfoot>
+        <tr>
+          <td style="padding:16px 8px;color:#ffffff;font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.2em;">Total</td>
+          <td style="padding:16px 8px;color:#ffffff;font-size:14px;font-weight:600;text-align:right;">${formatMoney(total)}</td>
+        </tr>
+      </tfoot>
+    </table>
+    <div style="text-align:center;margin:24px 0;">
+      <a href="${cartUrl}" style="display:inline-block;background:#9a212e;color:#ffffff;padding:16px 36px;font-size:13px;letter-spacing:0.3em;text-transform:uppercase;text-decoration:none;font-weight:600;">Return to Your Cart →</a>
+    </div>
+    <p style="color:#5a5a5a;font-size:11px;text-align:center;margin-top:32px;letter-spacing:0.2em;text-transform:uppercase;">VIGR Angel Apparel · Born in the grit</p>
+  </div>
+</body></html>`;
+}
+
+export async function sendAbandonedCartReminder(data: AbandonedCartData): Promise<void> {
+  await sendViaResend({
+    to: data.customerEmail,
+    subject: `You left ${data.items.length} item${data.items.length === 1 ? "" : "s"} behind · VIGR Angel Apparel`,
+    html: abandonedCartHtml(data),
+  });
+}
+
 export async function sendOrderConfirmation(data: OrderEmailData): Promise<void> {
   // Customer confirmation
   await sendViaResend({
