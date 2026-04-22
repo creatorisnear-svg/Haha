@@ -23,19 +23,28 @@ export function Header({ categories = [] }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [location, navigate] = useLocation();
+  const [returnTo, setReturnTo] = useState<string>("/");
+
+  // Remember which page the user came from so clearing the search bar
+  // returns them there instead of always going to the home page.
+  useEffect(() => {
+    if (location !== "/search") {
+      setReturnTo(location || "/");
+    }
+  }, [location]);
 
   // When the user types in the search bar, send them to the dedicated
   // search page so results render there instead of replacing other content.
-  // When they clear the bar while on the search page, send them back home.
-  // (This only fires on real input changes — landing on /search with an
-  // empty query does NOT bounce them out.)
+  // When they clear the bar while on the search page, send them back to
+  // wherever they were before. (This only fires on real input changes —
+  // landing on /search with an empty query does NOT bounce them out.)
   const handleSearchChange = (value: string) => {
     setQuery(value);
     const trimmed = value.trim();
     if (trimmed.length > 0 && location !== "/search") {
       navigate(`/search?q=${encodeURIComponent(value)}`);
     } else if (trimmed.length === 0 && location === "/search") {
-      navigate("/");
+      navigate(returnTo);
     }
   };
 
