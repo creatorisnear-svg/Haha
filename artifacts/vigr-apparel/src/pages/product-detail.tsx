@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { useJsonLd } from "@/lib/use-json-ld";
 import { Link, useRoute, useLocation } from "wouter";
 import { ArrowLeft, ShoppingCart, User, Menu, ChevronLeft, ChevronRight } from "lucide-react";
 import { useGetProduct, getGetProductQueryKey, useListProducts } from "@workspace/api-client-react";
@@ -57,6 +58,42 @@ export default function ProductDetail() {
   useEffect(() => {
     if (productId) track(productId);
   }, [productId, track]);
+
+  useJsonLd(
+    "breadcrumb",
+    product
+      ? {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: "https://vaaclothing.xyz/" },
+            ...((product as any)?.category
+              ? [
+                  {
+                    "@type": "ListItem",
+                    position: 2,
+                    name: (product as any).category,
+                    item: `https://vaaclothing.xyz/category/${String((product as any).category).toLowerCase().replace(/\s+/g, "-")}`,
+                  },
+                  {
+                    "@type": "ListItem",
+                    position: 3,
+                    name: product.name,
+                    item: `https://vaaclothing.xyz/products/${productId}`,
+                  },
+                ]
+              : [
+                  {
+                    "@type": "ListItem",
+                    position: 2,
+                    name: product.name,
+                    item: `https://vaaclothing.xyz/products/${productId}`,
+                  },
+                ]),
+          ],
+        }
+      : null,
+  );
 
   const images = useMemo<string[]>(() => {
     if (!product) return [];

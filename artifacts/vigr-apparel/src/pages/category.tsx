@@ -4,6 +4,7 @@ import { ChevronLeft } from "lucide-react";
 import { useListProducts } from "@workspace/api-client-react";
 import { Header } from "@/components/Header";
 import { ProductCard } from "@/components/ProductCard";
+import { useJsonLd } from "@/lib/use-json-ld";
 
 interface Category { id: string; name: string; slug: string; }
 
@@ -28,6 +29,20 @@ export default function CategoryPage() {
     (p: any) => (p.category ?? "").toLowerCase() === categoryName.toLowerCase(),
   );
   const displayed = inCategory;
+
+  useJsonLd("breadcrumb", {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://vaaclothing.xyz/" },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: categoryName,
+        item: `https://vaaclothing.xyz/category/${slug}`,
+      },
+    ],
+  });
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
