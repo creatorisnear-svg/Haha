@@ -68,6 +68,7 @@ app.get("/sitemap.xml", async (_req, res) => {
     { loc: "/account/register", changefreq: "yearly", priority: "0.3" },
   ];
   let productEntries: { loc: string; lastmod: string }[] = [];
+  let categoryEntries: { loc: string }[] = [];
   try {
     const products = await storage.listProducts();
     productEntries = products.map((p) => ({
@@ -77,10 +78,20 @@ app.get("/sitemap.xml", async (_req, res) => {
   } catch (err) {
     logger.warn({ err }, "sitemap: failed to load products, serving static-only sitemap");
   }
+  try {
+    const categories = await storage.listCategories();
+    categoryEntries = categories.map((c) => ({ loc: `/category/${c.slug}` }));
+  } catch (err) {
+    logger.warn({ err }, "sitemap: failed to load categories");
+  }
   const urls = [
     ...staticPaths.map(
       (s) =>
         `  <url><loc>${baseUrl}${s.loc}</loc><lastmod>${today}</lastmod><changefreq>${s.changefreq}</changefreq><priority>${s.priority}</priority></url>`,
+    ),
+    ...categoryEntries.map(
+      (c) =>
+        `  <url><loc>${baseUrl}${c.loc}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`,
     ),
     ...productEntries.map(
       (p) =>
