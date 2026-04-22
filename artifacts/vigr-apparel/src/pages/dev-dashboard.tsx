@@ -1967,9 +1967,18 @@ function CategoriesTab({ token }: { token: string }) {
                   autoFocus
                 />
               ) : (
-                <div>
-                  <p className="font-sans uppercase tracking-widest text-sm font-medium">{cat.name}</p>
-                  <p className="font-sans text-[10px] text-muted-foreground tracking-wider">/{cat.slug}</p>
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-12 h-12 flex-shrink-0 border border-border bg-secondary overflow-hidden relative">
+                    {cat.imageUrl ? (
+                      <img src={cat.imageUrl} alt={cat.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[9px] text-muted-foreground uppercase tracking-wide">Img</div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-sans uppercase tracking-widest text-sm font-medium">{cat.name}</p>
+                    <p className="font-sans text-[10px] text-muted-foreground tracking-wider">/{cat.slug}</p>
+                  </div>
                 </div>
               )}
               <div className="flex gap-2">
@@ -1992,6 +2001,38 @@ function CategoriesTab({ token }: { token: string }) {
                   </>
                 ) : (
                   <>
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const fd = new FormData();
+                          fd.append("file", file);
+                          try {
+                            const res = await fetch(`/api/admin/categories/${cat.id}/image`, {
+                              method: "POST",
+                              headers: { Authorization: `Bearer ${token}` },
+                              body: fd,
+                            });
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.error || "Upload failed");
+                            setCategories((prev) =>
+                              prev.map((c) => c.id === cat.id ? { ...c, imageUrl: data.imageUrl } : c)
+                            );
+                            toast({ title: "Image uploaded" });
+                          } catch (err: any) {
+                            toast({ title: "Error", description: err.message, variant: "destructive" });
+                          }
+                          e.target.value = "";
+                        }}
+                      />
+                      <span className="inline-flex items-center rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4 border border-border bg-transparent hover:bg-secondary transition-colors whitespace-nowrap">
+                        Photo
+                      </span>
+                    </label>
                     <Button
                       variant="outline"
                       onClick={() => { setEditingId(cat.id); setEditName(cat.name); }}

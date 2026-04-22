@@ -227,6 +227,7 @@ export interface Category {
   id: string;
   name: string;
   slug: string;
+  imageId?: string;
   createdAt: Date;
 }
 
@@ -243,6 +244,7 @@ function docToCategory(doc: any): Category {
     id: doc._id.toString(),
     name: doc.name,
     slug: doc.slug,
+    imageId: doc.imageId ?? undefined,
     createdAt: doc.createdAt,
   };
 }
@@ -285,6 +287,21 @@ export class Storage {
       return result ? docToCategory(result) : null;
     } catch (err: any) {
       if (err?.message?.includes("already exists")) throw err;
+      return null;
+    }
+  }
+
+  async setCategoryImage(id: string, imageId: string): Promise<Category | null> {
+    const db = await getDb();
+    try {
+      const _id = new ObjectId(id);
+      const result = await db.collection("categories").findOneAndUpdate(
+        { _id },
+        { $set: { imageId } },
+        { returnDocument: "after" }
+      );
+      return result ? docToCategory(result) : null;
+    } catch {
       return null;
     }
   }

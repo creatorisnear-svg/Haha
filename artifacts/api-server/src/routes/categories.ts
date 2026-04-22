@@ -10,6 +10,7 @@ router.get("/categories", async (_req, res) => {
       id: c.id,
       name: c.name,
       slug: c.slug,
+      imageUrl: c.imageId ? `/api/images/${c.imageId}` : null,
     })),
   });
 });

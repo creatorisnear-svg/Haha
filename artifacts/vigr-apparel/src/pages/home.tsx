@@ -11,7 +11,7 @@ import { Header } from "@/components/Header";
 import { ProductCard } from "@/components/ProductCard";
 import logoPath from "@assets/12214-removebg-preview_1776743232072.png";
 
-interface Category { id: string; name: string; slug: string; }
+interface Category { id: string; name: string; slug: string; imageUrl?: string | null; }
 
 export default function Home() {
   const { data: productsData, isLoading } = useListProducts();
@@ -164,30 +164,29 @@ export default function Home() {
             <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">Browse</p>
             <h2 className="font-display text-[clamp(2rem,5vw,4rem)] tracking-[0.15em]">SHOP BY CATEGORY</h2>
           </div>
-          <div className={`grid gap-3 sm:gap-5 ${
-            categories.length === 1
-              ? "grid-cols-1 max-w-sm mx-auto"
-              : categories.length === 2
-              ? "grid-cols-2 max-w-2xl mx-auto"
-              : categories.length === 3
-              ? "grid-cols-3"
-              : "grid-cols-2 sm:grid-cols-4"
-          }`}>
+          <div className="grid grid-cols-3 gap-3 sm:gap-4">
             {categories.map((cat) => (
               <Link
                 key={cat.id}
                 href={`/category/${cat.slug}`}
                 data-testid={`card-category-${cat.slug}`}
-                className="group relative flex items-end justify-start aspect-[3/4] sm:aspect-[2/3] bg-[#111] border border-border hover:border-foreground/60 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-20px_rgba(154,33,46,0.5)]"
+                className="group relative flex items-end justify-start aspect-square bg-[#111] border border-border hover:border-foreground/60 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_30px_-15px_rgba(154,33,46,0.5)]"
               >
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                {cat.imageUrl && (
+                  <img
+                    src={cat.imageUrl}
+                    alt={cat.name}
+                    className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:opacity-85 group-hover:scale-[1.04] transition-all duration-500"
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-primary/10" />
-                <div className="relative z-10 p-4 sm:p-6 w-full">
-                  <p className="font-sans text-[9px] sm:text-[10px] tracking-[0.4em] uppercase text-muted-foreground mb-1 group-hover:text-primary/80 transition-colors">Category</p>
-                  <h3 className="font-display text-xl sm:text-3xl tracking-[0.12em] leading-none text-foreground group-hover:text-primary transition-colors duration-200">
+                <div className="relative z-10 p-3 sm:p-4 w-full">
+                  <p className="font-sans text-[8px] tracking-[0.35em] uppercase text-muted-foreground mb-0.5 group-hover:text-primary/80 transition-colors">Shop</p>
+                  <h3 className="font-display text-sm sm:text-lg tracking-[0.1em] leading-none text-foreground group-hover:text-primary transition-colors duration-200">
                     {cat.name.toUpperCase()}
                   </h3>
-                  <div className="mt-3 h-px w-0 group-hover:w-full bg-primary transition-all duration-500" />
+                  <div className="mt-2 h-px w-0 group-hover:w-full bg-primary transition-all duration-500" />
                 </div>
               </Link>
             ))}

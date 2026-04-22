@@ -1,4 +1,6 @@
 import { Router } from "express";
+import multer from "multer";
+import { getDb } from "../lib/mongodb";
 import { storage } from "../storage";
 import { verifyPassword, setPassword, createToken, adminAuthMiddleware } from "../auth";
 import { sendShippingNotification, sendDeliveryNotification, sendNewsletterBlast, sendRestockNotification } from "../lib/email";
@@ -7,6 +9,15 @@ import { rateLimit } from "../lib/rateLimit";
 import { hashPasswordAsync, generateTemporaryPassword } from "../lib/customerAuth";
 
 const router = Router();
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Only image files are allowed"));
+  },
+});
 
 const adminLoginLimiter = rateLimit({
   bucket: "admin-login",
@@ -345,6 +356,30 @@ router.delete("/admin/categories/:id", adminAuthMiddleware, async (req, res) => 
   await storage.deleteCategory(req.params.id);
   res.json({ success: true, message: "Category deleted" });
 });
+
+router.post(
+  "/admin/categories/:id/image",
+  adminAuthMiddleware,
+  upload.single("file"),
+  async (req: any, res: any) => {
+    if (!req.file) return res.status(400).json({ error: "No file provided" });
+    try {
+      const db = await getDb();
+      const result = await db.collection("images").insertOne({
+        filename: req.file.originalname,
+        contentType: req.file.mimetype,
+        data: req.file.buffer,
+        size: req.file.size,
+        uploadedAt: new Date(),
+      });
+      const imageId = result.insertedId.toString();
+      await storage.setCategoryImage(req.params.id, imageId);
+      res.json({ imageUrl: `/api/images/${imageId}` });
+    } catch (err) {
+      res.status(500).json({ error: "Upload failed" });
+    }
+  }
+);
 
 // ── Sizes ─────────────────────────────────────────────────────────────────────
 router.get("/admin/sizes", adminAuthMiddleware, async (_req, res) => {
