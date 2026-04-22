@@ -54,16 +54,16 @@ export default function DevDashboard() {
   if (!token) return null;
 
   return (
-    <div className="min-h-screen bg-background p-6 md:p-12">
-      <div className="max-w-6xl mx-auto space-y-8">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
-          <div>
-            <h1 className="font-display text-4xl tracking-widest uppercase">Admin Dashboard</h1>
-            <p className="text-muted-foreground font-sans text-sm tracking-widest uppercase mt-1">SYS_ADMIN // VAACLOTHING.XYZ</p>
+    <div className="min-h-screen bg-background p-4 sm:p-6 md:p-12">
+      <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8">
+        <header className="flex flex-row items-start sm:items-center justify-between gap-3 border-b border-border pb-4 sm:pb-6">
+          <div className="min-w-0 flex-1">
+            <h1 className="font-display text-2xl sm:text-3xl md:text-4xl tracking-[0.15em] sm:tracking-widest uppercase truncate">Admin Dashboard</h1>
+            <p className="text-muted-foreground font-sans text-[10px] sm:text-sm tracking-widest uppercase mt-1 truncate">SYS_ADMIN // VAACLOTHING.XYZ</p>
           </div>
           <Button 
             variant="outline" 
-            className="rounded-none font-sans tracking-widest text-xs uppercase"
+            className="rounded-none font-sans tracking-widest text-xs uppercase flex-shrink-0"
             onClick={handleLogout}
             data-testid="button-logout"
           >
@@ -72,32 +72,32 @@ export default function DevDashboard() {
         </header>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="bg-transparent border-b border-border rounded-none h-12 w-full justify-start gap-8 p-0 overflow-x-auto">
-            <TabsTrigger value="overview" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
+          <TabsList className="bg-transparent border-b border-border rounded-none h-12 w-full justify-start gap-5 sm:gap-8 p-0 overflow-x-auto scrollbar-thin -mx-4 px-4 sm:mx-0 sm:px-0">
+            <TabsTrigger value="overview" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-sm sm:text-lg px-0 h-full uppercase flex-shrink-0">
               Overview
             </TabsTrigger>
-            <TabsTrigger value="orders" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
+            <TabsTrigger value="orders" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-sm sm:text-lg px-0 h-full uppercase flex-shrink-0">
               Orders
             </TabsTrigger>
-            <TabsTrigger value="products" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
+            <TabsTrigger value="products" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-sm sm:text-lg px-0 h-full uppercase flex-shrink-0">
               Products
             </TabsTrigger>
-            <TabsTrigger value="categories" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
+            <TabsTrigger value="categories" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-sm sm:text-lg px-0 h-full uppercase flex-shrink-0">
               Categories
             </TabsTrigger>
-            <TabsTrigger value="sizes" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
+            <TabsTrigger value="sizes" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-sm sm:text-lg px-0 h-full uppercase flex-shrink-0">
               Sizes
             </TabsTrigger>
-            <TabsTrigger value="promos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
+            <TabsTrigger value="promos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-sm sm:text-lg px-0 h-full uppercase flex-shrink-0">
               Promos
             </TabsTrigger>
-            <TabsTrigger value="customers" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
+            <TabsTrigger value="customers" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-sm sm:text-lg px-0 h-full uppercase flex-shrink-0">
               Customers
             </TabsTrigger>
-            <TabsTrigger value="newsletter" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
+            <TabsTrigger value="newsletter" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-sm sm:text-lg px-0 h-full uppercase flex-shrink-0">
               Newsletter
             </TabsTrigger>
-            <TabsTrigger value="settings" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-lg px-0 h-full uppercase flex-shrink-0">
+            <TabsTrigger value="settings" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-sm sm:text-lg px-0 h-full uppercase flex-shrink-0">
               Settings
             </TabsTrigger>
           </TabsList>
@@ -347,7 +347,7 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="font-display text-2xl tracking-widest uppercase">Inventory</h2>
+        <h2 className="font-display text-xl sm:text-2xl tracking-widest uppercase">Inventory</h2>
         <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
           <DialogTrigger asChild>
             <Button 
@@ -360,7 +360,7 @@ function ProductsTab({ products, isLoading, token }: { products: any[], isLoadin
           </DialogTrigger>
           <DialogContent className="sm:max-w-[500px] rounded-none border-border bg-background p-0 max-h-[90vh] flex flex-col gap-0 overflow-hidden">
             <DialogHeader className="p-6 border-b border-border flex-shrink-0">
-              <DialogTitle className="font-display text-2xl tracking-widest uppercase">
+              <DialogTitle className="font-display text-xl sm:text-2xl tracking-widest uppercase">
                 {editingProduct ? "Edit Product" : "New Product"}
               </DialogTitle>
             </DialogHeader>
@@ -753,7 +753,7 @@ function OrdersTab({ token }: { token: string }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="font-display text-2xl tracking-widest uppercase">Orders ({orders.length})</h2>
+        <h2 className="font-display text-xl sm:text-2xl tracking-widest uppercase">Orders ({orders.length})</h2>
         <Button variant="outline" onClick={fetchOrders} className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4">Refresh</Button>
       </div>
 
@@ -970,7 +970,7 @@ function SettingsTab({ settings, isLoading, token }: { settings: any, isLoading:
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="space-y-6 border border-border p-6 bg-card">
-          <h2 className="font-display text-2xl tracking-widest uppercase m-0">Payment Configuration</h2>
+          <h2 className="font-display text-xl sm:text-2xl tracking-widest uppercase m-0">Payment Configuration</h2>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="stripePublishableKey" className="text-xs uppercase tracking-widest text-muted-foreground">Stripe Publishable Key</Label>
@@ -997,7 +997,7 @@ function SettingsTab({ settings, isLoading, token }: { settings: any, isLoading:
         </div>
 
         <div className="space-y-6 border border-border p-6 bg-card">
-          <h2 className="font-display text-2xl tracking-widest uppercase m-0">Security</h2>
+          <h2 className="font-display text-xl sm:text-2xl tracking-widest uppercase m-0">Security</h2>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="newPassword" className="text-xs uppercase tracking-widest text-muted-foreground">New Password</Label>
@@ -1096,7 +1096,7 @@ function CustomersTab({ token }: { token: string }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-2xl tracking-widest uppercase">Customers ({customers.length})</h2>
+        <h2 className="font-display text-xl sm:text-2xl tracking-widest uppercase">Customers ({customers.length})</h2>
       </div>
 
       <div className="border border-border bg-card/50 p-4">
@@ -1264,7 +1264,7 @@ function NewsletterTab({ token }: { token: string }) {
     <div className="space-y-8 max-w-2xl">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-display text-2xl tracking-widest uppercase">Newsletter</h2>
+          <h2 className="font-display text-xl sm:text-2xl tracking-widest uppercase">Newsletter</h2>
           {!loading && (
             <p className="font-sans text-xs text-muted-foreground mt-1 tracking-widest">
               {subscribers.length} subscriber{subscribers.length !== 1 ? "s" : ""}
@@ -1420,7 +1420,7 @@ function PromoCodesTab({ token }: { token: string }) {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="font-display text-2xl tracking-widest uppercase">Promo Codes</h2>
+        <h2 className="font-display text-xl sm:text-2xl tracking-widest uppercase">Promo Codes</h2>
         <Button
           onClick={() => setShowForm((v) => !v)}
           className="rounded-none font-sans uppercase tracking-widest text-xs h-10 px-6 bg-foreground text-background hover:bg-primary hover:text-white transition-colors"
@@ -1653,7 +1653,7 @@ function CategoriesTab({ token }: { token: string }) {
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-2xl tracking-widest uppercase">Categories</h2>
+        <h2 className="font-display text-xl sm:text-2xl tracking-widest uppercase">Categories</h2>
         <Button variant="outline" onClick={fetchCategories} className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4">
           Refresh
         </Button>
@@ -1835,7 +1835,7 @@ function SizesTab({ token }: { token: string }) {
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-2xl tracking-widest uppercase">Sizes</h2>
+        <h2 className="font-display text-xl sm:text-2xl tracking-widest uppercase">Sizes</h2>
         <Button variant="outline" onClick={fetchSizes} className="rounded-none font-sans text-xs uppercase tracking-widest h-9 px-4">
           Refresh
         </Button>
@@ -2070,7 +2070,7 @@ function OverviewTab({ token }: { token: string }) {
     <div className="space-y-8">
       {/* Headline stats */}
       <div>
-        <h2 className="font-display text-2xl tracking-widest uppercase mb-4">Revenue</h2>
+        <h2 className="font-display text-xl sm:text-2xl tracking-widest uppercase mb-4">Revenue</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Stat label="This Month" value={fmt(monthRevenue)} sub={`${paidOrders.filter((o) => inRange(o, startOfMonth)).length} orders`} />
           <Stat label="Last 30 Days" value={fmt(last30Revenue)} sub={`${paidOrders.filter((o) => inRange(o, start30)).length} orders`} />
@@ -2081,7 +2081,7 @@ function OverviewTab({ token }: { token: string }) {
 
       {/* Order pipeline */}
       <div>
-        <h2 className="font-display text-2xl tracking-widest uppercase mb-4">Order Pipeline</h2>
+        <h2 className="font-display text-xl sm:text-2xl tracking-widest uppercase mb-4">Order Pipeline</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Stat label="Pending" value={String(statusCounts.pending)} sub="Awaiting payment" />
           <Stat label="Processing" value={String(statusCounts.processing)} sub="Paid · needs ship" />
@@ -2096,7 +2096,7 @@ function OverviewTab({ token }: { token: string }) {
       {/* Best sellers */}
       {bestSellers.length > 0 && (
         <div>
-          <h2 className="font-display text-2xl tracking-widest uppercase mb-4">Best Sellers</h2>
+          <h2 className="font-display text-xl sm:text-2xl tracking-widest uppercase mb-4">Best Sellers</h2>
           <div className="border border-border bg-card divide-y divide-border">
             {bestSellers.map((b, i) => (
               <div key={b.name} className="flex items-center justify-between p-4">
@@ -2117,7 +2117,7 @@ function OverviewTab({ token }: { token: string }) {
       {/* Tax helper */}
       <div>
         <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-          <h2 className="font-display text-2xl tracking-widest uppercase">Tax Summary</h2>
+          <h2 className="font-display text-xl sm:text-2xl tracking-widest uppercase">Tax Summary</h2>
           <div className="flex items-center gap-2">
             <select
               value={taxYear}
