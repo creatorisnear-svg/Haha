@@ -53,6 +53,10 @@ export default function Home() {
     document.getElementById("products")?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const scrollToCategories = () => {
+    document.getElementById("categories")?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <Header categories={categories} />
@@ -90,7 +94,7 @@ export default function Home() {
           </p>
           <div className="fade-up-d3 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full max-w-xs sm:max-w-none px-2 sm:px-0">
             <button
-              onClick={scrollToProducts}
+              onClick={scrollToCategories}
               data-testid="button-shop-now"
               className="font-display text-lg sm:text-2xl tracking-[0.15em] sm:tracking-[0.2em] px-8 sm:px-14 h-[52px] sm:h-[56px] border border-foreground bg-foreground text-background hover:bg-primary hover:border-primary hover:text-white transition-all duration-200"
             >
@@ -157,9 +161,35 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── RECENTLY ADDED ── */}
+      <section id="products" className="py-16 sm:py-28 px-4 sm:px-6 max-w-7xl mx-auto w-full">
+        <div className="mb-8 sm:mb-12 text-center">
+          <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">New In</p>
+          <h2 className="font-display text-[clamp(2.5rem,6vw,5rem)] tracking-[0.15em]">RECENTLY ADDED</h2>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64 font-sans text-xs tracking-widest uppercase text-muted-foreground">
+            Loading collection...
+          </div>
+        ) : !displayedProducts.length ? (
+          <div className="flex flex-col items-center justify-center h-64 gap-4">
+            <p className="font-sans text-xs tracking-widest uppercase text-muted-foreground">
+              No products marked "Recently Added" yet.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:gap-6">
+            {displayedProducts.map((product: any) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* ── SHOP BY CATEGORY ── */}
       {categories.length > 0 && (
-        <section className="py-16 sm:py-24 px-4 sm:px-6 max-w-7xl mx-auto w-full">
+        <section id="categories" className="py-16 sm:py-24 px-4 sm:px-6 max-w-7xl mx-auto w-full">
           <div className="mb-8 sm:mb-12 text-center">
             <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">Browse</p>
             <h2 className="font-display text-[clamp(2rem,5vw,4rem)] tracking-[0.15em]">SHOP BY CATEGORY</h2>
@@ -193,32 +223,6 @@ export default function Home() {
           </div>
         </section>
       )}
-
-      {/* ── RECENTLY ADDED ── */}
-      <section id="products" className="py-16 sm:py-28 px-4 sm:px-6 max-w-7xl mx-auto w-full">
-        <div className="mb-8 sm:mb-12 text-center">
-          <p className="font-sans text-[10px] tracking-[0.5em] uppercase text-muted-foreground mb-3">New In</p>
-          <h2 className="font-display text-[clamp(2.5rem,6vw,5rem)] tracking-[0.15em]">RECENTLY ADDED</h2>
-        </div>
-
-        {isLoading ? (
-          <div className="flex justify-center items-center h-64 font-sans text-xs tracking-widest uppercase text-muted-foreground">
-            Loading collection...
-          </div>
-        ) : !displayedProducts.length ? (
-          <div className="flex flex-col items-center justify-center h-64 gap-4">
-            <p className="font-sans text-xs tracking-widest uppercase text-muted-foreground">
-              No products marked "Recently Added" yet.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-6">
-            {displayedProducts.map((product: any) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        )}
-      </section>
 
       {/* ── RECENTLY VIEWED ── */}
       <RecentlyViewed />
