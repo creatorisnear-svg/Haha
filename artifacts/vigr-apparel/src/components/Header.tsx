@@ -31,6 +31,18 @@ export function Header({ categories = [] }: HeaderProps) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Seed search from ?q= URL param so the Schema.org SearchAction works
+  // (e.g. when Google routes a sitelinks search to /?q=hoodie).
+  useEffect(() => {
+    try {
+      const q = new URLSearchParams(window.location.search).get("q");
+      if (q && q.trim()) setQuery(q);
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const navHeight = scrolled ? "h-[56px] sm:h-[60px]" : "h-[64px] sm:h-[72px]";
 
   // Reusable search input, used in two spots: inline in nav (when scrolled)
