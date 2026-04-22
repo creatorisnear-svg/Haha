@@ -85,7 +85,7 @@ export default function Home() {
         className="fixed top-7 left-0 right-0 z-40 border-b border-border backdrop-blur-md"
         style={{ background: "rgba(10,10,10,0.85)" }}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[64px] sm:h-[72px] flex items-center justify-between gap-2">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 h-[64px] sm:h-[72px] flex items-center justify-between gap-2">
           {/* Hamburger menu */}
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
             <SheetTrigger asChild>
@@ -199,10 +199,10 @@ export default function Home() {
             )}
           </Link>
 
-          {/* Logo + brand */}
+          {/* Logo + brand (absolutely centered so side icons don't push it off) */}
           <Link
             href="/"
-            className="flex items-center gap-2 sm:gap-3 min-w-0"
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 sm:gap-3 min-w-0 pointer-events-auto"
           >
             <div className="hidden sm:block w-10 h-10 flex-shrink-0">
               <img
