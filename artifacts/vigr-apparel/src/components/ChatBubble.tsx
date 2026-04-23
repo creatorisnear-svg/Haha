@@ -268,23 +268,43 @@ export function ChatBubble() {
     }
   };
 
-  const handleQuickAction = (action: QuickAction) => {
+  const handleQuickAction = async (action: QuickAction) => {
     if (session) {
-      // Already in a conversation: just prefill the draft.
-      setDraft((prev) => (prev ? prev : action.prompt));
+      // Re-tag the existing conversation with the chosen topic.
+      if (action.topic !== session.topic) {
+        try {
+          await fetch(`/api/chat/${session.conversationId}/topic`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Chat-Token": session.guestToken,
+            },
+            body: JSON.stringify({ topic: action.topic }),
+          });
+          const updated = { ...session, topic: action.topic };
+          saveSession(updated);
+          setSession(updated);
+        } catch {}
+      }
+      if (action.prompt) {
+        setDraft((prev) => (prev ? prev : action.prompt));
+      }
       return;
     }
-    if (!action.prompt) {
-      setPendingTopic(action.topic);
-      return;
-    }
+    // No session yet: just remember the topic + prefill the draft.
     setPendingTopic(action.topic);
-    setDraft(action.prompt);
+    if (action.prompt) {
+      setDraft((prev) => (prev ? prev : action.prompt));
+    }
   };
 
-  const handleStartFromForm = async () => {
-    if (!pendingTopic) return;
-    await startNewConversation(pendingTopic, draft);
+  const handleSendOrStart = async () => {
+    if (!draft.trim()) return;
+    if (session) {
+      sendMessage(draft);
+    } else {
+      await startNewConversation(pendingTopic ?? "general", draft);
+    }
   };
 
   const endConversation = () => {
@@ -481,88 +501,62 @@ export function ChatBubble() {
             </div>
           )}
 
-          {/* Quick actions are always visible at the top when not in a pending form */}
-          {!pendingTopic && (
-            <div className="px-3 pt-3 pb-2 border-b border-border bg-card/20">
-              <p className="text-[11px] uppercase tracking-widest text-muted-foreground px-1 mb-2">
-                Quick help
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {QUICK_ACTIONS.map((a) => (
+          {/* Quick help chips: select a topic before or after starting the chat */}
+          <div className="px-3 pt-3 pb-2 border-b border-border bg-card/20">
+            <p className="text-[11px] uppercase tracking-widest text-muted-foreground px-1 mb-2">
+              {session ? "Topic" : "Optional · pick a topic"}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {QUICK_ACTIONS.map((a) => {
+                const activeTopic = session ? session.topic : pendingTopic;
+                const selected = activeTopic === a.topic;
+                return (
                   <button
                     key={a.topic + a.label}
                     type="button"
                     onClick={() => handleQuickAction(a)}
-                    className="text-left rounded-lg border border-border bg-background hover:border-primary/60 hover:bg-card transition px-3 py-2"
+                    title={a.hint}
+                    className={`rounded-full border px-3 py-1 text-[11px] transition ${
+                      selected
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background hover:border-primary/60 hover:bg-card text-foreground"
+                    }`}
                   >
-                    <p className="text-xs font-medium">{a.label}</p>
-                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
-                      {a.hint}
-                    </p>
+                    {a.label}
                   </button>
-                ))}
-              </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Guest contact fields shown only before a session exists and user isn't signed in */}
+          {!session && !customer && (
+            <div className="px-3 py-2 border-b border-border grid grid-cols-2 gap-2">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+                placeholder="Your name (optional)"
+              />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+                placeholder="Email (for follow-up)"
+              />
             </div>
           )}
 
-          {/* Pending start form (no conversation yet, user picked a topic) */}
-          {!session && pendingTopic && (
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              <div>
-                <label className="text-xs uppercase tracking-widest text-muted-foreground">
-                  Your name
-                </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                  placeholder="Guest"
-                />
-              </div>
-              <div>
-                <label className="text-xs uppercase tracking-widest text-muted-foreground">
-                  Email (so we can follow up)
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                  placeholder="you@example.com"
-                />
-              </div>
-              <div>
-                <label className="text-xs uppercase tracking-widest text-muted-foreground">
-                  Message
-                </label>
-                <textarea
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  rows={4}
-                  className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none"
-                  placeholder="How can we help?"
-                />
-              </div>
-              {error && <p className="text-xs text-red-500">{error}</p>}
-              <button
-                type="button"
-                disabled={loading || !draft.trim()}
-                onClick={handleStartFromForm}
-                className="w-full rounded-md bg-primary text-primary-foreground py-2 text-sm font-display tracking-widest uppercase disabled:opacity-50"
-              >
-                {loading ? "Sending..." : "Send message"}
-              </button>
-            </div>
-          )}
-
-          {/* Active conversation thread */}
-          {session && (
-            <>
+          {/* Conversation thread */}
+          <>
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-2">
                 {messages.length === 0 && !adminTyping ? (
                   <p className="text-xs text-muted-foreground text-center mt-6">
-                    Send a message and we'll get back to you here.
+                    {session
+                      ? "Send a message and we'll get back to you here."
+                      : "Type a message below to start. We typically reply within a few hours."}
                   </p>
                 ) : (
                   messages.map((m) => {
@@ -612,7 +606,7 @@ export function ChatBubble() {
                 className="border-t border-border p-2 flex gap-2"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  sendMessage(draft);
+                  handleSendOrStart();
                 }}
               >
                 <input
@@ -620,23 +614,22 @@ export function ChatBubble() {
                   value={draft}
                   onChange={(e) => {
                     setDraft(e.target.value);
-                    pingTyping();
+                    if (session) pingTyping();
                   }}
                   className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
-                  placeholder="Write a message..."
+                  placeholder={session ? "Write a message..." : "Type a message to start..."}
                   data-testid="chat-input"
                 />
                 <button
                   type="submit"
-                  disabled={!draft.trim()}
+                  disabled={loading || !draft.trim()}
                   className="rounded-md bg-primary text-primary-foreground px-3 disabled:opacity-50"
-                  aria-label="Send"
+                  aria-label={session ? "Send" : "Start chat"}
                 >
                   <Send className="h-4 w-4" />
                 </button>
               </form>
             </>
-          )}
         </div>
       )}
     </>

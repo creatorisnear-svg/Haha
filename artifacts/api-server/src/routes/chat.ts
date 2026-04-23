@@ -323,6 +323,40 @@ router.post("/admin/chat/:id/message", adminAuthMiddleware, async (req, res) => 
   }
 });
 
+// ── Customer: change the conversation topic ─────────────────────────────────
+router.patch("/chat/:id/topic", async (req, res) => {
+  const conversationId = req.params.id;
+  const guestToken = (req.headers["x-chat-token"] as string | undefined) ?? "";
+  if (!verifyGuest(conversationId, guestToken)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  const topic = clean(req.body?.topic);
+  const allowed = new Set([
+    "general",
+    "returns",
+    "refunds",
+    "shipping",
+    "order_status",
+    "sizing",
+    "other",
+  ]);
+  if (!allowed.has(topic)) {
+    return res.status(400).json({ error: "Invalid topic" });
+  }
+  try {
+    const db = await getDb();
+    await db
+      .collection("chat_conversations")
+      .updateOne(
+        { _id: new ObjectId(conversationId) },
+        { $set: { topic, updatedAt: new Date() } },
+      );
+    res.json({ success: true, topic });
+  } catch {
+    res.status(500).json({ error: "Failed to update topic" });
+  }
+});
+
 // ── Customer: email a transcript ────────────────────────────────────────────
 const transcriptLimiter = rateLimit({
   bucket: "chat-transcript",
