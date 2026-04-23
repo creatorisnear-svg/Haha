@@ -2728,7 +2728,9 @@ function ChatAdminTab({ token, active }: { token: string | null; active: boolean
   const [reply, setReply] = React.useState("");
   const [sending, setSending] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
+  const [customerTyping, setCustomerTyping] = React.useState(false);
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
+  const lastTypingPingRef = React.useRef<number>(0);
 
   const authHeaders = React.useMemo(
     () => ({ Authorization: `Bearer ${token ?? ""}` }),
@@ -2760,12 +2762,24 @@ function ChatAdminTab({ token, active }: { token: string | null; active: boolean
         if (!res.ok) return;
         const data = await res.json();
         setMessages(data.messages ?? []);
+        setCustomerTyping(!!data.typing?.customer);
       } finally {
         setLoading(false);
       }
     },
     [token, authHeaders],
   );
+
+  const pingTyping = React.useCallback(() => {
+    if (!selectedId || !token) return;
+    const now = Date.now();
+    if (now - lastTypingPingRef.current < 2000) return;
+    lastTypingPingRef.current = now;
+    fetch(`/api/admin/chat/${selectedId}/typing`, {
+      method: "POST",
+      headers: authHeaders,
+    }).catch(() => {});
+  }, [selectedId, token, authHeaders]);
 
   // Poll conversations list while tab is active.
   React.useEffect(() => {
@@ -2787,7 +2801,11 @@ function ChatAdminTab({ token, active }: { token: string | null; active: boolean
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages.length, selectedId]);
+  }, [messages.length, selectedId, customerTyping]);
+
+  React.useEffect(() => {
+    setCustomerTyping(false);
+  }, [selectedId]);
 
   const sendReply = async () => {
     if (!selectedId || !reply.trim() || !token) return;
@@ -2975,6 +2993,20 @@ function ChatAdminTab({ token, active }: { token: string | null; active: boolean
                   </div>
                 );
               })}
+              {customerTyping && (
+                <div className="flex justify-start">
+                  <div className="bg-muted text-foreground rounded-2xl rounded-bl-sm px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-widest opacity-70 mb-1">
+                      {selected?.customerName || "Customer"} is typing
+                    </p>
+                    <span className="inline-flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-foreground/70 animate-bounce [animation-delay:-0.2s]" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-foreground/70 animate-bounce [animation-delay:-0.1s]" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-foreground/70 animate-bounce" />
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
             <form
               className="border-t border-border p-2 flex gap-2"
@@ -2985,7 +3017,10 @@ function ChatAdminTab({ token, active }: { token: string | null; active: boolean
             >
               <Textarea
                 value={reply}
-                onChange={(e) => setReply(e.target.value)}
+                onChange={(e) => {
+                  setReply(e.target.value);
+                  pingTyping();
+                }}
                 rows={2}
                 placeholder="Reply to the customer..."
                 className="flex-1 resize-none"

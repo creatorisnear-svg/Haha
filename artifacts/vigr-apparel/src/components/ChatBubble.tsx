@@ -93,8 +93,10 @@ export function ChatBubble() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasUnread, setHasUnread] = useState(false);
+  const [adminTyping, setAdminTyping] = useState(false);
   const lastSeenRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const lastTypingPingRef = useRef<number>(0);
 
   // Keep name/email in sync if user logs in mid-session.
   useEffect(() => {
@@ -129,6 +131,9 @@ export function ChatBubble() {
           return;
         }
         const data = await res.json();
+        if (!cancelled) {
+          setAdminTyping(!!data.typing?.admin);
+        }
         const fresh: Message[] = data.messages ?? [];
         if (fresh.length === 0) return;
         if (!cancelled) {
@@ -160,7 +165,20 @@ export function ChatBubble() {
     if (open && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages.length, open]);
+  }, [messages.length, open, adminTyping]);
+
+  // Ping the server (debounced to once every 2s) while the customer is typing
+  // so the admin sees a live indicator on their end.
+  const pingTyping = () => {
+    if (!session) return;
+    const now = Date.now();
+    if (now - lastTypingPingRef.current < 2000) return;
+    lastTypingPingRef.current = now;
+    fetch(`/api/chat/${session.conversationId}/typing`, {
+      method: "POST",
+      headers: { "X-Chat-Token": session.guestToken },
+    }).catch(() => {});
+  };
 
   // Clear unread badge when the user opens the chat.
   useEffect(() => {
@@ -434,7 +452,7 @@ export function ChatBubble() {
           {session && (
             <>
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-2">
-                {messages.length === 0 ? (
+                {messages.length === 0 && !adminTyping ? (
                   <p className="text-xs text-muted-foreground text-center mt-6">
                     Send a message and we'll get back to you here.
                   </p>
@@ -464,6 +482,20 @@ export function ChatBubble() {
                     );
                   })
                 )}
+                {adminTyping && (
+                  <div className="flex justify-start">
+                    <div className="bg-muted text-foreground rounded-2xl rounded-bl-sm px-3 py-2">
+                      <p className="text-[10px] uppercase tracking-widest opacity-70 mb-1">
+                        Support
+                      </p>
+                      <span className="inline-flex items-center gap-1" aria-label="Support is typing">
+                        <span className="h-1.5 w-1.5 rounded-full bg-foreground/70 animate-bounce [animation-delay:-0.2s]" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-foreground/70 animate-bounce [animation-delay:-0.1s]" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-foreground/70 animate-bounce" />
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
               {error && (
                 <p className="px-3 pb-1 text-xs text-red-500">{error}</p>
@@ -478,7 +510,10 @@ export function ChatBubble() {
                 <input
                   type="text"
                   value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
+                  onChange={(e) => {
+                    setDraft(e.target.value);
+                    pingTyping();
+                  }}
                   className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
                   placeholder="Write a message..."
                   data-testid="chat-input"

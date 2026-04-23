@@ -4,6 +4,7 @@ import { ObjectId } from "mongodb";
 import { getDb } from "../lib/mongodb";
 import { adminAuthMiddleware } from "../auth";
 import { rateLimit } from "../lib/rateLimit";
+import { markTyping, getTyping } from "../lib/chatTyping";
 
 const router = Router();
 
@@ -219,7 +220,10 @@ router.get("/chat/:id/messages", async (req, res) => {
       .collection("chat_conversations")
       .updateOne({ _id: new ObjectId(conversationId) }, { $set: { unreadByCustomer: false } });
 
-    res.json({ messages: docs.map(serializeMessage) });
+    res.json({
+      messages: docs.map(serializeMessage),
+      typing: { admin: getTyping(conversationId).admin },
+    });
   } catch (err) {
     res.status(500).json({ error: "Failed to load messages" });
   }
@@ -262,6 +266,7 @@ router.get("/admin/chat/:id/messages", adminAuthMiddleware, async (req, res) => 
     res.json({
       conversation: serializeConversation(conv),
       messages: docs.map(serializeMessage),
+      typing: { customer: getTyping(conversationId).customer },
     });
   } catch (err) {
     res.status(500).json({ error: "Failed to load messages" });
@@ -314,6 +319,22 @@ router.post("/admin/chat/:id/message", adminAuthMiddleware, async (req, res) => 
   } catch (err) {
     res.status(500).json({ error: "Failed to send reply" });
   }
+});
+
+// ── Typing indicators ───────────────────────────────────────────────────────
+router.post("/chat/:id/typing", (req, res) => {
+  const conversationId = req.params.id;
+  const guestToken = (req.headers["x-chat-token"] as string | undefined) ?? "";
+  if (!verifyGuest(conversationId, guestToken)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  markTyping(conversationId, "customer");
+  res.json({ ok: true });
+});
+
+router.post("/admin/chat/:id/typing", adminAuthMiddleware, (req, res) => {
+  markTyping(req.params.id, "admin");
+  res.json({ ok: true });
 });
 
 // ── Admin: close / reopen / delete a conversation ───────────────────────────
