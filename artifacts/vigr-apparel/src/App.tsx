@@ -7,6 +7,8 @@ import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { SearchProvider } from "@/context/SearchContext";
 import { Cart } from "@/components/Cart";
+import { ChatBubble } from "@/components/ChatBubble";
+import { useLocation } from "wouter";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import CategoryPage from "@/pages/category";
@@ -31,6 +33,13 @@ function SyncBridge() {
   useWishlistSync();
   useCartSync();
   return null;
+}
+
+function ChatBubbleGate() {
+  const [location] = useLocation();
+  // Hide the chat bubble inside the admin / dev area.
+  if (location.startsWith("/dev")) return null;
+  return <ChatBubble />;
 }
 
 function Router() {
@@ -68,6 +77,7 @@ function App() {
                 <Router />
               </WouterRouter>
               <Cart />
+              <ChatBubbleGate />
               <Toaster />
             </TooltipProvider>
           </SearchProvider>

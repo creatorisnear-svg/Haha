@@ -13,6 +13,7 @@ import promoRouter from "./promo";
 import engagementRouter from "./engagement";
 import storageRouter from "./storage";
 import imagesRouter from "./images";
+import chatRouter from "./chat";
 import { storage } from "../storage";
 
 const router: IRouter = Router();
@@ -31,6 +32,7 @@ router.use(promoRouter);
 router.use(engagementRouter);
 router.use(storageRouter);
 router.use(imagesRouter);
+router.use(chatRouter);
 
 // Public order lookup by order number + email
 router.get("/orders/lookup", async (req, res) => {

@@ -164,6 +164,9 @@ export default function DevDashboard() {
             <TabsTrigger value="newsletter" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-sm sm:text-lg px-0 h-full uppercase flex-shrink-0">
               Newsletter
             </TabsTrigger>
+            <TabsTrigger value="chat" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-sm sm:text-lg px-0 h-full uppercase flex-shrink-0">
+              Chat
+            </TabsTrigger>
             <TabsTrigger value="settings" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground font-display tracking-widest text-sm sm:text-lg px-0 h-full uppercase flex-shrink-0">
               Settings
             </TabsTrigger>
@@ -207,6 +210,10 @@ export default function DevDashboard() {
 
           <TabsContent value="newsletter" className="pt-8">
             <NewsletterTab token={token} />
+          </TabsContent>
+
+          <TabsContent value="chat" className="pt-8">
+            <ChatAdminTab token={token} active={activeTab === "chat"} />
           </TabsContent>
 
           <TabsContent value="settings" className="pt-8">
@@ -2677,6 +2684,319 @@ function RestockTab({ token, products }: { token: string; products: any[] }) {
           </ul>
         </div>
       ))}
+    </div>
+  );
+}
+
+// ── Admin Chat Tab ──────────────────────────────────────────────────────────
+interface AdminConversation {
+  id: string;
+  customerName: string;
+  customerEmail: string | null;
+  topic: string;
+  status: "open" | "closed";
+  lastMessageAt: string;
+  lastMessagePreview: string;
+  unreadByAdmin: boolean;
+  createdAt: string;
+}
+
+interface AdminChatMessage {
+  id: string;
+  conversationId: string;
+  sender: "customer" | "admin";
+  senderName: string | null;
+  body: string;
+  createdAt: string;
+}
+
+const TOPIC_LABELS: Record<string, string> = {
+  general: "General",
+  returns: "Returns",
+  refunds: "Refunds",
+  shipping: "Shipping",
+  order_status: "Order status",
+  sizing: "Sizing",
+  other: "Other",
+};
+
+function ChatAdminTab({ token, active }: { token: string | null; active: boolean }) {
+  const { toast } = useToast();
+  const [conversations, setConversations] = React.useState<AdminConversation[]>([]);
+  const [selectedId, setSelectedId] = React.useState<string | null>(null);
+  const [messages, setMessages] = React.useState<AdminChatMessage[]>([]);
+  const [reply, setReply] = React.useState("");
+  const [sending, setSending] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const scrollRef = React.useRef<HTMLDivElement | null>(null);
+
+  const authHeaders = React.useMemo(
+    () => ({ Authorization: `Bearer ${token ?? ""}` }),
+    [token],
+  );
+
+  const fetchConversations = React.useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch("/api/admin/chat/conversations", {
+        headers: authHeaders,
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setConversations(data.conversations ?? []);
+    } catch {
+      /* ignore */
+    }
+  }, [token, authHeaders]);
+
+  const fetchMessages = React.useCallback(
+    async (id: string) => {
+      if (!token) return;
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/admin/chat/${id}/messages`, {
+          headers: authHeaders,
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        setMessages(data.messages ?? []);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [token, authHeaders],
+  );
+
+  // Poll conversations list while tab is active.
+  React.useEffect(() => {
+    if (!active) return;
+    fetchConversations();
+    const t = setInterval(fetchConversations, 5000);
+    return () => clearInterval(t);
+  }, [active, fetchConversations]);
+
+  // Poll selected conversation's messages.
+  React.useEffect(() => {
+    if (!active || !selectedId) return;
+    fetchMessages(selectedId);
+    const t = setInterval(() => fetchMessages(selectedId), 3000);
+    return () => clearInterval(t);
+  }, [active, selectedId, fetchMessages]);
+
+  React.useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages.length, selectedId]);
+
+  const sendReply = async () => {
+    if (!selectedId || !reply.trim() || !token) return;
+    setSending(true);
+    try {
+      const res = await fetch(`/api/admin/chat/${selectedId}/message`, {
+        method: "POST",
+        headers: { ...authHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({ body: reply.trim() }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? "Could not send reply");
+      }
+      const data = await res.json();
+      setMessages((prev) => [...prev, data.message]);
+      setReply("");
+      fetchConversations();
+    } catch (e: any) {
+      toast({ title: "Send failed", description: e.message, variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const closeConversation = async () => {
+    if (!selectedId || !token) return;
+    const res = await fetch(`/api/admin/chat/${selectedId}/close`, {
+      method: "POST",
+      headers: authHeaders,
+    });
+    if (res.ok) {
+      toast({ title: "Conversation closed" });
+      fetchConversations();
+    }
+  };
+
+  const reopenConversation = async () => {
+    if (!selectedId || !token) return;
+    const res = await fetch(`/api/admin/chat/${selectedId}/reopen`, {
+      method: "POST",
+      headers: authHeaders,
+    });
+    if (res.ok) {
+      toast({ title: "Conversation reopened" });
+      fetchConversations();
+    }
+  };
+
+  const deleteConversation = async () => {
+    if (!selectedId || !token) return;
+    if (!confirm("Delete this conversation and all of its messages?")) return;
+    const res = await fetch(`/api/admin/chat/${selectedId}`, {
+      method: "DELETE",
+      headers: authHeaders,
+    });
+    if (res.ok) {
+      toast({ title: "Conversation deleted" });
+      setSelectedId(null);
+      setMessages([]);
+      fetchConversations();
+    }
+  };
+
+  const selected = conversations.find((c) => c.id === selectedId) ?? null;
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-4 min-h-[600px]">
+      {/* List */}
+      <div className="border border-border rounded-md flex flex-col max-h-[70vh]">
+        <div className="px-3 py-2 border-b border-border flex items-center justify-between">
+          <p className="font-display tracking-widest text-sm uppercase">Conversations</p>
+          <button
+            type="button"
+            onClick={fetchConversations}
+            className="text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground"
+          >
+            Refresh
+          </button>
+        </div>
+        <div className="overflow-y-auto flex-1 divide-y divide-border">
+          {conversations.length === 0 && (
+            <p className="text-xs text-muted-foreground p-4">No conversations yet.</p>
+          )}
+          {conversations.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setSelectedId(c.id)}
+              className={`w-full text-left px-3 py-2.5 hover:bg-card/40 transition ${
+                selectedId === c.id ? "bg-card/60" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium truncate">
+                  {c.customerName || "Guest"}
+                </p>
+                {c.unreadByAdmin && (
+                  <span className="h-2 w-2 rounded-full bg-red-500 flex-shrink-0" />
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {TOPIC_LABELS[c.topic] ?? c.topic} · {c.customerEmail ?? "no email"}
+              </p>
+              <p className="text-xs text-foreground/80 truncate mt-0.5">
+                {c.lastMessagePreview || "(no messages yet)"}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {new Date(c.lastMessageAt).toLocaleString()} · {c.status}
+              </p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Thread */}
+      <div className="border border-border rounded-md flex flex-col max-h-[70vh]">
+        {!selected ? (
+          <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
+            Select a conversation to read and reply.
+          </div>
+        ) : (
+          <>
+            <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-2 flex-wrap">
+              <div>
+                <p className="font-display tracking-widest text-sm uppercase">
+                  {selected.customerName}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {selected.customerEmail ?? "no email"} ·{" "}
+                  {TOPIC_LABELS[selected.topic] ?? selected.topic} · {selected.status}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {selected.status === "open" ? (
+                  <button
+                    type="button"
+                    onClick={closeConversation}
+                    className="text-[10px] uppercase tracking-widest border border-border px-2 py-1 hover:bg-foreground/10"
+                  >
+                    Close
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={reopenConversation}
+                    className="text-[10px] uppercase tracking-widest border border-border px-2 py-1 hover:bg-foreground/10"
+                  >
+                    Reopen
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={deleteConversation}
+                  className="text-[10px] uppercase tracking-widest border border-red-500 text-red-500 px-2 py-1 hover:bg-red-500/10"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-2">
+              {loading && messages.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center">Loading…</p>
+              )}
+              {messages.map((m) => {
+                const mine = m.sender === "admin";
+                return (
+                  <div
+                    key={m.id}
+                    className={`flex ${mine ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap ${
+                        mine
+                          ? "bg-primary text-primary-foreground rounded-br-sm"
+                          : "bg-muted text-foreground rounded-bl-sm"
+                      }`}
+                    >
+                      <p className="text-[10px] uppercase tracking-widest opacity-70 mb-0.5">
+                        {m.senderName ?? (mine ? "You" : "Customer")} ·{" "}
+                        {new Date(m.createdAt).toLocaleTimeString()}
+                      </p>
+                      {m.body}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <form
+              className="border-t border-border p-2 flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                sendReply();
+              }}
+            >
+              <Textarea
+                value={reply}
+                onChange={(e) => setReply(e.target.value)}
+                rows={2}
+                placeholder="Reply to the customer..."
+                className="flex-1 resize-none"
+              />
+              <Button type="submit" disabled={sending || !reply.trim()}>
+                {sending ? "Sending…" : "Send"}
+              </Button>
+            </form>
+          </>
+        )}
+      </div>
     </div>
   );
 }
