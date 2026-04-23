@@ -278,12 +278,33 @@ export function ChatBubble() {
         type="button"
         aria-label={open ? "Close support chat" : "Open support chat"}
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-5 right-5 z-[80] h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-black/30 hover:scale-105 active:scale-95 transition flex items-center justify-center"
+        className="group fixed bottom-5 right-5 z-[80] flex items-center gap-2 pl-4 pr-5 py-3 rounded-full text-white font-display tracking-widest text-xs uppercase shadow-[0_10px_30px_-5px_rgba(220,38,38,0.55)] hover:shadow-[0_15px_40px_-5px_rgba(220,38,38,0.7)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 bg-[linear-gradient(135deg,#dc2626_0%,#7f1d1d_55%,#000_100%)] ring-1 ring-white/10 hover:ring-white/20 overflow-hidden"
         data-testid="chat-bubble-toggle"
       >
-        {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
+        {/* shimmer sweep on hover */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out bg-[linear-gradient(110deg,transparent_25%,rgba(255,255,255,0.18)_50%,transparent_75%)]"
+        />
+        {/* pulsing halo when there's an unread admin message */}
         {!open && hasUnread && (
-          <span className="absolute top-1 right-1 h-3 w-3 rounded-full bg-red-500 ring-2 ring-background" />
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-full ring-2 ring-red-500/70 animate-ping"
+          />
+        )}
+        <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm ring-1 ring-white/25">
+          {open ? (
+            <X className="h-4 w-4" />
+          ) : (
+            <MessageCircle className="h-4 w-4" />
+          )}
+        </span>
+        <span className="relative whitespace-nowrap">
+          {open ? "Close" : hasUnread ? "New reply" : "Chat with us"}
+        </span>
+        {!open && hasUnread && (
+          <span className="relative ml-1 h-2 w-2 rounded-full bg-red-300 ring-2 ring-red-500/40" />
         )}
       </button>
 
