@@ -434,6 +434,98 @@ export async function sendAbandonedCartReminder(data: AbandonedCartData): Promis
   });
 }
 
+interface ChatTranscriptMessage {
+  sender: "customer" | "admin";
+  senderName: string | null;
+  body: string;
+  createdAt: Date | string;
+}
+
+interface ChatTranscriptData {
+  to: string;
+  customerName: string;
+  topic: string;
+  startedAt: Date | string;
+  messages: ChatTranscriptMessage[];
+}
+
+const TRANSCRIPT_TOPIC_LABELS: Record<string, string> = {
+  general: "General",
+  returns: "Returns",
+  refunds: "Refunds",
+  shipping: "Shipping",
+  order_status: "Order status",
+  sizing: "Sizing",
+  other: "Other",
+};
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function chatTranscriptHtml(data: ChatTranscriptData): string {
+  const topicLabel = TRANSCRIPT_TOPIC_LABELS[data.topic] ?? data.topic;
+  const started = new Date(data.startedAt);
+  const rows = data.messages
+    .map((m) => {
+      const who =
+        m.sender === "admin"
+          ? "Support"
+          : m.senderName || data.customerName || "You";
+      const align = m.sender === "admin" ? "left" : "right";
+      const bg = m.sender === "admin" ? "#1a1a1a" : "#2a1414";
+      const border = m.sender === "admin" ? "#2a2a2a" : "#3a1f1f";
+      const ts = new Date(m.createdAt).toLocaleString();
+      return `
+        <tr>
+          <td style="padding:6px 0;" align="${align}">
+            <div style="display:inline-block;max-width:80%;text-align:left;background:${bg};border:1px solid ${border};border-radius:12px;padding:10px 14px;color:#e5e5e5;font-size:13px;line-height:1.5;">
+              <div style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#9a9a9a;margin-bottom:4px;">
+                ${escapeHtml(who)} · ${escapeHtml(ts)}
+              </div>
+              <div style="white-space:pre-wrap;">${escapeHtml(m.body)}</div>
+            </div>
+          </td>
+        </tr>`;
+    })
+    .join("");
+
+  return `<!doctype html>
+<html><body style="margin:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#e5e5e5;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
+    <div style="text-align:center;padding-bottom:24px;border-bottom:1px solid #2a2a2a;">
+      <h1 style="font-size:18px;letter-spacing:0.3em;margin:0;color:#ffffff;text-transform:uppercase;">VIGR Angel Apparel</h1>
+    </div>
+    <div style="padding:32px 0 16px;text-align:center;">
+      <p style="font-size:11px;letter-spacing:0.4em;text-transform:uppercase;color:#9a9a9a;margin:0 0 8px;">Chat Transcript</p>
+      <h2 style="font-size:22px;letter-spacing:0.15em;margin:0;color:#ffffff;">${escapeHtml(topicLabel)}</h2>
+      <p style="color:#9a9a9a;font-size:12px;margin:8px 0 0;">Started ${escapeHtml(started.toLocaleString())}</p>
+    </div>
+    <p style="color:#c5c5c5;font-size:14px;line-height:1.6;">Hey ${escapeHtml(data.customerName.split(" ")[0] || "there")}, here's a copy of your conversation with our support team. Reply to this email if you need anything else.</p>
+    <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+      <tbody>${rows || `<tr><td style="padding:16px;color:#9a9a9a;text-align:center;font-size:13px;">No messages were exchanged.</td></tr>`}</tbody>
+    </table>
+    <div style="margin-top:32px;padding-top:24px;border-top:1px solid #2a2a2a;text-align:center;">
+      <p style="color:#7a7a7a;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;margin:0;">Created Like Heaven · Worn With Faith</p>
+    </div>
+  </div>
+</body></html>`;
+}
+
+export async function sendChatTranscript(data: ChatTranscriptData): Promise<void> {
+  const subject = `Your VAA support chat transcript`;
+  await sendViaResend({
+    to: data.to,
+    subject,
+    html: chatTranscriptHtml(data),
+  });
+}
+
 export async function sendOrderConfirmation(data: OrderEmailData): Promise<void> {
   // Customer confirmation
   await sendViaResend({

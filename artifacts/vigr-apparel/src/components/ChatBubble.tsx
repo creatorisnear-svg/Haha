@@ -94,6 +94,12 @@ export function ChatBubble() {
   const [error, setError] = useState<string | null>(null);
   const [hasUnread, setHasUnread] = useState(false);
   const [adminTyping, setAdminTyping] = useState(false);
+  const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const [transcriptEmail, setTranscriptEmail] = useState("");
+  const [transcriptSending, setTranscriptSending] = useState(false);
+  const [transcriptStatus, setTranscriptStatus] = useState<
+    { type: "success" | "error"; text: string } | null
+  >(null);
   const lastSeenRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const lastTypingPingRef = useRef<number>(0);
@@ -288,6 +294,51 @@ export function ChatBubble() {
     setDraft("");
     lastSeenRef.current = null;
     setPendingTopic(null);
+    setTranscriptOpen(false);
+    setTranscriptStatus(null);
+  };
+
+  const openTranscript = () => {
+    setTranscriptEmail(email || customer?.email || "");
+    setTranscriptStatus(null);
+    setTranscriptOpen(true);
+  };
+
+  const sendTranscript = async () => {
+    if (!session) return;
+    const target = transcriptEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target)) {
+      setTranscriptStatus({ type: "error", text: "Enter a valid email address." });
+      return;
+    }
+    setTranscriptSending(true);
+    setTranscriptStatus(null);
+    try {
+      const res = await fetch(`/api/chat/${session.conversationId}/transcript`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Chat-Token": session.guestToken,
+        },
+        body: JSON.stringify({ email: target }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setTranscriptStatus({
+          type: "error",
+          text: data?.error ?? "Couldn't send transcript.",
+        });
+      } else {
+        setTranscriptStatus({
+          type: "success",
+          text: `Sent to ${data.sentTo ?? target}. Check your inbox.`,
+        });
+      }
+    } catch {
+      setTranscriptStatus({ type: "error", text: "Network error. Try again." });
+    } finally {
+      setTranscriptSending(false);
+    }
   };
 
   return (
@@ -363,15 +414,72 @@ export function ChatBubble() {
               </div>
             </div>
             {session && (
-              <button
-                type="button"
-                onClick={endConversation}
-                className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
-              >
-                End chat
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={openTranscript}
+                  disabled={messages.length === 0}
+                  className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline disabled:opacity-40 disabled:no-underline"
+                >
+                  Email transcript
+                </button>
+                <span className="text-muted-foreground/40">·</span>
+                <button
+                  type="button"
+                  onClick={endConversation}
+                  className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                >
+                  End chat
+                </button>
+              </div>
             )}
           </header>
+
+          {session && transcriptOpen && (
+            <div className="border-b border-border bg-card/40 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                  Email me a transcript
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setTranscriptOpen(false)}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                  aria-label="Close transcript form"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={transcriptEmail}
+                  onChange={(e) => setTranscriptEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={sendTranscript}
+                  disabled={transcriptSending || !transcriptEmail.trim()}
+                  className="rounded-md bg-primary text-primary-foreground px-3 text-sm disabled:opacity-50"
+                >
+                  {transcriptSending ? "Sending…" : "Send"}
+                </button>
+              </div>
+              {transcriptStatus && (
+                <p
+                  className={`text-xs ${
+                    transcriptStatus.type === "success"
+                      ? "text-emerald-500"
+                      : "text-red-500"
+                  }`}
+                >
+                  {transcriptStatus.text}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Quick actions are always visible at the top when not in a pending form */}
           {!pendingTopic && (

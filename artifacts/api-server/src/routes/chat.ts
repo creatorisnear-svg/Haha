@@ -5,6 +5,8 @@ import { getDb } from "../lib/mongodb";
 import { adminAuthMiddleware } from "../auth";
 import { rateLimit } from "../lib/rateLimit";
 import { markTyping, getTyping } from "../lib/chatTyping";
+import { sendChatTranscript } from "../lib/email";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -318,6 +320,83 @@ router.post("/admin/chat/:id/message", adminAuthMiddleware, async (req, res) => 
     });
   } catch (err) {
     res.status(500).json({ error: "Failed to send reply" });
+  }
+});
+
+// ── Customer: email a transcript ────────────────────────────────────────────
+const transcriptLimiter = rateLimit({
+  bucket: "chat-transcript",
+  max: 5,
+  windowMs: 60 * 60 * 1000,
+  message: "Too many transcript requests. Please wait a bit and try again.",
+});
+
+router.post("/chat/:id/transcript", transcriptLimiter, async (req, res) => {
+  const conversationId = req.params.id;
+  const guestToken = (req.headers["x-chat-token"] as string | undefined) ?? "";
+  if (!verifyGuest(conversationId, guestToken)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const overrideEmail = clean(req.body?.email).toLowerCase();
+
+  try {
+    const db = await getDb();
+    const _id = new ObjectId(conversationId);
+    const conv = await db.collection("chat_conversations").findOne({ _id });
+    if (!conv) return res.status(404).json({ error: "Conversation not found" });
+
+    const target = overrideEmail || (conv.customerEmail ?? "");
+    if (!target || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target)) {
+      return res
+        .status(400)
+        .json({ error: "We need a valid email address to send the transcript." });
+    }
+
+    const docs = await db
+      .collection("chat_messages")
+      .find({ conversationId })
+      .sort({ createdAt: 1 })
+      .limit(500)
+      .toArray();
+
+    if (docs.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "There are no messages to send yet." });
+    }
+
+    // Persist the email so future transcripts work even if user opted out earlier.
+    if (overrideEmail && overrideEmail !== conv.customerEmail) {
+      await db
+        .collection("chat_conversations")
+        .updateOne({ _id }, { $set: { customerEmail: overrideEmail } });
+    }
+
+    try {
+      await sendChatTranscript({
+        to: target,
+        customerName: conv.customerName ?? "Guest",
+        topic: conv.topic ?? "general",
+        startedAt: conv.createdAt,
+        messages: docs.map((d: any) => ({
+          sender: d.sender,
+          senderName: d.senderName ?? null,
+          body: d.body,
+          createdAt: d.createdAt,
+        })),
+      });
+    } catch (err: any) {
+      logger.error({ err, conversationId }, "Failed to send chat transcript");
+      return res.status(502).json({
+        error:
+          "We couldn't send the email right now. Please try again in a moment.",
+      });
+    }
+
+    res.json({ success: true, sentTo: target });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to send transcript" });
   }
 });
 
