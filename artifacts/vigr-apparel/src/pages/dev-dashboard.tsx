@@ -2875,7 +2875,7 @@ function ChatAdminTab({ token, active }: { token: string | null; active: boolean
   return (
     <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-4 min-h-[600px]">
       {/* List */}
-      <div className="border border-border rounded-md flex flex-col max-h-[70vh]">
+      <div className={`border border-border rounded-md flex flex-col max-h-[70vh] ${selected ? "hidden md:flex" : "flex"}`}>
         <div className="px-3 py-2 border-b border-border flex items-center justify-between">
           <p className="font-display tracking-widest text-sm uppercase">Conversations</p>
           <button
@@ -2922,7 +2922,7 @@ function ChatAdminTab({ token, active }: { token: string | null; active: boolean
       </div>
 
       {/* Thread */}
-      <div className="border border-border rounded-md flex flex-col max-h-[70vh]">
+      <div className={`border border-border rounded-md flex flex-col max-h-[70vh] ${selected ? "flex" : "hidden md:flex"}`}>
         {!selected ? (
           <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
             Select a conversation to read and reply.
@@ -2930,14 +2930,24 @@ function ChatAdminTab({ token, active }: { token: string | null; active: boolean
         ) : (
           <>
             <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-2 flex-wrap">
-              <div>
-                <p className="font-display tracking-widest text-sm uppercase">
+              <div className="flex items-center gap-2 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(null)}
+                  className="md:hidden text-xs text-muted-foreground hover:text-foreground border border-border rounded px-2 py-1"
+                  aria-label="Back to conversation list"
+                >
+                  ← Back
+                </button>
+                <div className="min-w-0">
+                <p className="font-display tracking-widest text-sm uppercase truncate">
                   {selected.customerName}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground truncate">
                   {selected.customerEmail ?? "no email"} ·{" "}
                   {TOPIC_LABELS[selected.topic] ?? selected.topic} · {selected.status}
                 </p>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 {selected.status === "open" ? (

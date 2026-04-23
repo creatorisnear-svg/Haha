@@ -441,7 +441,7 @@ export function ChatBubble() {
 
       {open && (
         <div
-          className="fixed bottom-24 right-5 z-[80] w-[min(360px,calc(100vw-2.5rem))] h-[min(560px,calc(100vh-7rem))] bg-background border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+          className="fixed z-[80] bg-background border border-border shadow-2xl flex flex-col overflow-hidden inset-x-3 bottom-24 sm:inset-auto sm:bottom-24 sm:right-5 sm:w-[min(380px,calc(100vw-2.5rem))] h-[min(620px,calc(100dvh-7rem))] sm:h-[min(560px,calc(100dvh-7rem))] rounded-2xl"
           role="dialog"
           aria-label="Support chat"
         >
@@ -518,7 +518,7 @@ export function ChatBubble() {
                   value={transcriptEmail}
                   onChange={(e) => setTranscriptEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-base sm:text-sm"
                 />
                 <button
                   type="button"
@@ -578,14 +578,14 @@ export function ChatBubble() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+                className="rounded-md border border-border bg-background px-2 py-2 text-base sm:text-xs sm:py-1.5"
                 placeholder="Your name (optional)"
               />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+                className="rounded-md border border-border bg-background px-2 py-2 text-base sm:text-xs sm:py-1.5"
                 placeholder="Email (for follow-up)"
               />
             </div>
@@ -673,7 +673,7 @@ export function ChatBubble() {
                     setDraft(e.target.value);
                     if (session) pingTyping();
                   }}
-                  className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-base sm:text-sm"
                   placeholder={session ? "Write a message..." : "Type a message to start..."}
                   data-testid="chat-input"
                 />
