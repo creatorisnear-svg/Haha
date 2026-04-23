@@ -67,6 +67,35 @@ interface Session {
   topic: Topic;
 }
 
+// Lightweight keyword-based topic detection. Returns null when nothing
+// jumps out (so we don't override the user's intent).
+function detectTopic(text: string): Topic | null {
+  const t = text.toLowerCase();
+  if (!t.trim()) return null;
+  // Order tracking — order numbers or explicit tracking words
+  if (
+    /\b(track(ing)?|where('?s| is) my order|ship(ped|ping) status|wism[oy])\b/.test(t) ||
+    /\b(order|tracking)\s*(number|#|no\.?)?\s*[:#]?\s*[a-z0-9-]{4,}\b/.test(t)
+  ) {
+    return "order_status";
+  }
+  if (/\brefund(ed|s)?\b|\bmoney back\b|\bcharge ?back\b/.test(t)) return "refunds";
+  if (/\breturn(s|ing|ed)?\b|\bsend (it )?back\b|\bexchange\b/.test(t)) return "returns";
+  if (
+    /\b(ship(ping)?|deliver(y|ed)?|arrive(s|d)?|address|postage|courier|usps|ups|fedex|dhl)\b/.test(
+      t,
+    )
+  ) {
+    return "shipping";
+  }
+  if (/\b(size|sizing|fit|fits|small|medium|large|xl|xxl|measurement)\b/.test(t)) return "sizing";
+  return null;
+}
+
+function topicLabel(t: Topic): string {
+  return QUICK_ACTIONS.find((a) => a.topic === t)?.label ?? "this";
+}
+
 function loadSession(): Session | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -100,9 +129,20 @@ export function ChatBubble() {
   const [transcriptStatus, setTranscriptStatus] = useState<
     { type: "success" | "error"; text: string } | null
   >(null);
+  const [topicManuallySet, setTopicManuallySet] = useState(false);
   const lastSeenRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const lastTypingPingRef = useRef<number>(0);
+
+  // Auto-detect topic from the draft and quietly apply it unless the user
+  // has manually picked one already.
+  const suggestedTopic = detectTopic(draft);
+  useEffect(() => {
+    if (topicManuallySet) return;
+    if (!session && suggestedTopic && suggestedTopic !== pendingTopic) {
+      setPendingTopic(suggestedTopic);
+    }
+  }, [suggestedTopic, session, topicManuallySet, pendingTopic]);
 
   // Keep name/email in sync if user logs in mid-session.
   useEffect(() => {
@@ -269,6 +309,7 @@ export function ChatBubble() {
   };
 
   const handleQuickAction = async (action: QuickAction) => {
+    setTopicManuallySet(true);
     if (session) {
       // Re-tag the existing conversation with the chosen topic.
       if (action.topic !== session.topic) {
@@ -316,6 +357,7 @@ export function ChatBubble() {
     setPendingTopic(null);
     setTranscriptOpen(false);
     setTranscriptStatus(null);
+    setTopicManuallySet(false);
   };
 
   const openTranscript = () => {
@@ -601,6 +643,21 @@ export function ChatBubble() {
               </div>
               {error && (
                 <p className="px-3 pb-1 text-xs text-red-500">{error}</p>
+              )}
+              {session && suggestedTopic && suggestedTopic !== session.topic && (
+                <div className="px-3 pb-1 text-[11px] text-muted-foreground flex items-center gap-2">
+                  <span>Sounds like this is about {topicLabel(suggestedTopic)}.</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const action = QUICK_ACTIONS.find((a) => a.topic === suggestedTopic);
+                      if (action) handleQuickAction({ ...action, prompt: "" });
+                    }}
+                    className="underline underline-offset-2 hover:text-foreground"
+                  >
+                    Switch topic
+                  </button>
+                </div>
               )}
               <form
                 className="border-t border-border p-2 flex gap-2"
